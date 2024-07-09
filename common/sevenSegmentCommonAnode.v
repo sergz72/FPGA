@@ -33,20 +33,21 @@ module sevenSegmentMultiplexedCommonAnode
 (
     input wire clk,
     input wire [(4 << SEL_BITS) - 1:0] code,
-    output wire [6:0] segments,
+    input wire [(1 << SEL_BITS) - 1:0] points,
+    output wire [7:0] segments,
     output reg [SEL_BITS - 1:0] sel = 0
 );
     reg [COUNTER_BITS - 1:0] counter = 0;
-    reg [(4 << SEL_BITS) - 1:0] s_code;
     wire [3:0] o_code;
 
-    mux #(.SEL_BITS(SEL_BITS)) m(.code(s_code), .sel(sel), .out(o_code));
-    sevenSegmentCommonAnode s(.code(o_code), .out(segments));
+    mux #(.SEL_BITS(SEL_BITS)) m(.code(code), .sel(sel), .out(o_code));
+    sevenSegmentCommonAnode s(.code(o_code), .out(segments[6:0]));
 
+    assign segments[7] = points[sel];
+    
     always @(posedge clk) begin
         if (counter == 0) begin
             sel = sel + 1;
-            s_code = code;
         end
         counter = counter + 1;
     end

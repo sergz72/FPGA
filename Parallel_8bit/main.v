@@ -16,8 +16,10 @@ module parallelViewer
     output [6:0] seven_seg
 );
     reg [7:0] o_data;
+    wire segment7;
 
-    sevenSegmentMultiplexedCommonAnode #(.COUNTER_BITS(COUNTER_BITS)) s(.clk(clk), .code(o_data), .segments(seven_seg), .sel(seven_seg_sel));
+    sevenSegmentMultiplexedCommonAnode #(.COUNTER_BITS(COUNTER_BITS))
+        s(.clk(clk), .code(o_data), .segments({segment7, seven_seg}), .sel(seven_seg_sel), .points(2'b00));
 
     always @(posedge wr) begin
         reset_o = reset;
