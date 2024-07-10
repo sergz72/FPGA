@@ -15,10 +15,10 @@ module sevenSegmentCommonCathode (
             'h7: sevenSegDecodeCommonCathode = 7'b0000111;
             'h8: sevenSegDecodeCommonCathode = 7'b1111111;
             'h9: sevenSegDecodeCommonCathode = 7'b0010000;
-            'hA: sevenSegDecodeCommonCathode = 7'b1111011;
+            'hA: sevenSegDecodeCommonCathode = 7'b1110111;
             'hB: sevenSegDecodeCommonCathode = 7'b1111100;
             'hC: sevenSegDecodeCommonCathode = 7'b0111001;
-            'hD: sevenSegDecodeCommonCathode = 7'b0011111;
+            'hD: sevenSegDecodeCommonCathode = 7'b1011110;
             'hE: sevenSegDecodeCommonCathode = 7'b1111001;
             'hF: sevenSegDecodeCommonCathode = 7'b1110001;
             default: sevenSegDecodeCommonCathode = 7'b0000000;
