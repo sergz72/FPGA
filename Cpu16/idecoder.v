@@ -376,28 +376,41 @@ module idecoder
                         stage <= 0;
                     end
                     else begin
-                        stage <= 3;
-                        if (max_stage != 3'd4)
+                        if (max_stage != 3'd4) begin
+                            if (current_instruction[7:0] == `ALU_OP_TEST || current_instruction[7:0] == `ALU_OP_CMP)
+                                stage <= 0;
+                            else
+                                stage <= 3;
                             alu_clk <= 1;
-                        else
+                        end
+                        else begin
                             alu_op2 <= io_data_in;
+                            stage <= 3;
+                        end
                     end
                 end
                 3: begin
-                    if (max_stage == 3)
-                        stage <= 0;
-                    else
-                        stage <= 4;
                     alu_clk <= 1;
                     io_rd <= 1;
                     case (current_instruction[7:`ALU_OPID_WIDTH])
                         // alu instruction, register->register or immediate->register
-                        3, 4: registers[current_instruction[15:8]] <= alu_out;
+                        3, 4: begin
+                            registers[current_instruction[15:8]] <= alu_out;
+                            stage <= 0;
+                        end
+                        // alu instruction, io->register
+                        5: begin
+                            if (current_instruction[7:0] == `ALU_OP_TEST || current_instruction[7:0] == `ALU_OP_CMP)
+                                stage <= 0;
+                            else
+                                stage <= 4;
+                        end
                         // alu instruction, register->io
                         6: begin
                             io_wr <= 0;
                             io_data_direction <= 0;
                             io_data_out <= alu_out;
+                            stage <= 4;
                         end
                         default: begin end
                     endcase

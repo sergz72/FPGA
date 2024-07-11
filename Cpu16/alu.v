@@ -15,15 +15,17 @@ module alu
 
     always @(posedge clk) begin
         case (op_id)
-            `ALU_OP_TEST: out <= op1; // TEST OP1
+            `ALU_OP_TEST, `ALU_OP_AND: out <= op1 & op2; // TEST/AND
             `ALU_OP_NOT: out <= ~op1; // NOT OP1
             `ALU_OP_NEG: out <= -op1; // NEG OP1
             `ALU_OP_ADD: {c, out} <= {1'b0, op1} + {1'b0, op2}; // OP1 + OP2
             `ALU_OP_ADC: {c, out} <= {1'b0, op1} + {1'b0, op2} + {{BITS{1'b0}}, c}; // OP1 + OP2 + c
-            `ALU_OP_SUB: {c, out} <= {1'b0, op1} - {1'b0, op2}; // OP1 - OP2
+            `ALU_OP_SUB, `ALU_OP_CMP: {c, out} <= {1'b0, op1} - {1'b0, op2}; // OP1 - OP2
             `ALU_OP_SBC: {c, out} <= {1'b0, op1} - {1'b0, op2} - {{BITS{1'b0}}, c}; // OP1 - OP2 - c
-            `ALU_OP_SHL: out <= op1 << 1; // shift left
-            `ALU_OP_SHR: out <= op1 >> 1; // shift right
+            `ALU_OP_SHL: out <= op1 << op2; // shift left
+            `ALU_OP_SHR: out <= op1 >> op2; // shift right
+            `ALU_OP_OR: out <= op1 | op2;
+            `ALU_OP_XOR: out <= op1 ^ op2;
             // NOP
             default: begin end
         endcase
