@@ -2,34 +2,51 @@
 
 internal sealed class MovInstruction : Instruction
 {
-    private readonly uint _type, _regNo, _value2;
+    private readonly uint _type, _regNo, _value2, _adder;
     
-    internal MovInstruction(uint type, uint regNo, uint value2)
+    internal MovInstruction(string line, uint type, uint regNo, uint value2, uint adder): base(line)
     {
         _type = type;
         _regNo = regNo;
         _value2 = value2;
+        _adder = adder;
     }
     
     internal override uint BuildCode(ushort labelAddress)
     {
-        return _type | (_regNo << 8) | ((uint)labelAddress << 16);
+        if (_type == InstructionCodes.MovImmediate)
+            return _type | (_regNo << 8) | (_value2 << 16);
+        else
+            return _type | (_regNo << 8) | (_value2 << 16) | (_adder << 24);
     }
 }
 
-internal sealed class MovInstructionCreator(uint addrCode, uint regCode) : InstructionCreator
+internal sealed class MovInstructionCreator() : InstructionCreator
 {
-    internal override Instruction Create(ICompiler compiler, List<Token> parameters)
+    internal override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
     {
         if (parameters.Count < 3 || parameters[0].Type != TokenType.Name)
-            throw new ParserException("register name and register/immediate expected");
+            throw new InstructionException("register name and register/immediate expected");
         if (!GetRegisterNumber(parameters[0].StringValue, out var regNo))
-            throw new ParserException("register name expected");
+            throw new InstructionException("register name expected");
         if (!parameters[1].IsChar(','))
-            throw new ParserException(", expected");
-        if (parameters.Count == 3 && GetRegisterNumber(parameters[2].StringValue, out var regNo2))
-            return new MovInstruction(InstructionCodes.MovReg, regNo, regNo2);
-        var value2 = compiler.CalculateExpression(parameters[1..]);
-        return new MovInstruction(InstructionCodes.MovReg, regNo, (uint)value2);
+            throw new InstructionException(", expected");
+        if (GetRegisterNumber(parameters[2].StringValue, out var regNo2))
+        {
+            var adder = 0;
+            if (parameters.Count > 3)
+            {
+                if (parameters.Count == 4)
+                    throw new InstructionException("invalid number of parameters");
+                if (!parameters[3].IsChar('+'))
+                    throw new InstructionException("+ expected");
+                adder = compiler.CalculateExpression(parameters[4..]);
+            }
+
+            return new MovInstruction(line, InstructionCodes.MovReg, regNo, regNo2, (uint)adder);
+        }
+
+        var value2 = compiler.CalculateExpression(parameters[2..]);
+        return new MovInstruction(line, InstructionCodes.MovImmediate, regNo, (uint)value2, 0);
     }
 }

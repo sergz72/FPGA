@@ -14,6 +14,8 @@ internal interface ICompiler
 }
 internal sealed class Compiler(List<string> sources, string outputFileName, OutputFormat outputFormat): ICompiler
 {
+    private record BinaryItem(uint Code, string Line);
+    
     private sealed class CompilerException(string fileName, int lineNo, string message) : Exception($"Error in {fileName}:{lineNo}: {message}");
     
     private static readonly Dictionary<string, InstructionCreator> InstructionCreators = new()
@@ -23,13 +25,25 @@ internal sealed class Compiler(List<string> sources, string outputFileName, Outp
         {"ret", new OpCodeInstructionCreator(InstructionCodes.Ret)},
         {"retc", new OpCodeInstructionCreator(InstructionCodes.Retc)},
         {"retz", new OpCodeInstructionCreator(InstructionCodes.Retz)},
-        {"mov", new MovInstructionCreator(InstructionCodes.MovImmediate, InstructionCodes.MovReg)},
+        {"retnc", new OpCodeInstructionCreator(InstructionCodes.Retnc)},
+        {"retnz", new OpCodeInstructionCreator(InstructionCodes.Retnz)},
+        {"mov", new MovInstructionCreator()},
+        {"clr", new RegisterLoadInstructionCreator(0)},
+        {"ser", new RegisterLoadInstructionCreator(0xFFFF)},
+        {"inc", new AluImmediateInstructionCreator(AluOperations.Add, 1)},
+        {"dec", new AluImmediateInstructionCreator(AluOperations.Add, 0xFFFF)},
+        {"in", new InOutInstructionCreator(InstructionCodes.In)},
+        {"out", new InOutInstructionCreator(InstructionCodes.Out)},
         {"jmp", new JmpInstructionCreator(InstructionCodes.JmpAddr, InstructionCodes.JmpReg)},
         {"jmpc", new JmpInstructionCreator(InstructionCodes.JmpcAddr, InstructionCodes.JmpcReg)},
         {"jmpz", new JmpInstructionCreator(InstructionCodes.JmpzAddr, InstructionCodes.JmpzReg)},
+        {"jmpnc", new JmpInstructionCreator(InstructionCodes.JmpncAddr, InstructionCodes.JmpncReg)},
+        {"jmpnz", new JmpInstructionCreator(InstructionCodes.JmpnzAddr, InstructionCodes.JmpnzReg)},
         {"call", new JmpInstructionCreator(InstructionCodes.CallAddr, InstructionCodes.CallReg)},
         {"callc", new JmpInstructionCreator(InstructionCodes.CallcAddr, InstructionCodes.CallcReg)},
-        {"callz", new JmpInstructionCreator(InstructionCodes.CallzAddr, InstructionCodes.CallzReg)}
+        {"callz", new JmpInstructionCreator(InstructionCodes.CallzAddr, InstructionCodes.CallzReg)},
+        {"callnc", new JmpInstructionCreator(InstructionCodes.CallncAddr, InstructionCodes.CallncReg)},
+        {"callnz", new JmpInstructionCreator(InstructionCodes.CallnzAddr, InstructionCodes.CallnzReg)}
     };
     private readonly Dictionary<string, ushort> _labels = [];
     private readonly List<Instruction> _instructions = [];
@@ -40,7 +54,10 @@ internal sealed class Compiler(List<string> sources, string outputFileName, Outp
 
     public int CalculateExpression(List<Token> tokens)
     {
-        var result = 0;
+        if (tokens.Count != 1 || tokens[0].Type != TokenType.Number)
+            throw new InstructionException("only single number is supported");
+        
+        var result = tokens[0].IntValue;
 
         return result;
     }
@@ -57,27 +74,31 @@ internal sealed class Compiler(List<string> sources, string outputFileName, Outp
             case OutputFormat.Hex:
             {
                 using var writer = new StreamWriter(output);
+                var pc = 0;
                 foreach (var data in binary)
-                    writer.Write(data.ToString("x8") +  "\n");
+                {
+                    writer.Write($"{data.Code:x8} // pc={pc:x4} {data.Line}\n");
+                    pc++;
+                }
                 break;
             }
             case OutputFormat.Bin:
             {
                 using var writer = new BinaryWriter(output);
                 foreach (var data in binary)
-                    writer.Write(data);
+                    writer.Write(data.Code);
                 break;
             }
         }
     }
 
-    private List<uint> CreateBinary()
+    private List<BinaryItem> CreateBinary()
     {
-        var bytes = new List<uint>();
+        var bytes = new List<BinaryItem>();
         foreach (var instruction in _instructions)
         {
             var labelAddress = instruction.RequiredLabel != null ? _labels[instruction.RequiredLabel] : (ushort)0;
-            bytes.Add(instruction.BuildCode(labelAddress));
+            bytes.Add(new BinaryItem(instruction.BuildCode(labelAddress), instruction.Line));
         }
         return bytes;
     }
@@ -114,7 +135,7 @@ internal sealed class Compiler(List<string> sources, string outputFileName, Outp
                             continue;
                         tokens = tokens[2..];
                     }
-                    var instruction = ParseInstruction(tokens);
+                    var instruction = ParseInstruction(line, tokens);
                     _instructions.Add(instruction);
                     _pc++;
                     break;
@@ -132,7 +153,7 @@ internal sealed class Compiler(List<string> sources, string outputFileName, Outp
         throw new NotImplementedException();
     }
     
-    private Instruction ParseInstruction(List<Token> tokens)
+    private Instruction ParseInstruction(string line, List<Token> tokens)
     {
         if (tokens[0].Type != TokenType.Name)
             throw new CompilerException(_currentFileName, _currentLineNo, "instruction name expected");
@@ -141,7 +162,7 @@ internal sealed class Compiler(List<string> sources, string outputFileName, Outp
         {
             if (!InstructionCreators.TryGetValue(tokens[0].StringValue, out var creator))
                 throw new Exception("unknown instruction: " + tokens[0].StringValue);
-            return creator.Create(this, tokens[1..]);
+            return creator.Create(this, line, tokens[1..]);
         }
         catch (Exception e)
         {

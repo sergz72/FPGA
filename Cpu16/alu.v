@@ -7,7 +7,6 @@ module alu
     input wire [`ALU_OPID_WIDTH - 1:0] op_id,
     input wire [BITS - 1:0] op1,
     input wire [BITS - 1:0] op2,
-    input wire [BITS - 1:0] op3,
     output reg [BITS - 1:0] out,
     output wire z, // zero flag
     output reg c // carry flag
@@ -16,20 +15,16 @@ module alu
 
     always @(posedge clk) begin
         case (op_id)
-            `ALU_OP_ZERO: out <= 0;
-            `ALU_OP_NZERO: out <= ~0;
             `ALU_OP_TEST: out <= op1; // TEST OP1
             `ALU_OP_NOT: out <= ~op1; // NOT OP1
             `ALU_OP_NEG: out <= -op1; // NEG OP1
-            `ALU_OP_INC: {c, out} <= {1'b0, op1} + 1; // INC OP1
-            `ALU_OP_DEC: {c, out} <= {1'b0, op1} - 1; // DEC OP1
             `ALU_OP_ADD: {c, out} <= {1'b0, op1} + {1'b0, op2}; // OP1 + OP2
             `ALU_OP_ADC: {c, out} <= {1'b0, op1} + {1'b0, op2} + {{BITS{1'b0}}, c}; // OP1 + OP2 + c
             `ALU_OP_SUB: {c, out} <= {1'b0, op1} - {1'b0, op2}; // OP1 - OP2
             `ALU_OP_SBC: {c, out} <= {1'b0, op1} - {1'b0, op2} - {{BITS{1'b0}}, c}; // OP1 - OP2 - c
             `ALU_OP_SHL: out <= op1 << 1; // shift left
             `ALU_OP_SHR: out <= op1 >> 1; // shift right
-            // 0 is NOP
+            // NOP
             default: begin end
         endcase
     end
@@ -49,30 +44,6 @@ module alu_tb;
     initial begin
         $monitor("time=%t op_id=%d op1=%d op2=%d op3=%d out=%d z=%d c=%d", $time, op_id, op1, op2, op3, out, z, c);
         
-        clk = 0;
-        op_id = `ALU_OP_ZERO;
-        op1 = 0;
-        op2 = 0;
-        op3 = 0;
-        #1
-        $display("ZERO");
-        clk = 1;
-
-        #1
-        clk = 0;
-        op_id = `ALU_OP_NOP;
-        #1
-        $display("NOP");
-        clk = 1;
-
-        #1
-        clk = 0;
-        op_id = `ALU_OP_NZERO;
-        #1
-        $display("NZERO");
-        clk = 1;
-
-        #1
         clk = 0;
         op_id = `ALU_OP_TEST;
         op1 = 1;
@@ -94,38 +65,6 @@ module alu_tb;
         op1 = 1;
         #1
         $display("NEG");
-        clk = 1;
-
-        #1
-        clk = 0;
-        op_id = `ALU_OP_INC;
-        op1 = 1;
-        #1
-        $display("INC1");
-        clk = 1;
-
-        #1
-        clk = 0;
-        op_id = `ALU_OP_INC;
-        op1 = 15;
-        #1
-        $display("INC2");
-        clk = 1;
-
-        #1
-        clk = 0;
-        op_id = `ALU_OP_DEC;
-        op1 = 1;
-        #1
-        $display("DEC1");
-        clk = 1;
-
-        #1
-        clk = 0;
-        op_id = `ALU_OP_DEC;
-        op1 = 0;
-        #1
-        $display("DEC2");
         clk = 1;
 
         $finish;

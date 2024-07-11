@@ -4,7 +4,7 @@ internal sealed class JmpInstruction : Instruction
 {
     private readonly uint _type, _regNo;
     
-    internal JmpInstruction(uint type, uint regNo, string? label)
+    internal JmpInstruction(string line, uint type, uint regNo, string? label): base(line)
     {
         _type = type;
         _regNo = regNo;
@@ -19,10 +19,10 @@ internal sealed class JmpInstruction : Instruction
 
 internal sealed class JmpInstructionCreator(uint addrCode, uint regCode) : InstructionCreator
 {
-    internal override Instruction Create(ICompiler compiler, List<Token> parameters)
+    internal override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
     {
         if ((parameters.Count != 1 && parameters.Count != 3) || parameters[0].Type != TokenType.Name)
-            throw new ParserException("label name and/or register name expected");
+            throw new InstructionException("label name and/or register name expected");
         if (GetRegisterNumber(parameters[0].StringValue, out var regNo))
         {
             string? labelName = null;
@@ -30,13 +30,13 @@ internal sealed class JmpInstructionCreator(uint addrCode, uint regCode) : Instr
             if (parameters.Count > 1)
             {
                 if (!parameters[1].IsChar(','))
-                    throw new ParserException(", expected");
+                    throw new InstructionException(", expected");
                 if (parameters[2].Type != TokenType.Name)
-                    throw new ParserException("label name expected");
+                    throw new InstructionException("label name expected");
                 labelName = parameters[2].StringValue;
             }
-            return new JmpInstruction(regCode, regNo, labelName);
+            return new JmpInstruction(line, regCode, regNo, labelName);
         }
-        return new JmpInstruction(addrCode, 0, parameters[0].StringValue);
+        return new JmpInstruction(line, addrCode, 0, parameters[0].StringValue);
     }
 }
