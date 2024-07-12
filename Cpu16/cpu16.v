@@ -79,7 +79,7 @@ module cpu
     alu #(.BITS(BITS))
         m_alu(.clk(alu_clk), .op_id(alu_op_id), .op1(alu_op1), .op2(alu_op2), .op3(alu_op3), .c(c), .z(z), .out(alu_out), .out2(alu_out2));
     idecoder #(.BITS(BITS), .STACK_BITS(STACK_BITS))
-        m_idecoder(.clk(clk), .reset(reset), .instruction(data), .alu_op_id(alu_op_id), .address(address), .io_address(io_address),
+        m_idecoder(.clk(clk), .reset(reset), .instruction(data), .address(address), .io_address(io_address), .alu_op_id(alu_op_id),
                     .alu_op1(alu_op1), .alu_op2(alu_op2), .alu_op3(alu_op3), .hlt(hlt), .c(c), .z(z), .alu_out(alu_out), .alu_out2(alu_out2),
                     .io_rd(io_rd), .io_wr(io_wr), .io_data_in(io_data), .io_data_out(io_data_out), .alu_clk(alu_clk),
                     .io_data_direction(io_data_direction), .error(error), .interrupt(interrupt));

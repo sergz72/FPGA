@@ -33,7 +33,7 @@ module idecoder
     input wire [BITS - 1:0] alu_out2,
     input wire [BITS - 1:0] io_data_in,
     output reg [BITS - 1:0] address,
-    output reg [`ALU_OPID_WIDTH - 1:0] alu_op_id,
+    output wire [`ALU_OPID_WIDTH - 1:0] alu_op_id,
     output reg [BITS - 1:0] alu_op1,
     output reg [BITS - 1:0] alu_op2,
     output reg [BITS - 1:0] alu_op3,
@@ -64,6 +64,8 @@ module idecoder
             default: jmp = 0;
         endcase
     endfunction
+
+    assign alu_op_id = current_instruction[`ALU_OPID_WIDTH - 1:0];
 
     always @(posedge clk or negedge reset) begin
         if (reset == 0) begin
@@ -165,7 +167,6 @@ module idecoder
                         3: begin
                             stage <= 2;
                             max_stage <= 3;
-                            alu_op_id <= instruction[`ALU_OPID_WIDTH - 1:0];
                             alu_op1 <= registers[instruction[23:16]];
                             alu_op2 <= registers[instruction[31:24]];
                             alu_op3 <= registers[instruction[15:8]];
@@ -175,7 +176,6 @@ module idecoder
                         4: begin
                             stage <= 2;
                             max_stage <= 3;
-                            alu_op_id <= instruction[`ALU_OPID_WIDTH - 1:0];
                             alu_op1 <= instruction[31:16];
                             alu_op2 <= registers[instruction[15:8]];
                             address <= address + 1;
@@ -186,7 +186,6 @@ module idecoder
                             max_stage <= 4;
                             io_address <= registers[instruction[31:24]];
                             io_rd <= 0;
-                            alu_op_id <= instruction[`ALU_OPID_WIDTH - 1:0];
                             alu_op1 <= registers[instruction[23:16]];
                             address <= address + 1;
                         end
@@ -195,7 +194,6 @@ module idecoder
                             stage <= 2;
                             max_stage <= 4;
                             io_address <= registers[instruction[31:24]];
-                            alu_op_id <= instruction[`ALU_OPID_WIDTH - 1:0];
                             alu_op1 <= registers[instruction[23:16]];
                             alu_op2 <= registers[instruction[15:8]];
                             address <= address + 1;
