@@ -1,6 +1,8 @@
-start:	nop
-	jmp l1
-	hlt
+start:	jmp l1
+interrupt_vector:
+	mov r255, $55AA
+	out r0, r255
+	reti
 l1:	call l2
 	jmp start
 l2:	mov r0, 1

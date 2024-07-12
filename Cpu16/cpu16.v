@@ -52,10 +52,11 @@ stage rd alu_clk io_rd io_wr comment
 */
 
 module cpu
-#(parameter BITS = 16)
+#(parameter BITS = 16, STACK_BITS = 4)
 (
     input wire clk,
     input wire reset,
+    input wire interrupt,
     // External flash interface
     output wire [BITS - 1:0] address,
     input wire [BITS * 2 - 1:0] data,
@@ -71,16 +72,17 @@ module cpu
 );
     //ALU related
     wire c, z;
-    wire [BITS-1:0] alu_op1, alu_op2, alu_out, io_data_out;
+    wire [BITS-1:0] alu_op1, alu_op2, alu_op3, alu_out, alu_out2, io_data_out;
     wire [`ALU_OPID_WIDTH - 1:0] alu_op_id;
     wire alu_clk, io_data_direction;
 
-    alu #(.BITS(BITS)) m_alu(.clk(alu_clk), .op_id(alu_op_id), .op1(alu_op1), .op2(alu_op2), .c(c), .z(z), .out(alu_out));
-    idecoder #(.BITS(BITS))
+    alu #(.BITS(BITS))
+        m_alu(.clk(alu_clk), .op_id(alu_op_id), .op1(alu_op1), .op2(alu_op2), .op3(alu_op3), .c(c), .z(z), .out(alu_out), .out2(alu_out2));
+    idecoder #(.BITS(BITS), .STACK_BITS(STACK_BITS))
         m_idecoder(.clk(clk), .reset(reset), .instruction(data), .alu_op_id(alu_op_id), .address(address), .io_address(io_address),
-                    .alu_op1(alu_op1), .alu_op2(alu_op2), .hlt(hlt), .c(c), .z(z), .alu_out(alu_out), .io_rd(io_rd),
-                    .io_wr(io_wr), .io_data_in(io_data), .io_data_out(io_data_out), .alu_clk(alu_clk), .io_data_direction(io_data_direction),
-                    .error(error));
+                    .alu_op1(alu_op1), .alu_op2(alu_op2), .alu_op3(alu_op3), .hlt(hlt), .c(c), .z(z), .alu_out(alu_out), .alu_out2(alu_out2),
+                    .io_rd(io_rd), .io_wr(io_wr), .io_data_in(io_data), .io_data_out(io_data_out), .alu_clk(alu_clk),
+                    .io_data_direction(io_data_direction), .error(error), .interrupt(interrupt));
     
     assign io_data = io_data_direction ? {BITS{1'bz}} : io_data_out;
 

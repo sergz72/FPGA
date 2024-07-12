@@ -25,15 +25,18 @@ module idecoder
 (
     input wire clk,
     input wire reset,
+    input wire interrupt,
     input wire [BITS * 2 - 1:0] instruction,
     input wire c,
     input wire z,
     input wire [BITS - 1:0] alu_out,
+    input wire [BITS - 1:0] alu_out2,
     input wire [BITS - 1:0] io_data_in,
     output reg [BITS - 1:0] address,
     output reg [`ALU_OPID_WIDTH - 1:0] alu_op_id,
     output reg [BITS - 1:0] alu_op1,
     output reg [BITS - 1:0] alu_op2,
+    output reg [BITS - 1:0] alu_op3,
     output reg hlt,
     output reg error,
     output reg io_rd = 1,
@@ -48,6 +51,19 @@ module idecoder
     reg [BITS - 1:0] registers [0:255];
     reg [2:0] stage, max_stage;
     reg [BITS * 2 - 1:0] current_instruction;
+    reg in_interrupt;
+
+    function [0:0] jmp(input [3:0] i);
+        case (i)
+            0: jmp = 1;
+            1, 2: jmp = c == i[0];
+            3, 4: jmp = z == i[0];
+            5: jmp = z == 0 && c == 0;
+            6: jmp = z == 1 || c == 1;
+            //error
+            default: jmp = 0;
+        endcase
+    endfunction
 
     always @(posedge clk or negedge reset) begin
         if (reset == 0) begin
@@ -61,6 +77,7 @@ module idecoder
             address <= 0;
             stage <= 0;
             max_stage <= 2;
+            in_interrupt <= 0;
         end
         else if (hlt == 0) begin
             case (stage)
@@ -68,6 +85,12 @@ module idecoder
                     alu_clk <= 0;
                     io_data_direction <= 1;
                     io_rd <= 1;
+                    if (interrupt == 1 && in_interrupt == 0) begin
+                        in_interrupt <= 1;
+                        stack[sp - 1] <= address;
+                        sp <= sp - 1;
+                        address <= 1;
+                    end
                     stage <= 1;
                 end
                 1:  begin
@@ -76,210 +99,49 @@ module idecoder
                         // jmp instructions
                         0: begin
                             stage <= 0;
-                            case (instruction[`ALU_OPID_WIDTH - 1:0])
-                                //jump
-                                0: address <= instruction[BITS * 2 - 1: BITS];
-                                //jump if carry
-                                1: begin
-                                    if (c == 1)
-                                        address <= instruction[BITS * 2 - 1: BITS];
-                                    else
-                                        address <= address + 1;
-                                end
-                                //jump if zero
-                                2: begin
-                                    if (z == 1)
-                                        address <= instruction[BITS * 2 - 1: BITS];
-                                    else
-                                        address <= address + 1;
-                                end
-                                //jump if not carry
-                                3: begin
-                                    if (c == 0)
-                                        address <= instruction[BITS * 2 - 1: BITS];
-                                    else
-                                        address <= address + 1;
-                                end
-                                //jump if not zero
-                                4: begin
-                                    if (z == 0)
-                                        address <= instruction[BITS * 2 - 1: BITS];
-                                    else
-                                        address <= address + 1;
-                                end
-                                // jump by register value
-                                'h10: address <= registers[instruction[15:8]] + instruction[BITS * 2 - 1: BITS];
-                                // jump by register value if carry
-                                'h11: begin
-                                    if (c == 1)
-                                        address <= registers[instruction[15:8]] + instruction[BITS * 2 - 1: BITS];
-                                    else
-                                        address <= address + 1;
-                                end
-                                //jump by register value if zero
-                                'h12: begin
-                                    if (z == 1)
-                                        address <= registers[instruction[15:8]] + instruction[BITS * 2 - 1: BITS];
-                                    else
-                                        address <= address + 1;
-                                end
-                                //error
-                                default: begin
-                                    hlt <= 1;
-                                    error <= 1;
-                                end
-                            endcase
+                            if (jmp(instruction[3:0])) begin
+                                if (instruction[4] == 0)
+                                    address <= instruction[BITS * 2 - 1: BITS];
+                                else
+                                    address <= registers[instruction[15:8]] + instruction[BITS * 2 - 1: BITS];
+                            end
+                            else
+                                address <= address + 1;
                         end
                         // call instructions
                         1: begin
                             stage <= 0;
-                            case (instruction[`ALU_OPID_WIDTH - 1:0])
-                                //call
-                                0: begin
+                            if (jmp(instruction[3:0])) begin
+                                stack[sp - 1] <= address + 1;
+                                sp <= sp - 1;
+                                if (instruction[4] == 0)
                                     address <= instruction[BITS * 2 - 1: BITS];
-                                    stack[sp - 1] <= address + 1;
-                                    sp <= sp - 1;
-                                end
-                                //call if carry
-                                1: begin
-                                    if (c == 1) begin
-                                        address <= instruction[BITS * 2 - 1: BITS];
-                                        stack[sp - 1] <= address + 1;
-                                        sp <= sp - 1;
-                                    end
-                                    else
-                                        address <= address + 1;
-                                end
-                                //call if zero
-                                2: begin
-                                    if (z == 1) begin
-                                        address <= instruction[BITS * 2 - 1: BITS];
-                                        stack[sp - 1] <= address + 1;
-                                        sp <= sp - 1;
-                                    end
-                                    else
-                                        address <= address + 1;
-                                end
-                                //call if not carry
-                                3: begin
-                                    if (c == 0) begin
-                                        address <= instruction[BITS * 2 - 1: BITS];
-                                        stack[sp - 1] <= address + 1;
-                                        sp <= sp - 1;
-                                    end
-                                    else
-                                        address <= address + 1;
-                                end
-                                //call if not zero
-                                4: begin
-                                    if (z == 0) begin
-                                        address <= instruction[BITS * 2 - 1: BITS];
-                                        stack[sp - 1] <= address + 1;
-                                        sp <= sp - 1;
-                                    end
-                                    else
-                                        address <= address + 1;
-                                end
-                                //call by register value
-                                'h10: begin
+                                else
                                     address <= registers[instruction[15:8]] + instruction[BITS * 2 - 1: BITS];
-                                    stack[sp - 1] <= address + 1;
-                                    sp <= sp - 1;
-                                end
-                                //call by register value if carry
-                                'h11: begin
-                                    if (c == 1) begin
-                                        address <= registers[instruction[15:8]] + instruction[BITS * 2 - 1: BITS];
-                                        stack[sp - 1] <= address + 1;
-                                        sp <= sp - 1;
-                                    end
-                                    else
-                                        address <= address + 1;
-                                end
-                                //call by register value if zero
-                                'h12: begin
-                                    if (z == 1) begin
-                                        address <= registers[instruction[15:8]] + instruction[BITS * 2 - 1: BITS];
-                                        stack[sp - 1] <= address + 1;
-                                        sp <= sp - 1;
-                                    end
-                                    else
-                                        address <= address + 1;
-                                end
-                                //call by register value if not carry
-                                'h13: begin
-                                    if (c == 1) begin
-                                        address <= registers[instruction[15:8]] + instruction[BITS * 2 - 1: BITS];
-                                        stack[sp - 1] <= address + 1;
-                                        sp <= sp - 1;
-                                    end
-                                    else
-                                        address <= address + 1;
-                                end
-                                //call by register value if not zero
-                                'h14: begin
-                                    if (z == 1) begin
-                                        address <= registers[instruction[15:8]] + instruction[BITS * 2 - 1: BITS];
-                                        stack[sp - 1] <= address + 1;
-                                        sp <= sp - 1;
-                                    end
-                                    else
-                                        address <= address + 1;
-                                end
-                                // error
-                                default: begin
-                                    hlt <= 1;
-                                    error <= 1;
-                                end
-                            endcase
+                            end
+                            else
+                                address <= address + 1;
                         end
                         // return/special opcodes
                         2: begin
                             stage <= 0;
                             case (instruction[`ALU_OPID_WIDTH - 1:0])
+                                //ret/reti
+                                0,1,2,3,4,5,6,'h10,'h11,'h12,'h13,'h14,'h15,'h16: begin
+                                    if (jmp(instruction[3:0])) begin
+                                        //reti
+                                        if (instruction[3] == 1)
+                                            in_interrupt <= 0;
+                                        address <= stack[sp];
+                                        sp <= sp + 1;
+                                    end
+                                    else
+                                        address <= address + 1;
+                                end
+                                // mov flags to register
+                                'h1B: registers[instruction[15:8]] <= {14'h0, c, z};
                                 // NOP
-                                0: address <= address + 1;
-                                // return
-                                1: begin
-                                    address <= stack[sp];
-                                    sp <= sp + 1;
-                                end
-                                //return if carry
-                                2: begin
-                                    if (c == 1) begin
-                                        address <= stack[sp];
-                                        sp <= sp + 1;
-                                    end
-                                    else
-                                        address <= address + 1;
-                                end
-                                //return if zero
-                                3: begin
-                                    if (z == 1) begin
-                                        address <= stack[sp];
-                                        sp <= sp + 1;
-                                    end
-                                    else
-                                        address <= address + 1;
-                                end
-                                //return if not carry
-                                4: begin
-                                    if (c == 0) begin
-                                        address <= stack[sp];
-                                        sp <= sp + 1;
-                                    end
-                                    else
-                                        address <= address + 1;
-                                end
-                                //return if not zero
-                                5: begin
-                                    if (z == 0) begin
-                                        address <= stack[sp];
-                                        sp <= sp + 1;
-                                    end
-                                    else
-                                        address <= address + 1;
-                                end
+                                'h1C: address <= address + 1;
                                 // mov immediate-register
                                 'h1D: begin
                                     registers[instruction[15:8]] <= instruction[BITS * 2 - 1: BITS];
@@ -306,6 +168,7 @@ module idecoder
                             alu_op_id <= instruction[`ALU_OPID_WIDTH - 1:0];
                             alu_op1 <= registers[instruction[23:16]];
                             alu_op2 <= registers[instruction[31:24]];
+                            alu_op3 <= registers[instruction[15:8]];
                             address <= address + 1;
                         end
                         // alu instruction, immediate->register
@@ -395,6 +258,10 @@ module idecoder
                     case (current_instruction[7:`ALU_OPID_WIDTH])
                         // alu instruction, register->register or immediate->register
                         3, 4: begin
+                            if (current_instruction[7:`ALU_OPID_WIDTH] == 3 &&
+                                 (current_instruction[`ALU_OPID_WIDTH - 1:0] == `ALU_OP_MUL ||
+                                  current_instruction[`ALU_OPID_WIDTH - 1:0] == `ALU_OP_DIV))
+                                registers[current_instruction[23:16]] <= alu_out2;
                             registers[current_instruction[15:8]] <= alu_out;
                             stage <= 0;
                         end
