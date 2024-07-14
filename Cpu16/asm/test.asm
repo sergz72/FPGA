@@ -22,4 +22,15 @@ p2:	mov r1, 2
 	in  r0, r1 + 1
 	ret
 p3:	ret
-p4:	ret
+p4:	test r0, $FFFF
+	test r0, r2
+	test r0, [r2]
+	cmp  r1, $5555
+	cmp  r1, r2
+	cmp  r3, [r4]
+	add  r0, r1, r2
+	add  r0, r1, [r2]
+	add  [r0], r1, r2
+	add  r1, r2
+	add  r0, 3
+	ret
