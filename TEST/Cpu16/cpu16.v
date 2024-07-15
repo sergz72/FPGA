@@ -9,41 +9,30 @@ reset clk rd start stage comment
 0     1   1  0     1
 1     0   0  1     1     instruction read start
 
-instruction without alu and registers write
+instruction without io
 reset clk rd start stage alu_clk io_rd io_wr comment
-1     1   0  1     0     0       1     1     instruction read, registers read
-1     0   1  1     0     0       1     1     microcode read
-1     1   1  1     1     0       1     1     next address set, registers read
-1     0   0  1     1     0       1     1     instruction read start, microcode read
+1     1   0  1     0     0       1     1     instruction read, stage reset
+1     0   1  1     0     0       1     1     microcode read, registers read
+1     1   1  1     1     0       1     1     next address set, may be alu clk
+1     0   0  1     1     0       1     1     instruction read start, microcode read, may be registers write
 
-instruction without alu with register write
+instruction with io read
 reset clk rd start stage alu_clk io_rd io_wr comment
-1     1   0  1     0     0       1     1     instruction read
-1     0   1  1     0     0       1     1     microcode read
-1     1   1  1     1     0       1     1     next address set, registers read
-1     0   1  1     1     0       1     1     microcode read
-1     1   1  1     2     0       1     1     register write
+1     1   0  1     0     0       1     1     instruction read, stage reset
+1     0   1  1     0     0       1     1     microcode read, registers read
+1     1   1  1     1     0       1     1     next address set, io address set
+1     0   1  1     1     0       0     1     microcode read, io read begin
+1     1   1  1     2     0       0     1     io read, may be alu clk, may be registers write
 1     0   0  1     2     0       1     1     instruction read start, microcode read
 
-instruction with alu without register write
-reset clk rd start stage alu_clk io_rd io_wr comment
-1     1   0  1     0     0       1     1     instruction read
-1     0   1  1     0     0       1     1     microcode read
-1     1   1  1     1     0       1     1     next address set, registers read
-1     0   1  1     1     0       1     1     microcode read
-1     1   1  1     2     1       1     1     alu_clk
-1     0   0  1     2     1       1     1     instruction read start, microcode read
-
-instruction with alu with register write
-reset clk rd start stage alu_clk io_rd io_wr comment
-1     1   0  1     0     0       1     1     instruction read
-1     0   1  1     0     0       1     1     microcode read
-1     1   1  1     1     0       1     1     next address set, registers read
-1     0   1  1     1     0       1     1     microcode read
-1     1   1  1     2     1       1     1     alu_clk
-1     0   1  1     2     1       1     1     microcode read
-1     1   1  1     3     0       1     1     register write
-1     0   0  1     3     0       1     1     instruction read start, microcode read
+instruction with io write
+reset clk rd start stage alu_clk io_rd io_wr io_data_direction comment
+1     1   0  1     0     0       1     1     1                 instruction read, stage reset
+1     0   1  1     0     0       1     1     1                 microcode read, registers read
+1     1   1  1     1     0       1     1     0                 next address set, io address set, may be alu clk
+1     0   1  1     1     0       1     0     0                 microcode read, io write begin
+1     1   1  1     2     0       1     0     0                 io write
+1     0   0  1     2     0       1     1     0                 instruction read start, microcode read
 
 */
 
@@ -202,7 +191,7 @@ module cpu
             address <= 0;
             stack_wr <= 1;
         end
-        else if (start == 1) begin
+        else if (start == 1 && error = 0) begin
             if (rd == 0) begin
                 current_instruction <= int_start == 0 ? data : 'h00010020; // call 1
                 if (int_start == 1)
