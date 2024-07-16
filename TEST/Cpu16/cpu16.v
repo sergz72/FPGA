@@ -60,6 +60,8 @@ module cpu
 );
     parameter MICROCODE_WIDTH = 20;
 
+    wire main_clk;
+
     wire stage_reset;
 
     reg [STACK_BITS - 1:0] sp;
@@ -114,24 +116,22 @@ module cpu
         endcase
     endfunction
 
+    assign regs_clk = clk | hlt; // clock is stopped when hlt is 1
+    assign main_clk = clk | error; // clock is stopped when error is 1
+
     register_files #(.WIDTH(BITS), .SIZE(8))
-        registers(.clk(!clk), .rd_address1(current_instruction[15:8]), .rd_data1(registers_data1),
+        registers(.clk(!regs_clk), .rd_address1(current_instruction[15:8]), .rd_data1(registers_data1),
                   .rd_address2(current_instruction[23:16]), .rd_data2(registers_data2),
 		          .rd_address3(current_instruction[31:24]), .rd_data3(registers_data3),
                   .wr_address1(current_instruction[14:8]), .wr_data1(registers_wr_data1), .wr1(registers_wr1),
                   .wr_address2(current_instruction[22:16]), .wr_data2(alu_out2), .wr2(registers_wr2));
 
     register_file #(.WIDTH(BITS), .SIZE(STACK_BITS))
-        stack(.clk(!clk), .rd_address(sp), .rd_data(stack_data),
+        stack(.clk(!regs_clk), .rd_address(sp), .rd_data(stack_data),
                   .wr_address(sp), .wr_data(prev_address), .wr(stack_wr));
 
     initial begin
         $readmemh("microcode.mem", microcode);
-    end
-
-    always @(negedge clk) begin
-        current_microinstruction <= microcode[{current_instruction[7:0], stage}];
-        start <= reset;
     end
 
     assign int_start = interrupt == 1 && in_interrupt == 0;
@@ -184,14 +184,21 @@ module cpu
     assign condition_temp = condition_flags & {c, z, alu_out[15]};
     assign condition_pass = (condition_temp[0] | condition_temp[1] | condition_temp[2]) ^ condition_neg;
 
+    always @(negedge main_clk) begin
+        current_microinstruction <= microcode[{current_instruction[7:0], stage}];
+        start <= reset;
+    end
+
     always @(posedge clk) begin
         if (reset == 0) begin
             in_interrupt <= 0;
             sp <= 0;
             address <= 0;
+            hlt <= 0;
+            error <= 0;
             stack_wr <= 1;
         end
-        else if (start == 1 && error = 0) begin
+        else if (start == 1 && error == 0) begin
             if (rd == 0) begin
                 current_instruction <= int_start == 0 ? data : 'h00010020; // call 1
                 if (int_start == 1)
