@@ -21,8 +21,6 @@ COMP_HI = IN > DAC_OUT
     input wire clk,
     input wire comp_data_hi,
     input wire comp_data_lo,
-    input wire [1:0] mode,
-    output wire [3:0] dac_value, // R2R DAC 4 bit
     output reg led_one,
     output reg led_zero,
     output reg led_floating,
@@ -33,16 +31,6 @@ COMP_HI = IN > DAC_OUT
     reg [7:0] one_brightness, zero_brightness, floating_brightness, pulse_brightness;
     reg pulse = 0;
     reg pulse_reset;
-
-    function [3:0] build_dac_value(input [1:0] mode);
-        case (mode)
-            0: build_dac_value = 7; // 1.4v - for 1.8v logic
-            1: build_dac_value = 10; // 2.0v - for 2.5v logic
-            default: build_dac_value = 12; // 2.4v - for 3.3/5v logic
-        endcase
-    endfunction
-
-    assign dac_value = build_dac_value(mode);
     
     always @(posedge comp_data_hi or negedge pulse_reset) begin
         pulse <= pulse_reset;
@@ -88,4 +76,22 @@ COMP_HI = IN > DAC_OUT
         end
         counter <= counter + 1;
     end
+endmodule
+
+module logicProbeDAC
+(
+    input wire [1:0] mode,
+    output wire [3:0] dac_value // R2R DAC 4 bit
+);
+
+    function [3:0] build_dac_value(input [1:0] mode);
+        case (mode)
+            0: build_dac_value = 7; // 1.4v - for 1.8v logic
+            1: build_dac_value = 10; // 2.0v - for 2.5v logic
+            default: build_dac_value = 12; // 2.4v - for 3.3/5v logic
+        endcase
+    endfunction
+
+    assign dac_value = build_dac_value(mode);
+
 endmodule

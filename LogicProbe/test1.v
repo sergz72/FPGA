@@ -1,4 +1,4 @@
-module logicProbe_tb;
+module logicProbe1_tb;
     reg clk;
     reg comp_data_hi, comp_data_lo;
     reg [1:0] mode;
@@ -6,9 +6,11 @@ module logicProbe_tb;
     wire led_one, led_zero, led_floating, led_pulse;
 
     logicProbe1 #(.COUNTER_WIDTH(16))
-        probe(.clk(clk), .comp_data_hi(comp_data_hi), .comp_data_lo(comp_data_lo), .mode(mode),
-                .dac_value(dac_value), .led_one(led_one), .led_zero(led_zero), .led_floating(led_floating),
+        probe(.clk(clk), .comp_data_hi(comp_data_hi), .comp_data_lo(comp_data_lo),
+                .led_one(led_one), .led_zero(led_zero), .led_floating(led_floating),
                 .led_pulse(led_pulse));
+
+    logicProbeDAC dac(.mode(mode), .dac_value(dac_value));
 
     always #1 clk = ~clk;
 
