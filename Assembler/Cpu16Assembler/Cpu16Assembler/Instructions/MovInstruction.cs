@@ -1,4 +1,6 @@
-﻿namespace Cpu16Assembler.Instructions;
+﻿using GenericAssembler;
+
+namespace Cpu16Assembler.Instructions;
 
 internal sealed class MovInstruction : Instruction
 {
@@ -12,7 +14,7 @@ internal sealed class MovInstruction : Instruction
         _adder = adder;
     }
     
-    internal override uint BuildCode(ushort labelAddress)
+    public override uint BuildCode(ushort labelAddress)
     {
         if (_type == InstructionCodes.MovImmediate)
             return _type | (_regNo << 8) | (_value2 << 16);
@@ -23,7 +25,7 @@ internal sealed class MovInstruction : Instruction
 
 internal sealed class MovInstructionCreator() : InstructionCreator
 {
-    internal override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
+    public override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
     {
         if (parameters.Count < 3 || parameters[0].Type != TokenType.Name)
             throw new InstructionException("register name and register/immediate expected");

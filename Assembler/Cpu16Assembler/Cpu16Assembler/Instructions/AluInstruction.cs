@@ -1,4 +1,6 @@
-﻿namespace Cpu16Assembler.Instructions;
+﻿using GenericAssembler;
+
+namespace Cpu16Assembler.Instructions;
 
 internal sealed class AluRegisterInstruction : Instruction
 {
@@ -13,7 +15,7 @@ internal sealed class AluRegisterInstruction : Instruction
         _regNo3 = regNo3;
     }
     
-    internal override uint BuildCode(ushort labelAddress)
+    public override uint BuildCode(ushort labelAddress)
     {
         return _aluOperation | _type | (_regNo << 8) | (_regNo2 << 16) | (_regNo3 << 24);
     }
@@ -21,7 +23,7 @@ internal sealed class AluRegisterInstruction : Instruction
 
 internal sealed class AluInstructionCreator(uint aluOperation) : InstructionCreator
 {
-    internal override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
+    public override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
     {
         if (aluOperation is AluOperations.Test or AluOperations.Cmp)
             return CreateTest(compiler, line, parameters);

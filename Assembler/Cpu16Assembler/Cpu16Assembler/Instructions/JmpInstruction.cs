@@ -1,4 +1,6 @@
-﻿namespace Cpu16Assembler.Instructions;
+﻿using GenericAssembler;
+
+namespace Cpu16Assembler.Instructions;
 
 internal sealed class JmpInstruction : Instruction
 {
@@ -11,7 +13,7 @@ internal sealed class JmpInstruction : Instruction
         RequiredLabel = label;
     }
     
-    internal override uint BuildCode(ushort labelAddress)
+    public override uint BuildCode(ushort labelAddress)
     {
         return _type | (_regNo << 8) | ((uint)labelAddress << 16);
     }
@@ -19,7 +21,7 @@ internal sealed class JmpInstruction : Instruction
 
 internal sealed class JmpInstructionCreator(uint addrCode, uint regCode) : InstructionCreator
 {
-    internal override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
+    public override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
     {
         if ((parameters.Count != 1 && parameters.Count != 3) || parameters[0].Type != TokenType.Name)
             throw new InstructionException("label name and/or register name expected");

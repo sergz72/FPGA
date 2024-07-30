@@ -1,4 +1,6 @@
-﻿namespace Cpu16Assembler.Instructions;
+﻿using GenericAssembler;
+
+namespace Cpu16Assembler.Instructions;
 
 internal sealed class InOutInstruction : Instruction
 {
@@ -12,7 +14,7 @@ internal sealed class InOutInstruction : Instruction
         _adder = adder;
     }
     
-    internal override uint BuildCode(ushort labelAddress)
+    public override uint BuildCode(ushort labelAddress)
     {
         return _type | (_regNo << 8) | (_regNo2 << 16) | (_adder << 24);
     }
@@ -20,7 +22,7 @@ internal sealed class InOutInstruction : Instruction
 
 internal sealed class InOutInstructionCreator(uint type) : InstructionCreator
 {
-    internal override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
+    public override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
     {
         if (parameters.Count < 3 || parameters[0].Type != TokenType.Name)
             throw new InstructionException("register name and register [+ immediate] expected");

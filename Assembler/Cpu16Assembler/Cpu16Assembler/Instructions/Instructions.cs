@@ -1,4 +1,6 @@
-﻿namespace Cpu16Assembler.Instructions;
+﻿using GenericAssembler;
+
+namespace Cpu16Assembler.Instructions;
 
 internal static class AluOperations
 {
@@ -76,70 +78,9 @@ internal static class InstructionCodes
     internal const uint Out = 0xE1;
 }
 
-internal class InstructionException(string message) : Exception(message);
-
-internal abstract class Instruction(string line)
-{
-    internal readonly string Line = line;
-    
-    internal string? RequiredLabel { get; init; }
-    
-    internal abstract uint BuildCode(ushort labelAddress);
-
-}
-
-internal abstract class InstructionCreator
-{
-    internal abstract Instruction Create(ICompiler compiler, string line, List<Token> parameters);
-    
-    protected static bool GetRegisterNumber(string parameter, out uint regNo)
-    {
-        if ((parameter.StartsWith('r') || parameter.StartsWith('R')) && uint.TryParse(parameter[1..], out regNo))
-        {
-            if (regNo > 255)
-                throw new InstructionException("invalid register number");
-            return true;
-        }
-        regNo = 0;
-        return false;
-    }
-
-    protected static bool GetRegisterNumberWithIoFlag(List<Token> parameters, ref int start, out uint regNo, out bool io)
-    {
-        io = false;
-        if (parameters[start].IsChar('['))
-        {
-            io = true;
-            start++;
-        }
-
-        if (start == parameters.Count)
-            throw new InstructionException("unexpected end of line");
-
-        if (parameters[start].Type != TokenType.Name ||
-            !GetRegisterNumber(parameters[start].StringValue, out regNo))
-        {
-            if (io) throw new InstructionException("register name expected");
-            regNo = 0;
-            return false;
-        }
-
-        start++;
-        
-        if (!io)
-            return true;
-
-        if (start == parameters.Count || !parameters[start].IsChar(']'))
-            throw new InstructionException("] expected");
-        start++;
-        
-        return true;
-    }
-}
-
 internal sealed class OpCodeInstruction(string line, uint opCode) : Instruction(line)
 {
-    internal override uint BuildCode(ushort labelAddress)
+    public override uint BuildCode(ushort labelAddress)
     {
         return opCode;
     }
@@ -147,7 +88,7 @@ internal sealed class OpCodeInstruction(string line, uint opCode) : Instruction(
 
 internal sealed class OpCodeInstructionCreator(uint opCode) : InstructionCreator
 {
-    internal override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
+    public override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
     {
         if (parameters.Count != 0)
             throw new InstructionException("unexpected instruction parameters");

@@ -1,4 +1,5 @@
 ﻿using Cpu16Assembler;
+using GenericAssembler;
 
 List<string> sources = [];
 var outputFileName = "a.out";
@@ -38,7 +39,7 @@ if (sources.Count == 0 || outputFileNameExpected)
     Usage();
 else
 {
-    var compiler = new Compiler(sources, outputFileName, outputFormat);
+    var compiler = new Cpu16Compiler(sources, outputFileName, outputFormat);
     try
     {
         compiler.Compile();

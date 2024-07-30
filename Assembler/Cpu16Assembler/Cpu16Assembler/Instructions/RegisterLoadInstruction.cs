@@ -1,8 +1,10 @@
-﻿namespace Cpu16Assembler.Instructions;
+﻿using GenericAssembler;
+
+namespace Cpu16Assembler.Instructions;
 
 internal sealed class RegisterLoadInstructionCreator(uint adder) : InstructionCreator
 {
-    internal override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
+    public override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
     {
         if (parameters.Count != 1 || parameters[0].Type != TokenType.Name ||
             !GetRegisterNumber(parameters[0].StringValue, out var regNo))
