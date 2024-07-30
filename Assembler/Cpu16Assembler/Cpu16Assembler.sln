@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cpu16Assembler", "Cpu16Assembler\Cpu16Assembler.csproj", "{F54F95FF-3777-4460-A2CA-A275B290B74C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenericAssembler", "..\GenericAssembler\GenericAssembler\GenericAssembler.csproj", "{5B72D81F-2AB7-40C6-960E-E94A9B70F612}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{F54F95FF-3777-4460-A2CA-A275B290B74C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F54F95FF-3777-4460-A2CA-A275B290B74C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F54F95FF-3777-4460-A2CA-A275B290B74C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B72D81F-2AB7-40C6-960E-E94A9B70F612}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B72D81F-2AB7-40C6-960E-E94A9B70F612}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B72D81F-2AB7-40C6-960E-E94A9B70F612}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B72D81F-2AB7-40C6-960E-E94A9B70F612}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
