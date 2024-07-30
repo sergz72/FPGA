@@ -12,6 +12,7 @@
 `define ALU_OP_CMP   11
 `define ALU_OP_MUL   12
 `define ALU_OP_DIV   13
-`define ALU_OP_SETF  14
+`define ALU_OP_REM   14
+`define ALU_OP_SETF  15
 
 `define ALU_OPID_WIDTH 5

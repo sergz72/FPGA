@@ -58,7 +58,7 @@ module cpu
     // stage
     output reg [1:0] stage
 );
-    parameter MICROCODE_WIDTH = 20;
+    parameter MICROCODE_WIDTH = 22;
 
     wire main_clk;
 
@@ -94,7 +94,7 @@ module cpu
 
     // interrupt
     reg in_interrupt;
-    wire int_start;
+    wire int_start, in_interrupt_clear;
 
     // error flags
     wire hltf, errorf;
@@ -102,11 +102,13 @@ module cpu
     wire condition_neg, condition_pass;
     wire [2:0] condition_temp, condition_flags;
 
-    wire [BITS - 1:0] registers_data1, registers_data2, registers_data3, registers_wr_data1;
-    wire registers_wr1, registers_wr2;
+    wire [BITS - 1:0] registers_data1, registers_data2, registers_data3, registers_wr_data;
+    wire registers_wr, regs_clk, registers_wr_dest;
+    wire [7:0] registers_wr_address;
+    wire [2:0] registers_wr_source;
 
     reg start;
-
+    
     // can be registers[current_instruction[31:24] or current_instruction[31:16] or io_data
     function [15:0] alu_op2_f(input [1:0] source);
         case (source)
@@ -116,19 +118,34 @@ module cpu
         endcase
     endfunction
 
+    function [15:0] registers_wr_source_f(input [2:0] source);
+        case (source)
+            0: registers_wr_source_f = alu_out;
+            1: registers_wr_source_f = alu_out2;
+            2: registers_wr_source_f = current_instruction[BITS * 2 - 1:BITS]; // immediate
+            3: registers_wr_source_f = registers_data1;
+            4: registers_wr_source_f = registers_data2 + {{8{1'b0}}, current_instruction[BITS * 2 - 1: 24]};
+            5: registers_wr_source_f = registers_data3;
+            6: registers_wr_source_f = {14'h0, c, z};
+            default: registers_wr_source_f = io_data;
+        endcase
+    endfunction
+
     assign regs_clk = clk | hlt; // clock is stopped when hlt is 1
     assign main_clk = clk | error; // clock is stopped when error is 1
 
-    register_files #(.WIDTH(BITS), .SIZE(8))
+    register_file3 #(.WIDTH(BITS), .SIZE(8))
         registers(.clk(!regs_clk), .rd_address1(current_instruction[15:8]), .rd_data1(registers_data1),
                   .rd_address2(current_instruction[23:16]), .rd_data2(registers_data2),
 		          .rd_address3(current_instruction[31:24]), .rd_data3(registers_data3),
-                  .wr_address1(current_instruction[14:8]), .wr_data1(registers_wr_data1), .wr1(registers_wr1),
-                  .wr_address2(current_instruction[22:16]), .wr_data2(alu_out2), .wr2(registers_wr2));
+                  .wr_address(registers_wr_address), .wr_data(registers_wr_data), .wr(registers_wr));
 
     register_file #(.WIDTH(BITS), .SIZE(STACK_BITS))
         stack(.clk(!regs_clk), .rd_address(sp), .rd_data(stack_data),
                   .wr_address(sp), .wr_data(prev_address), .wr(stack_wr));
+
+    alu #(.BITS(BITS))
+        m_alu(.clk(alu_clk), .op_id(alu_op_id), .op1(alu_op1), .op2(alu_op2), .op3(alu_op3), .c(c), .z(z), .out(alu_out), .out2(alu_out2));
 
     initial begin
         $readmemh("microcode.mem", microcode);
@@ -146,29 +163,33 @@ module cpu
     assign io_rd_set = current_microinstruction[1];
     assign io_wr_set = current_microinstruction[2];
     assign io_data_direction_set = current_microinstruction[3];
-    assign address_set = current_microinstruction[4];
-    assign address_load = current_microinstruction[5];
+    assign address_load = current_microinstruction[4];
     // can be current_instruction[31:16] or registers[current_instruction[15:8]] + current_instruction[31:16]
-    assign address_source = current_microinstruction[6];
+    assign address_source = current_microinstruction[5];
     // can be current_instruction[31:16] or registers[current_instruction[15:8]] + current_instruction[31:16]
-    assign io_address_source = current_microinstruction[7];
-    assign io_data_out_source = current_microinstruction[8];
-    assign alu_clk_set = current_microinstruction[9];
-    assign condition_neg = current_microinstruction[10];
-    assign condition_flags = current_microinstruction[13:11];
+    assign io_address_source = current_microinstruction[6];
+    assign io_data_out_source = current_microinstruction[7];
+    assign alu_clk_set = current_microinstruction[8];
+    assign condition_neg = current_microinstruction[9];
+    assign condition_flags = current_microinstruction[12:10];
     // can be registers[current_instruction[15:8]] or registers[current_instruction[23:16]]
-    assign alu_op1_source = current_microinstruction[10];
+    assign alu_op1_source = current_microinstruction[9];
     // can be registers[current_instruction[31:24]] or current_instruction[31:16] or io_data
-    assign alu_op2_source = current_microinstruction[12:11];
+    assign alu_op2_source = current_microinstruction[11:10];
     // can be alu_out or registers[current_instruction[15:8]]
-    assign hltf = current_microinstruction[14];
-    assign errorf = current_microinstruction[15];
-    assign push = current_microinstruction[16];
-    assign pop = current_microinstruction[17];
-    assign registers_wr1 = current_microinstruction[18];
-    assign registers_wr2 = current_microinstruction[19];
+    assign hltf = current_microinstruction[13];
+    assign errorf = current_microinstruction[14];
+    assign push = current_microinstruction[15];
+    assign in_interrupt_clear = current_microinstruction[15];
+    assign pop = current_microinstruction[16];
+    assign registers_wr = current_microinstruction[17];
+    assign registers_wr_dest = current_microinstruction[18];
+    assign registers_wr_source = current_microinstruction[21:19];
 
-    assign alu_clk = (alu_clk_set == 1) && (stage == 1);
+    assign registers_wr_address = registers_wr_dest ? current_instruction[23:16] : current_instruction[15:8];
+    assign registers_wr_data = registers_wr_source_f(registers_wr_source);
+
+    assign alu_clk = (alu_clk_set == 1) && (clk == 1);
     assign alu_op_id = current_instruction[`ALU_OPID_WIDTH - 1:0];
     assign alu_op1 = alu_op1_source ? registers_data1 : registers_data2;
     assign alu_op2 = alu_op2_f(alu_op2_source);
@@ -176,13 +197,15 @@ module cpu
     
     assign io_data_out = io_data_out_source ? alu_out : registers_data1;
     assign io_data = io_data_direction ? {BITS{1'bz}} : io_data_out;
-    assign io_address = io_address_source ? current_instruction[BITS * 2 - 1:BITS] : registers_data1 + current_instruction[BITS * 2 - 1:BITS];
+    assign io_address = io_address_source ? registers_data2 + {{8{1'b0}}, current_instruction[BITS * 2 - 1: 24]} : registers_data3;
     assign io_wr = (start == 0) || (stage != 1) || (io_wr_set == 1);
     assign io_rd = !start | io_rd_set;
     assign io_data_direction = !start | io_data_direction_set;
 
     assign condition_temp = condition_flags & {c, z, alu_out[15]};
     assign condition_pass = (condition_temp[0] | condition_temp[1] | condition_temp[2]) ^ condition_neg;
+
+    assign address_set = stage == 1;
 
     always @(negedge main_clk) begin
         current_microinstruction <= microcode[{current_instruction[7:0], stage}];
@@ -200,33 +223,40 @@ module cpu
         end
         else if (start == 1 && error == 0) begin
             if (rd == 0) begin
-                current_instruction <= int_start == 0 ? data : 'h00010020; // call 1
-                if (int_start == 1)
-                    in_interrupt <= 1;
-            end
-
-            hlt <= hltf;
-            error <= errorf;
-            if (address_set) begin
-                if ((address_load == 0) || (condition_pass == 0))
-                    address <= address + 1;
+                if (int_start == 0)
+                    current_instruction <= data;
                 else begin
-                    if (pop) begin
-                        address <= stack_data;
-                        sp <= sp + 1;
-                    end
-                    else begin
-                        if (push) begin
-                            prev_address <= address + 1;
-                            sp <= sp - 1;
-                        end
-                        stack_wr <= !push;
-                        address <= address_source ? current_instruction[BITS * 2 - 1:BITS] : registers_data1 + current_instruction[31:16];
-                    end
+                    current_instruction <= 'h00010020; // call 1
+                    in_interrupt <= 1;
+                    address <= address - 1;
                 end
             end
-            else
-                stack_wr <= 1;
+            else begin
+                hlt <= hltf;
+                error <= errorf;
+                if (address_set) begin
+                    if ((address_load == 0) || (condition_pass == 0))
+                        address <= address + 1;
+                    else begin
+                        if (pop) begin
+                            address <= stack_data;
+                            sp <= sp + 1;
+                            if (in_interrupt_clear)
+                                in_interrupt <= 0;
+                        end
+                        else begin
+                            if (push) begin
+                                prev_address <= address + 1;
+                                sp <= sp - 1;
+                            end
+                            stack_wr <= !push;
+                            address <= address_source ? current_instruction[BITS * 2 - 1:BITS] : registers_data1 + current_instruction[31:16];
+                        end
+                    end
+                end
+                else
+                    stack_wr <= 1;
+            end
         end
 
         if (!start)
@@ -237,7 +267,4 @@ module cpu
             stage <= stage + 1;
     end
 
-    alu #(.BITS(BITS))
-        m_alu(.clk(alu_clk), .op_id(alu_op_id), .op1(alu_op1), .op2(alu_op2), .op3(alu_op3), .c(c), .z(z), .out(alu_out), .out2(alu_out2));
-    
 endmodule

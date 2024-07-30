@@ -17,6 +17,28 @@ module register_file
 	end
 endmodule
 
+module register_file2
+#(parameter WIDTH = 16, SIZE = 8)
+(
+	input wire [SIZE - 1:0] rd_address1,
+	output reg [WIDTH - 1:0] rd_data1,
+	input wire [SIZE - 1:0] rd_address2,
+	output reg [WIDTH - 1:0] rd_data2,
+	input wire [SIZE - 1:0] wr_address,
+	input wire [WIDTH - 1:0] wr_data,
+	input wire wr,
+	input wire clk
+);
+	reg [WIDTH - 1:0] registers [0:(1 << SIZE) - 1];
+	
+	always @(posedge clk) begin
+		rd_data1 <= registers[rd_address1];
+		rd_data2 <= registers[rd_address2];
+		if (wr == 0)
+			registers[wr_address] <= wr_data;
+	end
+endmodule
+
 module register_file3
 #(parameter WIDTH = 16, SIZE = 8)
 (
@@ -42,7 +64,7 @@ module register_file3
 	end
 endmodule
 
-module register_files
+module register_files2
 #(parameter WIDTH = 16, SIZE = 8)
 (
 	input wire [SIZE - 1:0] rd_address1,
