@@ -24,24 +24,21 @@ internal sealed class InOutInstructionCreator(uint type) : InstructionCreator
 {
     public override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
     {
-        if (parameters.Count < 3 || parameters[0].Type != TokenType.Name)
-            throw new InstructionException("register name and register [+ immediate] expected");
-        if (!GetRegisterNumber(parameters[0].StringValue, out var regNo))
+        if (parameters.Count < 5)
+            throw new InstructionException("register name and io address expected");
+        int start = 0;
+        if (!GetRegisterNumberWithIoFlag(parameters, ref start, true, out var regNo, out var offset1, out var io))
             throw new InstructionException("register name expected");
-        if (!parameters[1].IsChar(','))
+        if ((type == InstructionCodes.In && io) || (type == InstructionCodes.Out && !io))
+            throw new InstructionException("incorrect parameter 1");
+        if (start == parameters.Count || !parameters[start].IsChar(','))
             throw new InstructionException(", expected");
-        if (!GetRegisterNumber(parameters[2].StringValue, out var regNo2))
-            throw new InstructionException("register name expected");
-        var adder = 0;
-        if (parameters.Count > 3)
-        {
-            if (parameters.Count == 4)
-                throw new InstructionException("invalid number of parameters");
-            if (!parameters[3].IsChar('+'))
-                throw new InstructionException("+ expected");
-            adder = compiler.CalculateExpression(parameters[4..]);
-        }
+        start++;
+        if (!GetRegisterNumberWithIoFlag(parameters, ref start, true, out var regNo2, out var offset2, out var io2))
+            throw new InstructionException("register2 name expected");
+        if ((type == InstructionCodes.In && !io2) || (type == InstructionCodes.Out && io2))
+            throw new InstructionException("incorrect parameter 2");
 
-        return new InOutInstruction(line, type, regNo, regNo2, (uint)adder);
+        return new InOutInstruction(line, type, regNo, regNo2, (uint)offset1 | (uint)offset2);
     }
 }

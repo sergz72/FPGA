@@ -69,6 +69,8 @@ public class GenericParser: IParser
             case '/':
             case ',':
             case ':':
+            case '[':
+            case ']':
                 Mode = ParserMode.None;
                 Result.Add(new Token(TokenType.Name, Builder.ToString(), 0, ' '));
                 Builder.Clear();
@@ -109,6 +111,8 @@ public class GenericParser: IParser
             case '/':
             case ',':
             case ':':
+            case '[':
+            case ']':
                 Mode = ParserMode.None;
                 Result.Add(new Token(TokenType.Number, "", IntValue, ' '));
                 Result.Add(new Token(TokenType.Symbol, "", 0, c));
@@ -139,6 +143,8 @@ public class GenericParser: IParser
             case '/':
             case ',':
             case ':':
+            case '[':
+            case ']':
                 Mode = ParserMode.None;
                 Result.Add(new Token(TokenType.Number, "", IntValue, ' '));
                 Result.Add(new Token(TokenType.Symbol, "", 0, c));
@@ -178,6 +184,8 @@ public class GenericParser: IParser
             case '/':
             case ',':
             case ':':
+            case '[':
+            case ']':
                 Result.Add(new Token(TokenType.Symbol, "", 0, c));
                 break;
             default:

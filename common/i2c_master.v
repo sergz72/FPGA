@@ -14,40 +14,57 @@ module i2c
     localparam CLK_DIVIDER_BITS = $log2(CLK_DIVIDER) + 1;
     localparam START_SDA = 0;
     localparam START_SCL = 1;
+    localparam WR1 = 2;
+    localparam WR2 = 3;
+    localparam WR3 = 4;
+    localparam ACK1 = 5;
+    localparam ACK2 = 6;
+    localparam RESTART1 = 7;
+    localparam RESTART2 = 8;
+    localparam RESTART3 = 9;
+    localparam RD1 = 10;
+    localparam RD2 = 11;
 
     reg [CLK_DIVIDER_BITS - 1:0] counter = 0;
     reg [7:0] wr_data_mem [0:15];
     reg [7:0] rd_data_mem [0:15];
     reg [7:0] rd_data;
+    reg [7:0] current_byte;
+    reg [3:0] bit_count;
+    reg [3:0] pointer;
     reg busy = 0;
     reg nack = 0;
     reg [3:0] wr_length;
     reg [3:0] rd_length;
     reg [3:0] stage;
+    wire read, restart;
 
     assign data = rd == 0 ? rd_data : 8'bzzzzzzzz;
+    assign read = wr_pointer == wr_length && rd_length != 0;
+    assign restart = wr_length > 1 && read;
 
     always @(posedge clk) begin
+        if (wr == 0) begin
+            if (address < 15)
+                wr_data_mem[address] <= data;
+            else begin
+                wr_length <= data[3:0] + 1;
+                rd_length <= data[7:4];
+                busy <= 1;
+            end
+        end
+        else if (rd == 0) begin
+            if (address < 15)
+                rd_data <= rd_data_mem[address];
+            else
+                rd_data <= {6'b000000, nack, busy};
+        end
         if (busy == 0) begin
             counter <= 0;
             stage <= START_SDA;
             sda <= 1;
             scl <= 1;
-            if (wr == 0) begin
-                if (address < 15)
-                    wr_data_mem[address] <= data;
-                else begin
-                    wr_length <= data[3:0] + 1;
-                    rd_length <= data[7:4];
-                    busy <= 1;
-                end
-            end
-            else if (rd == 0) begin
-                if (address < 15)
-                    rd_data <= rd_data_mem[address];
-                else
-                    rd_data <= {6'b000000, nack, busy};
-            end
+            stop <= 0;
         end
         else begin
             if (counter == 0) begin
@@ -58,7 +75,85 @@ module i2c
                     end
                     START_SCL: begin
                         scl <= 0;
-                        stage <= START_SCL;
+                        pointer <= 0;
+                        current_byte <= wr_data_mem[0];
+                        bit_count <= 0;
+                        stage <= WR1;
+                    end
+                    WR1: begin
+                        sda <= current_byte[7];
+                        current_byte <= {current_byte[6:0], 1'b0};
+                        if (bit_count == 7) begin
+                            bit_count <= 0;
+                            pointer <= pointer + 1;
+                            stage <= ACK1;
+                        end
+                        else begin
+                            bit_count <= bit_count + 1;
+                            stage <= WR2;
+                        end
+                    end
+                    WR2: begin
+                        scl <= 1;
+                        stage <= WR3;
+                    end
+                    WR3: begin
+                        scl <= 0;
+                        stage <= WR1;
+                    end
+                    ACK1: begin
+                        scl <= 1;
+                        sda <= 1;
+                        stage <= ACK2;
+                    end
+                    ACK2: begin
+                        if (scl_in == 1) begin // Clock Stretching 
+                            scl <= 0;
+                            nack = sda_in == 1;
+                            if (nack) begin
+                                stage <= STOP1;
+                                sda <= 0;
+                            end
+                            else if (restart) begin
+                                stage <= RESTART1;
+                                sda <= 1;
+                            end
+                            else if (read)
+                                stage <= RD1;
+                            else begin
+                                current_byte <= wr_data_mem[pointer];
+                                stage <= WR1;
+                            end
+                        end
+                    end
+                    STOP2: begin
+                        sda <= 1;
+                        busy <= 0;
+                    end
+                    RESTART1: begin
+                        scl <= 1;
+                        stage <= RESTART2;
+                    end
+                    RESTART2: begin
+                        sda <= 0;
+                        stage <= RESTART3;
+                    end
+                    RESTART3: begin
+                        scl <= 0;
+                        stage <= RD1;
+                    end
+                    RD1: begin
+                        scl <= 1;
+                        stage <= RD2;
+                    end
+                    RD2: begin
+                        scl <= 0;
+                        stage <= RD2;
+                    end
+                    // includes STOP1
+                    default: begin
+                        scl <= 1;
+                        stage <= STOP2;
                     end
                 endcase
             end

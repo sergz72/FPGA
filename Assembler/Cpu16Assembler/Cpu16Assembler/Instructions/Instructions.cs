@@ -18,7 +18,8 @@ internal static class AluOperations
     internal const uint Cmp = 11;
     internal const uint Mul = 12;
     internal const uint Div = 13;
-    internal const uint Setf = 14;
+    internal const uint Rem = 14;
+    internal const uint Setf = 15;
 }
 
 internal static class InstructionCodes
@@ -69,6 +70,7 @@ internal static class InstructionCodes
     internal const uint RetiGt = 0x55;
     internal const uint RetiLe = 0x56;
     
+    internal const uint Loadf = 0x5B;
     internal const uint Nop = 0x5C;
     internal const uint MovImmediate = 0x5D;
     internal const uint MovReg = 0x5E;

@@ -44,7 +44,18 @@ for (var i = 0; i < microcodeLength; i++)
     var opSubtype = (i >> 2) & 0x0F;
     v |= stage switch
     {
-        0 => ioRd | ioWr | ioDataDirection,
+        0 => opType switch
+        {
+            14 => opSubtype switch
+            {
+                // in io->register
+                0 => ioWr | ioDataDirection,
+                // out register->io
+                1 => ioRd,
+                _ => ioRd | ioWr | ioDataDirection
+            },
+            _ => ioRd | ioWr | ioDataDirection
+        },
         1 => opType switch
         {
             // jmp addr
@@ -98,7 +109,7 @@ for (var i = 0; i < microcodeLength; i++)
                 // in io->register
                 0 => stageReset | ioRd | ioWr | ioDataDirection,
                 // out register->io
-                1 => stageReset | ioRd | ioWr | ioDataDirection,
+                1 => ioRd | ioWr,
                 _ => hlt | error | ioRd | ioWr | ioDataDirection
             },
             // operations without ALU with io
@@ -112,6 +123,12 @@ for (var i = 0; i < microcodeLength; i++)
         {
             // alu instruction, register->io
             >= 12 and <= 13 => stageReset | ioRd | ioWr | ioDataDirection,
+            14 => opSubtype switch
+            {
+                // out register->io
+                1 => stageReset | ioRd | ioWr | ioDataDirection,
+                _ => hlt | error | ioRd | ioWr | ioDataDirection
+            },
             _ => hlt | error | ioRd | ioWr | ioDataDirection
         },
         3 => ioRd | ioWr | ioDataDirection,

@@ -10,29 +10,29 @@ reset clk rd start stage comment
 1     0   0  1     1     instruction read start
 
 instruction without io
-reset clk rd start stage alu_clk io_rd io_wr comment
-1     1   0  1     0     0       1     1     instruction read, stage reset
-1     0   1  1     0     0       1     1     microcode read, registers read
-1     1   1  1     1     0       1     1     next address set, may be alu clk
-1     0   0  1     1     0       1     1     instruction read start, microcode read, may be registers write
+clk rd stage alu_clk io_rd io_wr comment
+1   0  0     0       1     1     instruction read
+0   1  0     0       1     1     microcode read, registers read
+1   1  1     0       1     1     next address set, may be alu clk
+0   0  1     0       1     1     instruction read start, microcode read, may be registers write
 
-instruction with io read
-reset clk rd start stage alu_clk io_rd io_wr comment
-1     1   0  1     0     0       1     1     instruction read, stage reset
-1     0   1  1     0     0       1     1     microcode read, registers read
-1     1   1  1     1     0       1     1     next address set, io address set
-1     0   1  1     1     0       0     1     microcode read, io read begin
-1     1   1  1     2     0       0     1     io read, may be alu clk, may be registers write
-1     0   0  1     2     0       1     1     instruction read start, microcode read
+instruction wit io read
+clk rd stage alu_clk io_rd io_wr comment
+1   0  0     0       1     1     instruction read
+0   1  0     0       1     1     microcode read, registers read, io address set
+1   1  1     0       0     1     next address set, io read start
+0   1  1     0       0     1     microcode read, io read
+1   1  2     0       1     1     may be alu clk
+0   0  2     0       1     1     instruction read start, microcode read, may be registers write
 
 instruction with io write
-reset clk rd start stage alu_clk io_rd io_wr io_data_direction comment
-1     1   0  1     0     0       1     1     1                 instruction read, stage reset
-1     0   1  1     0     0       1     1     1                 microcode read, registers read
-1     1   1  1     1     0       1     1     0                 next address set, io address set, may be alu clk
-1     0   1  1     1     0       1     0     0                 microcode read, io write begin
-1     1   1  1     2     0       1     0     0                 io write
-1     0   0  1     2     0       1     1     0                 instruction read start, microcode read
+clk rd stage alu_clk io_rd io_wr io_data_direction comment
+1   0  0     0       1     1     1                 instruction read
+0   1  0     0       1     1     1                 microcode read, registers read, io address set
+1   1  1     0       1     1     0                 next address set, may be alu clk
+0   1  1     0       1     0     0                 microcode read, may be registers write, io write start
+1   1  2     0       1     0     0                 io write
+0   0  2     0       1     1     0                 instruction read start, microcode read
 
 */
 
@@ -79,10 +79,10 @@ module cpu
     wire [1:0] alu_op2_source;
 
     // IO
-    wire io_data_direction, io_data_direction_set;
+    reg io_data_direction;
+    wire io_data_direction_set;
     wire io_data_out_source;
     wire io_address_source;
-    wire io_wr_set, io_rd_set;
 
     // address
     wire address_source, address_load, address_set;
@@ -160,8 +160,8 @@ module cpu
     // io_data_direction = 1
     // stage_reset = 1
     assign stage_reset = current_microinstruction[0];
-    assign io_rd_set = current_microinstruction[1];
-    assign io_wr_set = current_microinstruction[2];
+    assign io_rd = current_microinstruction[1];
+    assign io_wr = current_microinstruction[2];
     assign io_data_direction_set = current_microinstruction[3];
     assign address_load = current_microinstruction[4];
     // can be current_instruction[31:16] or registers[current_instruction[15:8]] + current_instruction[31:16]
@@ -198,9 +198,6 @@ module cpu
     assign io_data_out = io_data_out_source ? alu_out : registers_data1;
     assign io_data = io_data_direction ? {BITS{1'bz}} : io_data_out;
     assign io_address = io_address_source ? registers_data2 + {{8{1'b0}}, current_instruction[BITS * 2 - 1: 24]} : registers_data3;
-    assign io_wr = (start == 0) || (stage != 1) || (io_wr_set == 1);
-    assign io_rd = !start | io_rd_set;
-    assign io_data_direction = !start | io_data_direction_set;
 
     assign condition_temp = condition_flags & {c, z, alu_out[15]};
     assign condition_pass = (condition_temp[0] | condition_temp[1] | condition_temp[2]) ^ condition_neg;
@@ -220,8 +217,10 @@ module cpu
             hlt <= 0;
             error <= 0;
             stack_wr <= 1;
+            current_instruction <= 0;
         end
         else if (start == 1 && error == 0) begin
+            io_data_direction <= io_data_direction_set;
             if (rd == 0) begin
                 if (int_start == 0)
                     current_instruction <= data;
