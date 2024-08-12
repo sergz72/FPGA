@@ -1,5 +1,5 @@
 module i2c
-#(parameter CLK_DIVIDER = 250) // 50 MHZ clock and 100 KHz i2c
+#(parameter CLK_DIVIDER_BITS = 8) // 50 MHZ clock and 100 KHz i2c
 (
     input wire clk,
     input wire wr,
@@ -11,7 +11,6 @@ module i2c
     input wire scl_in,
     input wire sda_in
 );
-    localparam CLK_DIVIDER_BITS = $log2(CLK_DIVIDER) + 1;
     localparam START_SDA = 0;
     localparam START_SCL = 1;
     localparam WR1 = 2;
@@ -22,8 +21,10 @@ module i2c
     localparam RESTART1 = 7;
     localparam RESTART2 = 8;
     localparam RESTART3 = 9;
-    localparam RD1 = 10;
-    localparam RD2 = 11;
+    localparam STOP1 = 10;
+    localparam STOP2 = 11;
+    localparam RD1 = 12;
+    localparam RD2 = 13;
 
     reg [CLK_DIVIDER_BITS - 1:0] counter = 0;
     reg [7:0] wr_data_mem [0:15];
@@ -40,7 +41,7 @@ module i2c
     wire read, restart;
 
     assign data = rd == 0 ? rd_data : 8'bzzzzzzzz;
-    assign read = wr_pointer == wr_length && rd_length != 0;
+    assign read = pointer == wr_length && rd_length != 0;
     assign restart = wr_length > 1 && read;
 
     always @(posedge clk) begin
@@ -64,7 +65,6 @@ module i2c
             stage <= START_SDA;
             sda <= 1;
             scl <= 1;
-            stop <= 0;
         end
         else begin
             if (counter == 0) begin
@@ -162,24 +162,29 @@ module i2c
     end
 endmodule
 
-module i2c_tb;
-    reg clk, wr, rd;
+module i2c_master_tb;
+    reg clk, wr, rd, scl_in, sda_in;
     wire scl, dsa;
     reg [3:0] address;
     reg [7:0] data_out;
-    wire data;
+    wire [7:0] data;
 
     assign data = wr ? 8'bzzzzzzzz : data_out;
 
-    i2c #(.CLK_DIVIDER(2)) i(.clk(clk), .wr(wr), .rd(rd), .address(address), .data(data), .scl(scl), .sda(sda));
+    i2c #(.CLK_DIVIDER_BITS(2)) i(.clk(clk), .wr(wr), .rd(rd), .address(address), .data(data), .scl(scl), .sda(sda),
+            .scl_in(scl_in), .sda_in(sda_in));
 
     always #1 clk = ~clk;
 
     initial begin
+        $dumpfile("i2c_master_tb.vcd");
+        $dumpvars(0, i2c_master_tb);
         $monitor("time=%t scl=%d sda=%d", $time, scl, sda);
         clk = 0;
         wr = 1;
         rd = 1;
+        scl_in = 1;
+        sda_in = 1;
         address = 0;
         data_out = 8'h22;
         #10

@@ -46,18 +46,6 @@ for (var i = 0; i < microcodeLength; i++)
     {
         0 => opType switch
         {
-            14 => opSubtype switch
-            {
-                // in io->register
-                0 => ioWr | ioDataDirection,
-                // out register->io
-                1 => ioRd,
-                _ => ioRd | ioWr | ioDataDirection
-            },
-            _ => ioRd | ioWr | ioDataDirection
-        },
-        1 => opType switch
-        {
             // jmp addr
             0 => addressLoad | addressSourceImmediate | BuildCondition(i) | stageReset | ioRd | ioWr | ioDataDirection,
             // jmp reg
@@ -107,9 +95,9 @@ for (var i = 0; i < microcodeLength; i++)
             14 => opSubtype switch
             {
                 // in io->register
-                0 => stageReset | ioRd | ioWr | ioDataDirection,
+                0 => stageReset | ioWr | ioDataDirection,
                 // out register->io
-                1 => ioRd | ioWr,
+                1 => stageReset | ioRd,
                 _ => hlt | error | ioRd | ioWr | ioDataDirection
             },
             // operations without ALU with io
@@ -119,20 +107,7 @@ for (var i = 0; i < microcodeLength; i++)
             },
             _ => hlt | error | ioRd | ioWr | ioDataDirection
         },
-        2 => opType switch
-        {
-            // alu instruction, register->io
-            >= 12 and <= 13 => stageReset | ioRd | ioWr | ioDataDirection,
-            14 => opSubtype switch
-            {
-                // out register->io
-                1 => stageReset | ioRd | ioWr | ioDataDirection,
-                _ => hlt | error | ioRd | ioWr | ioDataDirection
-            },
-            _ => hlt | error | ioRd | ioWr | ioDataDirection
-        },
-        3 => ioRd | ioWr | ioDataDirection,
-        _ => ioRd | ioWr | ioDataDirection
+        _ => hlt | error | ioRd | ioWr | ioDataDirection
     };
     Console.WriteLine("{0:X6}", v);
 }
