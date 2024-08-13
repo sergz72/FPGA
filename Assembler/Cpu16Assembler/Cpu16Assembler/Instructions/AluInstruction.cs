@@ -29,70 +29,44 @@ internal sealed class AluInstructionCreator(uint aluOperation) : InstructionCrea
             return CreateTest(compiler, line, parameters);
         if (aluOperation == AluOperations.Neg)
             return CreateNeg(compiler, line, parameters);
-        int start = 0;
-        if (parameters.Count < 3 ||
-            !GetRegisterNumberWithIoFlag(parameters, ref start, false, out var regNo, out var _, out var io))
-            throw new InstructionException("register name expected");
-        if (start == parameters.Count || !parameters[start].IsChar(','))
-            throw new InstructionException(", expected");
-        start++;
-        if (start == parameters.Count)
-            throw new InstructionException("register or immediate expected");
-        if (parameters[start].Type == TokenType.Name &&
-            GetRegisterNumber(parameters[start].StringValue, out var regNo2))
+        if (parameters.Count < 3 || parameters[0].Type != TokenType.Name || !parameters[1].IsChar(','))
+            throw new InstructionException("syntax error");
+        
+        if (!GetRegisterNumber(parameters[0].StringValue, out var regNo))
+            throw new InstructionException("invalid register 1 name");
+        
+        if (parameters[2].Type != TokenType.Name || !GetRegisterNumber(parameters[2].StringValue, out var regNo2))
         {
-            start++;
-            if (parameters.Count < start + 2 || !parameters[start].IsChar(','))
-                throw new InstructionException(", expected");
-            start++;
-            if (!GetRegisterNumberWithIoFlag(parameters, ref start, false, out var regNo3, out var _, out var io2))
-                throw new InstructionException("register3 name expected");
-            return BuildWithIO(line, io, io2, regNo, regNo2, regNo3);
+            var v = (uint)compiler.CalculateExpression(parameters[2..]);
+            return new AluImmediateInstruction(line, aluOperation, regNo, v);
         }
-        var v = (uint)compiler.CalculateExpression(parameters[2..]);
-        return new AluImmediateInstruction(line, aluOperation, regNo, v);
+        
+        if (parameters.Count != 5 || parameters[4].Type != TokenType.Name || !parameters[3].IsChar(','))
+            throw new InstructionException("syntax error");
+            
+        if (!GetRegisterNumber(parameters[2].StringValue, out var regNo3))
+            throw new InstructionException("invalid register 3 name");
+
+        return new AluRegisterInstruction(line, 0x60, aluOperation, regNo, regNo2, regNo3);
     }
 
-    private Instruction BuildWithIO(string line, bool io, bool io2, uint regNo, uint regNo2, uint regNo3)
-    {
-        if (io && io2)
-            throw new InstructionException("illegal io operation");
-        if (!io && !io2)
-            // register-register
-            return new AluRegisterInstruction(line, 0x60, aluOperation, regNo, regNo2, regNo3);
-        if (io)
-            // register-io
-            return new AluRegisterInstruction(line, 0xB0, aluOperation, regNo, regNo2, regNo3);
-        // io-register
-        return new AluRegisterInstruction(line, 0xA0, aluOperation, regNo, regNo2, regNo3);
-    }
-    
     private Instruction CreateTest(ICompiler _, string line, List<Token> parameters)
     {
-        int start = 0;
-        if (!GetRegisterNumberWithIoFlag(parameters, ref start, true, out var regNo, out var offset, out var io))
+        if (parameters.Count != 1 || parameters[0].Type != TokenType.Name ||
+            !GetRegisterNumber(parameters[0].StringValue, out var regNo))
             throw new InstructionException("register name expected");
-        if (start != parameters.Count)
-            throw new InstructionException("syntax error");
-        if (io)
-            // io-register
-            return new AluRegisterInstruction(line, 0xA0, aluOperation, regNo, regNo, (uint)offset);
         // register-register
         return new AluRegisterInstruction(line, 0x60, aluOperation, regNo, 0, 0);
     }
 
     private Instruction CreateNeg(ICompiler _, string line, List<Token> parameters)
     {
-        int start = 0;
-        if (!GetRegisterNumberWithIoFlag(parameters, ref start, true, out var regNo, out var offset1, out var io))
-            throw new InstructionException("register name expected");
-        if (parameters.Count < start + 2 || !parameters[start].IsChar(','))
-            throw new InstructionException(", expected");
-        start++;
-        if (!GetRegisterNumberWithIoFlag(parameters, ref start, true, out var regNo2, out var offset2, out var io2))
-            throw new InstructionException("register2 name expected");
-        if (start != parameters.Count)
+        if (parameters.Count != 3 || parameters[0].Type != TokenType.Name || parameters[2].Type != TokenType.Name ||
+            !parameters[1].IsChar(',') ||
+            !GetRegisterNumber(parameters[0].StringValue, out var regNo) || 
+            !GetRegisterNumber(parameters[2].StringValue, out var regNo2))
             throw new InstructionException("syntax error");
-        return BuildWithIO(line, io, io2, regNo, regNo2, (uint)offset1 | (uint)offset2);
+        // register-register
+        return new AluRegisterInstruction(line, 0x60, aluOperation, regNo, regNo2, 0);
     }
 }

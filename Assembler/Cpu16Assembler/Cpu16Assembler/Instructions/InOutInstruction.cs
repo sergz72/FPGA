@@ -20,25 +20,41 @@ internal sealed class InOutInstruction : Instruction
     }
 }
 
-internal sealed class InOutInstructionCreator(uint type) : InstructionCreator
+internal sealed class InInstructionCreator : InstructionCreator
+{
+    public override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
+    {
+        if (parameters.Count < 5 || parameters[0].Type != TokenType.Name || !parameters[1].IsChar(',') ||
+            !GetRegisterNumber(parameters[0].StringValue, out var regNo))
+            throw new InstructionException("register name and io address expected");
+        var start = 2;
+        if (!GetRegisterNumberWithIoFlag(parameters, ref start, true, out var regNo2, out var offset, out var io))
+            throw new InstructionException("io address expected");
+        if (!io)
+            throw new InstructionException("incorrect io address format");
+
+        return new InOutInstruction(line, InstructionCodes.In, regNo, regNo2, (uint)offset);
+    }
+}
+
+internal sealed class OutInstructionCreator() : InstructionCreator
 {
     public override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
     {
         if (parameters.Count < 5)
-            throw new InstructionException("register name and io address expected");
+            throw new InstructionException("io address and register name expected");
         int start = 0;
-        if (!GetRegisterNumberWithIoFlag(parameters, ref start, true, out var regNo, out var offset1, out var io))
-            throw new InstructionException("register name expected");
-        if ((type == InstructionCodes.In && io) || (type == InstructionCodes.Out && !io))
-            throw new InstructionException("incorrect parameter 1");
+        if (!GetRegisterNumberWithIoFlag(parameters, ref start, true, out var regNo, out var offset, out var io))
+            throw new InstructionException("io address expected");
+        if (!io)
+            throw new InstructionException("incorrect io address");
         if (start == parameters.Count || !parameters[start].IsChar(','))
             throw new InstructionException(", expected");
         start++;
-        if (!GetRegisterNumberWithIoFlag(parameters, ref start, true, out var regNo2, out var offset2, out var io2))
-            throw new InstructionException("register2 name expected");
-        if ((type == InstructionCodes.In && !io2) || (type == InstructionCodes.Out && io2))
-            throw new InstructionException("incorrect parameter 2");
+        if (start == parameters.Count || parameters[start].Type != TokenType.Name ||
+            !GetRegisterNumber(parameters[start].StringValue, out var regNo2))
+            throw new InstructionException("register name expected");
 
-        return new InOutInstruction(line, type, regNo, regNo2, (uint)offset1 | (uint)offset2);
+        return new InOutInstruction(line, InstructionCodes.Out, regNo2, regNo, (uint)offset);
     }
 }

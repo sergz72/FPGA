@@ -52,8 +52,8 @@ internal sealed class Cpu16Compiler(List<string> sources, string outputFileName,
         {"div", new AluInstructionCreator(AluOperations.Div)},
         {"rem", new AluInstructionCreator(AluOperations.Rem)},
         
-        {"in", new InOutInstructionCreator(InstructionCodes.In)},
-        {"out", new InOutInstructionCreator(InstructionCodes.Out)},
+        {"in", new InInstructionCreator()},
+        {"out", new OutInstructionCreator()},
         
         {"jmp", new JmpInstructionCreator(InstructionCodes.JmpAddr, InstructionCodes.JmpReg)},
         {"jmpc", new JmpInstructionCreator(InstructionCodes.JmpcAddr, InstructionCodes.JmpcReg)},

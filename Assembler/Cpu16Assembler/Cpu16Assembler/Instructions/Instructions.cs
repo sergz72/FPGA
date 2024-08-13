@@ -70,14 +70,15 @@ internal static class InstructionCodes
     internal const uint RetiGt = 0x55;
     internal const uint RetiLe = 0x56;
     
+    internal const uint MovAluOut2 = 0x5A;
     internal const uint Loadf = 0x5B;
     internal const uint Nop = 0x5C;
     internal const uint MovImmediate = 0x5D;
     internal const uint MovReg = 0x5E;
     internal const uint Hlt = 0x5F;
 
-    internal const uint In = 0xE0;
-    internal const uint Out = 0xE1;
+    internal const uint In = 0xF0;
+    internal const uint Out = 0xF1;
 }
 
 internal sealed class OpCodeInstruction(string line, uint opCode) : Instruction(line)

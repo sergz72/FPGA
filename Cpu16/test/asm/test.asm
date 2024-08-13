@@ -8,7 +8,9 @@ l2:	mov r0, 0
 	dec r1
 	neg r1, r1
 	out [r1], r0
-	add r0, 2
+	in  r2, [r1]
+	inc r2
+	add r0, r0, r2
 	out [r1], r0
 	sub r0, 1
 	out [r1], r0

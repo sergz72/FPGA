@@ -33,6 +33,8 @@ internal sealed class MovInstructionCreator() : InstructionCreator
             throw new InstructionException("register name expected");
         if (!parameters[1].IsChar(','))
             throw new InstructionException(", expected");
+        if (parameters[2].StringValue.Equals("alu_out_2", StringComparison.CurrentCultureIgnoreCase))
+            return new MovInstruction(line, InstructionCodes.MovAluOut2, regNo, 0, 0);
         if (GetRegisterNumber(parameters[2].StringValue, out var regNo2))
         {
             var adder = 0;
