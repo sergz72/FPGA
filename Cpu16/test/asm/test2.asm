@@ -2,8 +2,7 @@ start:	jmp l1
 	mov r255, $FFFF
 	out [r255], r255 ; clear interrupt flag
 	reti
-l1:	hlt
-	call l2
+l1:	call l2
 	jmp start
 l2:	mov r0, 0
 	inc r0

@@ -14,11 +14,21 @@ public enum TokenType
     Symbol
 }
 
-public record Token(TokenType Type, string StringValue, int IntValue, char CharValue)
+public record Token(TokenType Type, string StringValue, int IntValue)
 {
+    public Token(char charValue) : this(TokenType.Symbol, charValue.ToString(), 0)
+    {
+        
+    }
+    
+    public bool IsChar(string value)
+    {
+        return Type == TokenType.Symbol && StringValue == value;
+    }
+
     public bool IsChar(char value)
     {
-        return Type == TokenType.Symbol && CharValue == value;
+        return Type == TokenType.Symbol && StringValue.Length == 1 && StringValue[0] == value;
     }
 }
 
@@ -31,7 +41,8 @@ public class GenericParser: IParser
         None,
         Name,
         Number,
-        HexNumber
+        HexNumber,
+        Symbol
     }
     
     protected ParserMode Mode;
@@ -49,13 +60,6 @@ public class GenericParser: IParser
     {
         switch (c)
         {
-            case ';':
-                return true;
-            case <= ' ':
-                Mode = ParserMode.None;
-                Result.Add(new Token(TokenType.Name, Builder.ToString(), 0, ' '));
-                Builder.Clear();
-                break;
             case >= '0' and <= '9':
             case >= 'a' and <= 'z':
             case >= 'A' and <= 'Z':
@@ -63,21 +67,11 @@ public class GenericParser: IParser
             case '_':
                 Builder.Append(c);
                 break;
-            case '+':
-            case '-':
-            case '*':
-            case '/':
-            case ',':
-            case ':':
-            case '[':
-            case ']':
-                Mode = ParserMode.None;
-                Result.Add(new Token(TokenType.Name, Builder.ToString(), 0, ' '));
-                Builder.Clear();
-                Result.Add(new Token(TokenType.Symbol, "", 0, c));
-                break;
             default:
-                throw new ParserException("invalid symbol in name: " + c);
+                Mode = ParserMode.None;
+                Result.Add(new Token(TokenType.Name, Builder.ToString(), 0));
+                Builder.Clear();
+                return ModeNoneHandler(c);
         }
 
         return false;
@@ -87,12 +81,6 @@ public class GenericParser: IParser
     {
         switch (c)
         {
-            case <= ' ':
-                Mode = ParserMode.None;
-                Result.Add(new Token(TokenType.Number, "", IntValue, ' '));
-                break;
-            case ';':
-                return true;
             case >= '0' and <= '9':
                 IntValue <<= 4;
                 IntValue |= c - '0';
@@ -105,20 +93,10 @@ public class GenericParser: IParser
                 IntValue <<= 4;
                 IntValue |= c - 'A' + 10;
                 break;
-            case '+':
-            case '-':
-            case '*':
-            case '/':
-            case ',':
-            case ':':
-            case '[':
-            case ']':
-                Mode = ParserMode.None;
-                Result.Add(new Token(TokenType.Number, "", IntValue, ' '));
-                Result.Add(new Token(TokenType.Symbol, "", 0, c));
-                break;
             default:
-                throw new ParserException("invalid symbol in number: " + c);
+                Mode = ParserMode.None;
+                Result.Add(new Token(TokenType.Number, "", IntValue));
+                return ModeNoneHandler(c);
         }
         return false;
     }
@@ -127,34 +105,47 @@ public class GenericParser: IParser
     {
         switch (c)
         {
-            case <= ' ':
-                Mode = ParserMode.None;
-                Result.Add(new Token(TokenType.Number, "", IntValue, ' '));
-                break;
-            case ';':
-                return true;
             case >= '0' and <= '9':
                 IntValue *= 10;
                 IntValue += c - '0';
                 break;
-            case '+':
-            case '-':
-            case '*':
-            case '/':
-            case ',':
-            case ':':
-            case '[':
-            case ']':
-                Mode = ParserMode.None;
-                Result.Add(new Token(TokenType.Number, "", IntValue, ' '));
-                Result.Add(new Token(TokenType.Symbol, "", 0, c));
-                break;
             default:
-                throw new ParserException("invalid symbol in number: " + c);
+                Mode = ParserMode.None;
+                Result.Add(new Token(TokenType.Number, "", IntValue));
+                return ModeNoneHandler(c);
         }
         return false;
     }
-    
+
+    protected bool ModeSymbolHandler(char c)
+    {
+        switch (c)
+        {
+            case '+':
+            case '-':
+                if (c == Builder[0])
+                {
+                    Builder.Append(c);
+                    Result.Add(new Token(TokenType.Symbol, Builder.ToString(), 0));
+                }
+                else
+                {
+                    Result.Add(new Token(TokenType.Symbol, Builder.ToString(), 0));
+                    Result.Add(new Token(c));
+                }
+                Mode = ParserMode.None;
+                Builder.Clear();
+                break;
+            default:
+                Mode = ParserMode.None;
+                Result.Add(new Token(TokenType.Symbol, Builder.ToString(), 0));
+                Builder.Clear();
+                return ModeNoneHandler(c);
+        }
+
+        return false;
+    }
+
     protected bool ModeNoneHandler(char c)
     {
         switch (c)
@@ -180,13 +171,16 @@ public class GenericParser: IParser
                 break;
             case '+':
             case '-':
+                Mode = ParserMode.Symbol;
+                Builder.Append(c);
+                break;
             case '*':
             case '/':
             case ',':
             case ':':
             case '[':
             case ']':
-                Result.Add(new Token(TokenType.Symbol, "", 0, c));
+                Result.Add(new Token(c));
                 break;
             default:
                 throw new ParserException("unknown symbol " + c);
@@ -200,12 +194,16 @@ public class GenericParser: IParser
         switch (Mode)
         {
             case ParserMode.Name:
-                Result.Add(new Token(TokenType.Name, Builder.ToString(), 0, ' '));
+                Result.Add(new Token(TokenType.Name, Builder.ToString(), 0));
                 Builder.Clear();
                 break;
             case ParserMode.Number:
             case ParserMode.HexNumber:
-                Result.Add(new Token(TokenType.Number, "", IntValue, ' '));
+                Result.Add(new Token(TokenType.Number, "", IntValue));
+                break;
+            case ParserMode.Symbol:
+                Result.Add(new Token(TokenType.Symbol, Builder.ToString(), 0));
+                Builder.Clear();
                 break;
         }
     }
@@ -222,7 +220,8 @@ public class GenericParser: IParser
                 ParserMode.None => ModeNoneHandler(c),
                 ParserMode.Number => ModeNumberHandler(c),
                 ParserMode.HexNumber => ModeHexNumberHandler(c),
-                ParserMode.Name => ModeNameHandler(c)
+                ParserMode.Name => ModeNameHandler(c),
+                ParserMode.Symbol => ModeSymbolHandler(c)
             };
             if (exit)
                 break;

@@ -99,9 +99,10 @@ module cpu
     wire [2:0] condition_temp, condition_flags;
 
     wire [BITS - 1:0] registers_data1, registers_data2, registers_data3, registers_wr_data;
-    wire registers_wr_set, regs_clk, registers_wr_dest, registers_wr;
+    wire registers_wr_set, regs_clk, registers_wr_dest;
     wire [7:0] registers_wr_address;
     wire [2:0] registers_wr_source;
+    reg registers_wr = 1;
 
     // can be registers[current_instruction[31:24] or current_instruction[31:16]
     function [15:0] alu_op2_f(input source);
@@ -119,7 +120,7 @@ module cpu
             3: registers_wr_source_f = registers_data1;
             4: registers_wr_source_f = registers_data2 + {{8{1'b0}}, current_instruction[BITS * 2 - 1: 24]};
             5: registers_wr_source_f = registers_data3;
-            6: registers_wr_source_f = {14'h0, c, z};
+            6: registers_wr_source_f = {13'h0, alu_out[15], c, z};
             default: registers_wr_source_f = io_data;
         endcase
     endfunction
@@ -150,11 +151,11 @@ module cpu
     // registers read/write
     assign clk4 = start && stage[0] == 1 && stage[1] == 1;
 
-    assign regs_clk = start & !stage[0] & clk;
+    assign regs_clk = !hlt & start & !stage[0];
 
     assign int_start = interrupt == 1 && in_interrupt == 0;
 
-    assign rd = error || !clk1;
+    assign rd = error || hlt || !clk1;
 
     // in reset state:
     // io_rd = io_wr = 1
@@ -181,7 +182,6 @@ module cpu
 
     assign registers_wr_address = registers_wr_dest ? current_instruction[23:16] : current_instruction[15:8];
     assign registers_wr_data = registers_wr_source_f(registers_wr_source);
-    assign registers_wr = !registers_wr_set | !clk1;
 
     assign alu_clk = (alu_clk_set == 1) && (clk4 == 1);
     assign alu_op_id = current_instruction[`ALU_OPID_WIDTH - 1:0];
@@ -201,14 +201,14 @@ module cpu
     assign stack_wr = !push;
 
     always @(negedge clk) begin
-        if (error != 0 || hlt != 0)
+        if (error != 0)
             stage <= 0;
         else
             stage <= stage + 1;
     end
 
     always @(posedge clk3) begin
-        if (error == 0)
+        if (error == 0 && hlt == 0)
             current_microinstruction <= microcode[current_instruction[7:0]];
     end
 
@@ -227,39 +227,45 @@ module cpu
                 start <= 1;
             else begin
                 if (start == 1 && error == 0) begin
-                    if (clk2 == 1) begin
-                        if (int_start == 0) begin
-                            if (hlt == 0)
-                                current_instruction <= data;
-                        end
-                        else begin
-                            current_instruction <= 'h00010020; // call 1
-                            in_interrupt <= 1;
-                            address <= address - 1;
-                            hlt <= 0;
-                        end
-                    end
-                    else if (clk4 == 1 && hlt == 0) begin
-                        hlt <= hltf;
-                        error <= errorf;
-                        if ((address_load == 0) || (condition_pass == 0))
-                            address <= address + 1;
-                        else begin
-                            if (pop) begin
-                                address <= stack_data;
-                                sp <= sp + 1;
-                                if (in_interrupt_clear)
-                                    in_interrupt <= 0;
+                    case (stage)
+                        1: begin
+                            if (int_start == 0) begin
+                                if (hlt == 0)
+                                    current_instruction <= data;
                             end
                             else begin
-                                if (push) begin
-                                    prev_address <= address + 1;
-                                    sp <= sp - 1;
+                                current_instruction <= 'h00010020; // call 1
+                                in_interrupt <= 1;
+                                address <= address - 1;
+                                hlt <= 0;
+                            end
+                            registers_wr <= 1;
+                        end
+                        3: begin
+                            if (hlt == 0) begin
+                                hlt <= hltf;
+                                error <= errorf;
+                                registers_wr <= !registers_wr_set;
+                                if ((address_load == 0) || (condition_pass == 0))
+                                    address <= address + 1;
+                                else begin
+                                    if (pop) begin
+                                        address <= stack_data;
+                                        sp <= sp + 1;
+                                        if (in_interrupt_clear)
+                                            in_interrupt <= 0;
+                                    end
+                                    else begin
+                                        if (push) begin
+                                            prev_address <= address + 1;
+                                            sp <= sp - 1;
+                                        end
+                                        address <= address_source ? current_instruction[BITS * 2 - 1:BITS] : registers_data1 + current_instruction[31:16];
+                                    end
                                 end
-                                address <= address_source ? current_instruction[BITS * 2 - 1:BITS] : registers_data1 + current_instruction[31:16];
                             end
                         end
-                    end
+                    endcase
                 end
             end
         end

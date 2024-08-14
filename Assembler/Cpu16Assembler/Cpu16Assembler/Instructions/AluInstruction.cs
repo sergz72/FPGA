@@ -44,7 +44,7 @@ internal sealed class AluInstructionCreator(uint aluOperation) : InstructionCrea
         if (parameters.Count != 5 || parameters[4].Type != TokenType.Name || !parameters[3].IsChar(','))
             throw new InstructionException("syntax error");
             
-        if (!GetRegisterNumber(parameters[2].StringValue, out var regNo3))
+        if (!GetRegisterNumber(parameters[4].StringValue, out var regNo3))
             throw new InstructionException("invalid register 3 name");
 
         return new AluRegisterInstruction(line, 0x60, aluOperation, regNo, regNo2, regNo3);

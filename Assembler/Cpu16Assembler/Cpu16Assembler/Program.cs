@@ -9,7 +9,10 @@ var outputFormat = OutputFormat.Hex;
 foreach (var arg in args)
 {
     if (outputFileNameExpected)
+    {
         outputFileName = arg;
+        outputFileNameExpected = false;
+    }
     else
     {
         if (arg.StartsWith('-'))

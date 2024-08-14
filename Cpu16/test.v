@@ -7,7 +7,7 @@ module cpu16_tb;
     reg clk, reset, interrupt;
     reg [15:0] io_data_out;
 
-    reg [31:0] rom [0:63];
+    reg [31:0] rom [0:255];
     reg [15:0] ram [0:65535];
 
     initial begin
@@ -32,8 +32,8 @@ module cpu16_tb;
         interrupt = 0;
         #20
         reset = 1;
-        //#1000
-        //interrupt = 1;
+        #1000
+        interrupt = 1;
         #10000
         $finish;
     end
@@ -41,11 +41,15 @@ module cpu16_tb;
     always @(negedge io_rd or negedge io_wr) begin
         if (!io_rd)
             io_data_out <= ram[io_address];
-        else
-            ram[io_address] <= io_data;
+        else begin
+            if (io_address == 'hFFFF)
+                interrupt <= 0;
+            else
+                ram[io_address] <= io_data;
+        end
     end
 
     always @(negedge rd) begin
-        data <= rom[address[5:0]];
+        data <= rom[address[7:0]];
     end
 endmodule

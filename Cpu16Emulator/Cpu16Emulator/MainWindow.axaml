@@ -1,0 +1,33 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:cpu16Emulator="clr-namespace:Cpu16Emulator"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="Cpu16Emulator.MainWindow"
+        KeyDown="InputElement_OnKeyDown"
+        Title="Cpu16 emulator">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="_Open..." Click="FileOpen_OnClick"/>
+                <Separator/>
+                <MenuItem Header="_Exit" Click="Exit_OnClick"/>
+            </MenuItem>
+            <MenuItem Header="_Run">
+                <MenuItem Header="Step" Click="Step_OnClick"/>
+                <MenuItem Header="Step over" Click="StepOver_OnClick"/>
+                <MenuItem Header="Reset" Click="Reset_OnClick"/>
+                <MenuItem Header="Stop" Click="Stop_OnClick"/>
+            </MenuItem>
+        </Menu>
+        <ScrollViewer DockPanel.Dock="Left">
+            <StackPanel Orientation="Vertical">
+                <Label Content="Code"/>
+                <ListBox Name="LbCode" SelectionMode="AlwaysSelected" AutoScrollToSelectedItem="True" Width="310" IsEnabled="False"/>
+            </StackPanel>
+        </ScrollViewer>
+        <Label Name="Status" DockPanel.Dock="Bottom" Content="Ready"/>
+        <cpu16Emulator:CPUView Name="CpuView"/>
+    </DockPanel>
+</Window>

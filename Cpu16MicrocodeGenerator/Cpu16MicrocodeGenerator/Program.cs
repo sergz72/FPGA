@@ -75,7 +75,7 @@ for (var i = 0; i < microcodeLength; i++)
         15 => opSubtype switch
         {
             // in io->register
-            0 => ioWr,
+            0 => ioWr | registersWrSourceIoData | registersWr | registersWrDestInstruction158,
             // out register->io
             1 => ioRd,
             _ => hlt | error | ioRd | ioWr

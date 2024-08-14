@@ -63,7 +63,7 @@ public class GenericCompiler: ICompiler
                 var pc = 0;
                 foreach (var data in binary)
                 {
-                    writer.Write($"{data.Code:x8} // pc={pc:x4} {data.Line}\n");
+                    writer.Write($"{data.Code:x8} // {pc:x4} {data.Line}\n");
                     pc++;
                 }
                 break;
