@@ -11,9 +11,10 @@ module register_file
 	reg [WIDTH - 1:0] registers [0:(1 << SIZE) - 1];
 	
 	always @(posedge clk) begin
-		rd_data <= registers[rd_address];
 		if (wr == 0)
 			registers[wr_address] <= wr_data;
+		else
+			rd_data <= registers[rd_address];
 	end
 endmodule
 
@@ -32,10 +33,12 @@ module register_file2
 	reg [WIDTH - 1:0] registers [0:(1 << SIZE) - 1];
 	
 	always @(posedge clk) begin
-		rd_data1 <= registers[rd_address1];
-		rd_data2 <= registers[rd_address2];
 		if (wr == 0)
 			registers[wr_address] <= wr_data;
+		else begin
+			rd_data1 <= registers[rd_address1];
+			rd_data2 <= registers[rd_address2];
+		end
 	end
 endmodule
 
@@ -56,11 +59,13 @@ module register_file3
 	reg [WIDTH - 1:0] registers [0:(1 << SIZE) - 1];
 	
 	always @(posedge clk) begin
-		rd_data1 <= registers[rd_address1];
-		rd_data2 <= registers[rd_address2];
-		rd_data3 <= registers[rd_address3];
 		if (wr == 0)
 			registers[wr_address] <= wr_data;
+		else begin
+			rd_data1 <= registers[rd_address1];
+			rd_data2 <= registers[rd_address2];
+			rd_data3 <= registers[rd_address3];
+		end
 	end
 endmodule
 

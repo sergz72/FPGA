@@ -63,7 +63,7 @@ module cpu
     
     reg [STACK_BITS - 1:0] sp;
     wire push, pop;
-    wire stack_wr;
+    reg stack_wr = 1;
     wire [BITS-1:0] stack_data;
     reg [BITS-1:0] prev_address;
 
@@ -132,7 +132,7 @@ module cpu
                   .wr_address(registers_wr_address), .wr_data(registers_wr_data), .wr(registers_wr));
 
     register_file #(.WIDTH(BITS), .SIZE(STACK_BITS))
-        stack(.clk(clk1), .rd_address(sp), .rd_data(stack_data),
+        stack(.clk(regs_clk), .rd_address(sp), .rd_data(stack_data),
                   .wr_address(sp), .wr_data(prev_address), .wr(stack_wr));
 
     alu #(.BITS(BITS))
@@ -198,8 +198,6 @@ module cpu
     assign condition_temp = condition_flags & {c, z, alu_out[15]};
     assign condition_pass = (condition_temp[0] | condition_temp[1] | condition_temp[2]) ^ condition_neg;
 
-    assign stack_wr = !push;
-
     always @(negedge clk) begin
         if (error != 0)
             stage <= 0;
@@ -240,6 +238,7 @@ module cpu
                                 hlt <= 0;
                             end
                             registers_wr <= 1;
+                            stack_wr <= 1;
                         end
                         3: begin
                             if (hlt == 0) begin
@@ -260,6 +259,7 @@ module cpu
                                             prev_address <= address + 1;
                                             sp <= sp - 1;
                                         end
+                                        stack_wr <= !push;
                                         address <= address_source ? current_instruction[BITS * 2 - 1:BITS] : registers_data1 + current_instruction[31:16];
                                     end
                                 end
