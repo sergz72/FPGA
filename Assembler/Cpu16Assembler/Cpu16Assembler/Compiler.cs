@@ -3,9 +3,17 @@ using GenericAssembler;
 
 namespace Cpu16Assembler;
 
-internal sealed class Cpu16Compiler(List<string> sources, string outputFileName, OutputFormat outputFormat):
-    GenericCompiler(sources, outputFileName, outputFormat, Creators, new GenericParser())
+internal sealed class Cpu16Compiler: GenericCompiler
 {
+    internal Cpu16Compiler(List<string> sources, string outputFileName, OutputFormat outputFormat, bool noDiv,
+        bool noRem): base(sources, outputFileName, outputFormat, Creators, new GenericParser())
+    {
+        if (!noDiv)
+            Creators.Add("div", new AluInstructionCreator(AluOperations.Div));
+        if (!noRem)
+            Creators.Add("rem", new AluInstructionCreator(AluOperations.Rem));
+    }
+        
     private static readonly Dictionary<string, InstructionCreator> Creators = new()
     {
         {"nop", new OpCodeInstructionCreator(InstructionCodes.Nop)},
@@ -49,8 +57,15 @@ internal sealed class Cpu16Compiler(List<string> sources, string outputFileName,
         {"xor", new AluInstructionCreator(AluOperations.Xor)},
         {"setf", new AluInstructionCreator(AluOperations.Setf)},
         {"mul", new AluInstructionCreator(AluOperations.Mul)},
-        {"div", new AluInstructionCreator(AluOperations.Div)},
-        {"rem", new AluInstructionCreator(AluOperations.Rem)},
+        {"rlc", new AluInstructionCreator(AluOperations.Rlc)},
+        {"rrc", new AluInstructionCreator(AluOperations.Rrc)},
+        {"shlc", new AluInstructionCreator(AluOperations.Shlc)},
+        {"shrc", new AluInstructionCreator(AluOperations.Shrc)},
+        
+        {"setc", new Setf2InstructionCreator(4)},
+        {"setz", new Setf2InstructionCreator(2)},
+        {"setn", new Setf2InstructionCreator(1)},
+        {"clrf", new Setf2InstructionCreator(0)},
         
         {"in", new InInstructionCreator()},
         {"out", new OutInstructionCreator()},

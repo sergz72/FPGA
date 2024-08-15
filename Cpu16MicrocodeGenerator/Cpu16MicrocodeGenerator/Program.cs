@@ -66,11 +66,9 @@ for (var i = 0; i < microcodeLength; i++)
             _ => hlt | error | ioRd | ioWr
         },
         // alu instruction, register->register
-        >= 6 and <= 7 => aluClk | aluOp1SourceRegisters2316 | aluOp2SourceRegisters3124 | registersWr |
-                            registersWrSourceAluOut | registersWrDestInstruction158 | ioRd | ioWr,
+        >= 6 and <= 7 => aluClk | aluOp1SourceRegisters2316 | aluOp2SourceRegisters3124 | BuildWr(i & 0x1F) | ioRd | ioWr,
         // alu instruction, immediate->register
-        >= 8 and <= 9 => aluClk | aluOp1SourceRegisters158 | aluOp2SourceInstruction3116 | registersWr |
-                         registersWrSourceAluOut | registersWrDestInstruction158 | ioRd | ioWr,
+        >= 8 and <= 9 => aluClk | aluOp1SourceRegisters158 | aluOp2SourceInstruction3116 | BuildWr(i & 0x1F) | ioRd | ioWr,
         // operations without ALU with io
         15 => opSubtype switch
         {
@@ -86,6 +84,13 @@ for (var i = 0; i < microcodeLength; i++)
 }
 
 return;
+
+int BuildWr(int aluOp)
+{
+    if (aluOp is 0 or 11) // test or cmp
+        return 0;
+    return registersWr | registersWrSourceAluOut | registersWrDestInstruction158;
+}
 
 int BuildCondition(int opSubType)
 {

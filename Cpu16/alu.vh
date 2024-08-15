@@ -14,5 +14,10 @@
 `define ALU_OP_DIV   13
 `define ALU_OP_REM   14
 `define ALU_OP_SETF  15
+`define ALU_OP_SETF2 16
+`define ALU_OP_RLC   17
+`define ALU_OP_RRC   18
+`define ALU_OP_SHLC  19
+`define ALU_OP_SHRC  20
 
 `define ALU_OPID_WIDTH 5

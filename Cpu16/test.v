@@ -33,8 +33,8 @@ module cpu16_tb;
         #20
         reset = 1;
         #1000
-        interrupt = 1;
-        #10000
+//        interrupt = 1;
+        #100000
         $finish;
     end
 

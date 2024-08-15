@@ -20,6 +20,11 @@ internal static class AluOperations
     internal const uint Div = 13;
     internal const uint Rem = 14;
     internal const uint Setf = 15;
+    internal const uint Setf2 = 16;
+    internal const uint Rlc   = 17;
+    internal const uint Rrc   = 18;
+    internal const uint Shlc  = 19;
+    internal const uint Shrc  = 20;
 }
 
 internal static class InstructionCodes

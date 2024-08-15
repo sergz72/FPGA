@@ -9,15 +9,20 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="11.1.0"/>
+        <PackageReference Include="Avalonia" Version="11.1.3" />
         <PackageReference Include="Avalonia.Desktop" Version="11.1.0"/>
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.1.0"/>
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.1.0"/>
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.1.2" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.1.3" />
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.1.0"/>
+        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.1.3" />
     </ItemGroup>
 
     <ItemGroup>
       <Compile Remove="MainWindowViewModel.cs" />
+      <Compile Remove="IIODevice.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Cpu16EmulatorCommon\Cpu16EmulatorCommon.csproj" />
     </ItemGroup>
 </Project>

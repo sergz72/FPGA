@@ -1,4 +1,5 @@
 `include "alu.vh"
+`include "cpu16.vh"
 
 module alu
 #(parameter BITS = 16)
@@ -28,12 +29,24 @@ module alu
             `ALU_OP_OR: out <= op1 | op2;
             `ALU_OP_XOR: out <= op1 ^ op2;
             `ALU_OP_MUL: {out2, out} <= op1 * op2;
+`ifndef NO_DIV
             `ALU_OP_DIV: {out2, out} <= {op2, op1} / {16'h0, op3};
+`endif
+`ifndef NO_REM
             `ALU_OP_REM: {out2, out} <= {op2, op1} % {16'h0, op3};
+`endif
             `ALU_OP_SETF: begin
                 c <= op1[2];
                 out <= op1[1] ? 0 : (op1[0] ? 'h8000 : 1);
             end
+            `ALU_OP_SETF2: begin
+                c <= op2[2];
+                out <= op2[1] ? 0 : (op2[0] ? 'h8000 : 1);
+            end
+            `ALU_OP_RLC: {out, c} <= {op1[14:0], c, op1[15]}; // rotate left through carry
+            `ALU_OP_RRC: {out, c} <= {c, op1[15:0]}; // rotate right through carry
+            `ALU_OP_SHLC: {c, out} <= {op1, 1'b0}; // shift left through carry
+            `ALU_OP_SHRC: {out, c} <= {1'b0, op1}; // rotate right through carry
             // NOP
             default: begin end
         endcase

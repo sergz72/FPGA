@@ -73,6 +73,10 @@ public partial class CPUView : UserControl
         UpdateContent(LbSp, _cpu.Sp, markChangesAsBold);
         UpdateContent(LbHlt, _cpu.Hlt, markChangesAsBold);
         UpdateContent(LbError, _cpu.Error, markChangesAsBold);
+        UpdateContent(LbC, _cpu.C, markChangesAsBold);
+        UpdateContent(LbZ, _cpu.Z, markChangesAsBold);
+        UpdateContent(LbN, _cpu.N, markChangesAsBold);
+        LbTicks.Content = _cpu.Ticks.ToString();
         var idx = 0;
         for (var row = 1; row < 17; row++)
         {

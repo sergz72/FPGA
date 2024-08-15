@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.Linq;
+using Cpu16EmulatorCommon;
 
 namespace Cpu16Emulator;
 
@@ -8,12 +9,6 @@ public sealed class Cpu16
 {
     internal sealed class Cpu16Exception(string message): Exception(message)
     {}
-
-    public sealed class IoEvent
-    {
-        public ushort Address;
-        public ushort Data;
-    }
     
     public sealed class CodeLine
     {
@@ -54,7 +49,11 @@ public sealed class Cpu16
     private const int ALU_OP_DIV = 13;
     private const int ALU_OP_REM = 14;
     private const int ALU_OP_SETF = 15;
-    
+    private const int ALU_OP_RLC = 17;
+    private const int ALU_OP_RRC = 18;
+    private const int ALU_OP_SHLC = 19;
+    private const int ALU_OP_SHRC = 20;
+
     public readonly CodeLine[] Code;
     public ushort Pc { get; private set; }
     public ushort Sp { get; private set; }
@@ -70,6 +69,9 @@ public sealed class Cpu16
     public bool C { get; private set; }
     public bool Z { get; private set; }
     public bool N { get; private set; }
+
+    public readonly int Speed;
+    public int Ticks { get; private set; }
     
     private bool _interrupt;
     public bool Interrupt
@@ -82,10 +84,11 @@ public sealed class Cpu16
         }
     }
 
-    public EventHandler<IoEvent> IoWriteEventHandler;
-    public EventHandler<IoEvent> IoReadEventHandler;
+    public EventHandler<IoEvent>? IoWriteEventHandler;
+    public EventHandler<IoEvent>? IoReadEventHandler;
+    public EventHandler<int>? TicksEventHandler;
     
-    public Cpu16(string[] code, int stackSize)
+    public Cpu16(string[] code, int stackSize, int speed)
     {
         Code = code.Select((c, i) => new CodeLine(c, (ushort)i)).ToArray();
         Registers = new ushort[256];
@@ -95,6 +98,7 @@ public sealed class Cpu16
             Registers[i] = (ushort)r.Next(0xFFFF);
         for (var i = 0; i < Stack.Length; i++)
             Stack[i] = (ushort)r.Next(0xFFFF);
+        Speed = speed;
         Reset();
     }
 
@@ -119,6 +123,11 @@ public sealed class Cpu16
     }
     public void Step()
     {
+        Ticks++;
+        if (TicksEventHandler == null)
+            throw new Cpu16Exception("null TicksEventHandler");
+        TicksEventHandler(this, Ticks);
+        
         if (Hlt | Error)
             return;
         
@@ -157,7 +166,7 @@ public sealed class Cpu16
                     Call((ushort)(Registers[regNo2] + adder));
                 break;
             case 4: // ret
-                if (!ConditionMatch(instruction))
+                if (!ConditionMatch(opSubtype))
                     Pc = (ushort)(Pc + 1);
                 else
                     Ret();
@@ -167,7 +176,7 @@ public sealed class Cpu16
                 {
                     // reti
                     case <= 6:
-                        if (!ConditionMatch(instruction))
+                        if (!ConditionMatch(opSubtype))
                             Pc = (ushort)(Pc + 1);
                         else
                             Ret();
@@ -189,6 +198,7 @@ public sealed class Cpu16
                         break;
                     case 0x0E: // mov reg reg
                         Registers[regNo1] = (ushort)(Registers[regNo2] + adder);
+                        Pc = (ushort)(Pc + 1);
                         break;
                     case 0x0F:
                         Hlt = true;
@@ -201,11 +211,40 @@ public sealed class Cpu16
                 break;
             case 6: // alu instruction, register->register
             case 7:
-                Registers[regNo1] = AluOperation(instruction & 0x1F, Registers[regNo2], Registers[regNo3], Registers[regNo1]);
+                AluOperation(instruction & 0x1F, regNo1, Registers[regNo2], Registers[regNo3]);
+                Pc = (ushort)(Pc + 1);
                 break;
-            case 8: // alu instruction, register->register
+            case 8: // alu instruction, immediate->register
             case 9:
-                Registers[regNo1] = AluOperation(instruction & 0x1F, Registers[regNo2], immediate, Registers[regNo1]);
+                AluOperation(instruction & 0x1F, regNo1, Registers[regNo1], immediate);
+                Pc = (ushort)(Pc + 1);
+                break;
+            case 15: // operations without ALU with io
+                ushort ioAddress;
+                IoEvent ev;
+                switch (opSubtype)
+                {
+                    case 0: //in io->register
+                        if (IoReadEventHandler == null)
+                            throw new Cpu16Exception("null IoReadEventHandler");
+                        ioAddress = (ushort)(Registers[regNo2] + adder);
+                        ev = new IoEvent { Address = ioAddress };
+                        IoReadEventHandler(this, ev);
+                        Registers[regNo1] = ev.Data;
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    case 1: //out register->io
+                        if (IoWriteEventHandler == null)
+                            throw new Cpu16Exception("null IoWriteEventHandler");
+                        ioAddress = (ushort)(Registers[regNo2] + adder);
+                        ev = new IoEvent { Address = ioAddress, Data = Registers[regNo1] };
+                        IoWriteEventHandler(this, ev);
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    default:
+                        Hlt = Error = true;
+                        break;
+                }
                 break;
             default:
                 Hlt = Error = true;
@@ -213,14 +252,107 @@ public sealed class Cpu16
         }
     }
 
-    private ushort AluOperation(uint opId, ushort op1, ushort op2, ushort op3)
+    private void AluOperation(uint opId, uint regNo1, ushort op2, ushort op3)
     {
-        AluOut = opId switch
+        var op1 = Registers[regNo1];
+        int v;
+        uint uv;
+        bool savedc;
+        switch (opId)
         {
-            ALU_OP_TEST:
-            _ => AluOut
-        };
-        return AluOut;
+            case ALU_OP_TEST:
+                AluOut = (ushort)(op2 & op3);
+                break;
+            case ALU_OP_AND:
+                AluOut = (ushort)(op2 & op3);
+                break;
+            case ALU_OP_OR:
+                AluOut = (ushort)(op2 | op3);
+                break;
+            case ALU_OP_ADD:
+                v = op2 + op3;
+                C = (v & 0xFFFF0000) != 0;
+                AluOut = (ushort)v;
+                break;
+            case ALU_OP_SUB:
+                v = op2 - op3;
+                C = (v & 0xFFFF0000) != 0;
+                AluOut = (ushort)v;
+                break;
+            case ALU_OP_ADC:
+                v = op2 + op3 + (C ? 1: 0);
+                C = (v & 0xFFFF0000) != 0;
+                AluOut = (ushort)v;
+                break;
+            case ALU_OP_SBC:
+                v = op2 - op3 - (C ? 1: 0);
+                C = (v & 0xFFFF0000) != 0;
+                AluOut = (ushort)v;
+                break;
+            case ALU_OP_CMP:
+                v = op2 - op3;
+                C = (v & 0xFFFF0000) != 0;
+                AluOut = (ushort)v;
+                break;
+            case ALU_OP_NEG:
+                AluOut = (ushort)(-(short)op2);
+                break;
+            case ALU_OP_SHL:
+                AluOut = (ushort)(op2 << op3);
+                break;
+            case ALU_OP_SHR:
+                AluOut = (ushort)(op2 >> op3);
+                break;
+            case ALU_OP_XOR:
+                AluOut = (ushort)(op2 ^ op3);
+                break;
+            case ALU_OP_SETF:
+                C = (op2 & 4) != 0;
+                Z = (op2 & 2) != 0;
+                N = (op2 & 1) != 0;
+                break;
+            case ALU_OP_MUL:
+                uv = (uint)(op2 * op3);
+                AluOut = (ushort)uv;
+                AluOut2 = (ushort)(uv >> 16);
+                break;
+            case ALU_OP_DIV:
+                uv = (uint)(((op3 << 16) | op2) / op1);
+                AluOut = (ushort)uv;
+                AluOut2 = (ushort)(uv >> 16);
+                break;
+            case ALU_OP_REM:
+                uv = (uint)(((op3 << 16) | op2) % op1);
+                AluOut = (ushort)uv;
+                AluOut2 = (ushort)(uv >> 16);
+                break;
+            case ALU_OP_RLC:
+                savedc = C;
+                C = (op2 & 0x8000) != 0;
+                AluOut = (ushort)(op2 << 1);
+                if (savedc)
+                    AluOut |= 1;
+                break;
+            case ALU_OP_RRC:
+                savedc = C;
+                C = (op2 & 1) != 0;
+                AluOut = (ushort)(op2 >> 1);
+                if (savedc)
+                    AluOut |= 0x8000;
+                break;
+            case ALU_OP_SHLC:
+                C = (op2 & 0x8000) != 0;
+                AluOut = (ushort)(op2 << 1);
+                break;
+            case ALU_OP_SHRC:
+                C = (op2 & 1) != 0;
+                AluOut = (ushort)(op2 >> 1);
+                break;
+        }
+        Z = AluOut == 0;
+        N = (AluOut & 0x8000) != 0;
+        if (opId != ALU_OP_TEST && opId != ALU_OP_CMP)
+            Registers[regNo1] = AluOut;
     }
 
     private ushort BuildFlags()
@@ -282,6 +414,7 @@ public sealed class Cpu16
 
     public void Reset()
     {
+        Ticks = 0;
         Pc = Sp = 0;
         Hlt = Error = _interrupt = false;
     }

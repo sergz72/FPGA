@@ -2,6 +2,10 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cpu16Emulator", "Cpu16Emulator\Cpu16Emulator.csproj", "{1AB3FAF3-1ECD-45CF-8695-98A020F18841}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cpu16EmulatorCommon", "Cpu16EmulatorCommon\Cpu16EmulatorCommon.csproj", "{09684BA1-7E55-4F01-831D-1A96061BB003}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODeviceMemory", "IODeviceMemory\IODeviceMemory.csproj", "{BDE5CB4E-9014-473D-ACF6-8F74455720E3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +16,13 @@ Global
 		{1AB3FAF3-1ECD-45CF-8695-98A020F18841}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1AB3FAF3-1ECD-45CF-8695-98A020F18841}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1AB3FAF3-1ECD-45CF-8695-98A020F18841}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09684BA1-7E55-4F01-831D-1A96061BB003}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09684BA1-7E55-4F01-831D-1A96061BB003}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09684BA1-7E55-4F01-831D-1A96061BB003}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09684BA1-7E55-4F01-831D-1A96061BB003}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BDE5CB4E-9014-473D-ACF6-8F74455720E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDE5CB4E-9014-473D-ACF6-8F74455720E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BDE5CB4E-9014-473D-ACF6-8F74455720E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BDE5CB4E-9014-473D-ACF6-8F74455720E3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

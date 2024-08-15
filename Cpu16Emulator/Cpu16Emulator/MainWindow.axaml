@@ -27,7 +27,10 @@
                 <ListBox Name="LbCode" SelectionMode="AlwaysSelected" AutoScrollToSelectedItem="True" Width="310" IsEnabled="False"/>
             </StackPanel>
         </ScrollViewer>
-        <Label Name="Status" DockPanel.Dock="Bottom" Content="Ready"/>
-        <cpu16Emulator:CPUView Name="CpuView"/>
+        <Label Name="LStatus" DockPanel.Dock="Bottom" Content="Ready"/>
+        <StackPanel Orientation="Vertical">
+            <cpu16Emulator:CPUView Name="CpuView"/>
+            <StackPanel Name="SpIODevices" Orientation="Horizontal"/>
+        </StackPanel>
     </DockPanel>
 </Window>

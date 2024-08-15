@@ -1,0 +1,6 @@
+{
+  "cpuSpeed": 12500,
+  "IODevices": [
+    { "fileName": "device1.dll", "parameters": "address=0x1000" }
+  ]
+}

@@ -5,6 +5,8 @@ List<string> sources = [];
 var outputFileName = "a.out";
 var outputFileNameExpected = false;
 var outputFormat = OutputFormat.Hex;
+var noDiv = true;
+var noRem = true;
 
 foreach (var arg in args)
 {
@@ -28,6 +30,12 @@ foreach (var arg in args)
                 case "-b":
                     outputFormat = OutputFormat.Bin;
                     break;
+                case "--hdiv": // hardware div
+                    noDiv = false;
+                    break;
+                case "--hrem": // hardware rem
+                    noRem = false;
+                    break;
                 default:
                     Usage();
                     break;
@@ -42,7 +50,7 @@ if (sources.Count == 0 || outputFileNameExpected)
     Usage();
 else
 {
-    var compiler = new Cpu16Compiler(sources, outputFileName, outputFormat);
+    var compiler = new Cpu16Compiler(sources, outputFileName, outputFormat, noDiv, noRem);
     try
     {
         compiler.Compile();

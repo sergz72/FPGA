@@ -2,11 +2,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
              x:Class="Cpu16Emulator.CPUView">
-    <Grid ColumnDefinitions="50,50,50,50,50,50,50,*" RowDefinitions="Auto,Auto,Auto,Auto">
-        <Label Content="Registers" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="8"/>
-        <Grid Name="GRegisters" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="8"
+    <Grid ColumnDefinitions="50,50,30,50,30,20,40,20,20,20,20,20,20,20,50,*" RowDefinitions="Auto,Auto,Auto,Auto">
+        <Label Content="Registers" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="16"/>
+        <Grid Name="GRegisters" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="16"
               ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
               RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"/>
         <Label Content="Pc" Grid.Column="0" Grid.Row="2"/>
@@ -17,8 +17,16 @@
         <Label Name="LbHlt" Grid.Column="5" Grid.Row="2"  Content="0"/>
         <Label Content="Error" Grid.Column="6" Grid.Row="2"/>
         <Label Name="LbError" Grid.Column="7" Grid.Row="2"  Content="0"/>
+        <Label Content="C" Grid.Column="8" Grid.Row="2"/>
+        <Label Name="LbC" Grid.Column="9" Grid.Row="2"  Content="0"/>
+        <Label Content="Z" Grid.Column="10" Grid.Row="2"/>
+        <Label Name="LbZ" Grid.Column="11" Grid.Row="2"  Content="0"/>
+        <Label Content="N" Grid.Column="12" Grid.Row="2"/>
+        <Label Name="LbN" Grid.Column="13" Grid.Row="2"  Content="0"/>
+        <Label Content="Ticks" Grid.Column="14" Grid.Row="2"/>
+        <Label Name="LbTicks" Grid.Column="15" Grid.Row="2"  Content="0"/>
         <Label Content="Stack" Grid.Column="0" Grid.Row="3"/>
-        <Grid Name="GStack" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="7"
+        <Grid Name="GStack" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="15"
               ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
               RowDefinitions="Auto"/>
     </Grid>
