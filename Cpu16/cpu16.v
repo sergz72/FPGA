@@ -26,11 +26,11 @@ stage clk1 clk2 clk3 clk4 rd alu_clk io_rd io_wr registers read/write stack read
 3     0    0    0    1    1  0       0     1     0                    0                next address set, registers_wr set
 
 instruction with io write and without alu
-stage clk1 clk2 clk3 clk4 rd alu_clk io_rd io_wr registers read/write stack read/write io_data_direction comment
-0     1    0    0    0    0  0       1     1     1                    1                1                 instruction read start, io_wr = 1, io_data_direction = 1
-1     0    1    0    0    1  0       1     1     0                    0                1                 instruction read, registers_wr = 1, io_rd = 1
-2     0    0    1    0    1  0       1     1     1                    0                0                 microcode read, io address set, io data set
-3     0    0    0    1    1  0       1     0     0                    0                0                 next address set, registers_wr set, io write
+stage clk1 clk2 clk3 clk4 rd alu_clk io_rd io_wr registers read/write stack read/write comment
+0     1    0    0    0    0  0       1     1     1                    1                instruction read start, io_wr = 1, io_data_direction = 1
+1     0    1    0    0    1  0       1     1     0                    0                instruction read, registers_wr = 1, io_rd = 1
+2     0    0    1    0    1  0       1     1     1                    0                microcode read, io address set, io data set
+3     0    0    0    1    1  0       1     0     0                    0                next address set, registers_wr set, io write
 
 */
 
@@ -52,7 +52,8 @@ module cpu
     output wire io_rd,
     output wire io_wr,
     output wire [BITS - 1:0] io_address,
-    inout wire [BITS - 1:0] io_data,
+    input wire [BITS - 1:0] io_data_in,
+    output wire [BITS - 1:0] io_data_out,
     output reg [1:0] stage = 0
 );
     parameter MICROCODE_WIDTH = 21;
@@ -69,14 +70,13 @@ module cpu
 
     //ALU related
     wire c, z;
-    wire [BITS-1:0] alu_op1, alu_op2, alu_op3, alu_out, alu_out2, io_data_out;
+    wire [BITS-1:0] alu_op1, alu_op2, alu_op3, alu_out, alu_out2;
     wire [`ALU_OPID_WIDTH - 1:0] alu_op_id;
     wire alu_clk, alu_clk_set;
     wire alu_op1_source;
     wire alu_op2_source;
 
     // IO
-    wire io_data_direction;
     wire io_data_out_source;
     wire io_wr_set, io_rd_set;
 
@@ -121,7 +121,7 @@ module cpu
             4: registers_wr_source_f = registers_data2 + {{8{1'b0}}, current_instruction[BITS * 2 - 1: 24]};
             5: registers_wr_source_f = registers_data3;
             6: registers_wr_source_f = {13'h0, alu_out[15], c, z};
-            default: registers_wr_source_f = io_data;
+            default: registers_wr_source_f = io_data_in;
         endcase
     endfunction
 
@@ -189,8 +189,7 @@ module cpu
     assign alu_op2 = alu_op2_f(alu_op2_source);
     assign alu_op3 = registers_data1;
     
-    assign io_data_direction = io_wr_set | clk1 | clk2;
-    assign io_data = io_data_direction ? {BITS{1'bz}} : registers_data1;
+    assign io_data_out = registers_data1;
     assign io_address = registers_data2 + {{8{1'b0}}, current_instruction[BITS * 2 - 1: 24]};
     assign io_rd = io_rd_set | !(clk1 | clk4);
     assign io_wr = io_wr_set | !clk4;
