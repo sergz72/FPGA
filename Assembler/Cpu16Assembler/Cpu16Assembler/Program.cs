@@ -7,6 +7,7 @@ var outputFileNameExpected = false;
 var outputFormat = OutputFormat.Hex;
 var noDiv = true;
 var noRem = true;
+var noMul = true;
 
 foreach (var arg in args)
 {
@@ -30,6 +31,9 @@ foreach (var arg in args)
                 case "-b":
                     outputFormat = OutputFormat.Bin;
                     break;
+                case "--hmul": // hardware mul
+                    noMul = false;
+                    break;
                 case "--hdiv": // hardware div
                     noDiv = false;
                     break;
@@ -50,7 +54,7 @@ if (sources.Count == 0 || outputFileNameExpected)
     Usage();
 else
 {
-    var compiler = new Cpu16Compiler(sources, outputFileName, outputFormat, noDiv, noRem);
+    var compiler = new Cpu16Compiler(sources, outputFileName, outputFormat, noDiv, noRem, noMul);
     try
     {
         compiler.Compile();

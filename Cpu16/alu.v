@@ -28,7 +28,9 @@ module alu
             `ALU_OP_SHR: out <= op1 >> op2; // shift right
             `ALU_OP_OR: out <= op1 | op2;
             `ALU_OP_XOR: out <= op1 ^ op2;
+`ifndef NO_MUL
             `ALU_OP_MUL: {out2, out} <= op1 * op2;
+`endif
 `ifndef NO_DIV
             `ALU_OP_DIV: {out2, out} <= {op2, op1} / {16'h0, op3};
 `endif

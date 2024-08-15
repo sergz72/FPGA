@@ -6,12 +6,14 @@ namespace Cpu16Assembler;
 internal sealed class Cpu16Compiler: GenericCompiler
 {
     internal Cpu16Compiler(List<string> sources, string outputFileName, OutputFormat outputFormat, bool noDiv,
-        bool noRem): base(sources, outputFileName, outputFormat, Creators, new GenericParser())
+        bool noRem, bool noMul): base(sources, outputFileName, outputFormat, Creators, new GenericParser())
     {
         if (!noDiv)
             Creators.Add("div", new AluInstructionCreator(AluOperations.Div));
         if (!noRem)
             Creators.Add("rem", new AluInstructionCreator(AluOperations.Rem));
+        if (!noMul)
+            Creators.Add("mul", new AluInstructionCreator(AluOperations.Mul));
     }
         
     private static readonly Dictionary<string, InstructionCreator> Creators = new()
@@ -56,7 +58,6 @@ internal sealed class Cpu16Compiler: GenericCompiler
         {"or", new AluInstructionCreator(AluOperations.Or)},
         {"xor", new AluInstructionCreator(AluOperations.Xor)},
         {"setf", new AluInstructionCreator(AluOperations.Setf)},
-        {"mul", new AluInstructionCreator(AluOperations.Mul)},
         {"rlc", new AluInstructionCreator(AluOperations.Rlc)},
         {"rrc", new AluInstructionCreator(AluOperations.Rrc)},
         {"shlc", new AluInstructionCreator(AluOperations.Shlc)},
