@@ -5,7 +5,8 @@ module i2c
     input wire wr,
     input wire rd,
     input wire [3:0] address,
-    inout wire [7:0] data,
+    input wire [7:0] data_in,
+    output reg [7:0] data_out,
     output reg scl = 1,
     output reg sda = 1,
     input wire scl_in,
@@ -29,7 +30,6 @@ module i2c
     reg [CLK_DIVIDER_BITS - 1:0] counter = 0;
     reg [7:0] wr_data_mem [0:15];
     reg [7:0] rd_data_mem [0:15];
-    reg [7:0] rd_data;
     reg [7:0] current_byte;
     reg [3:0] bit_count;
     reg [3:0] pointer;
@@ -40,25 +40,24 @@ module i2c
     reg [3:0] stage;
     wire read, restart;
 
-    assign data = rd == 0 ? rd_data : 8'bzzzzzzzz;
     assign read = pointer == wr_length && rd_length != 0;
     assign restart = wr_length > 1 && read;
 
     always @(posedge clk) begin
         if (wr == 0) begin
             if (address < 15)
-                wr_data_mem[address] <= data;
+                wr_data_mem[address] <= data_in;
             else begin
-                wr_length <= data[3:0] + 1;
-                rd_length <= data[7:4];
+                wr_length <= data_in[3:0] + 1;
+                rd_length <= data_in[7:4];
                 busy <= 1;
             end
         end
         else if (rd == 0) begin
             if (address < 15)
-                rd_data <= rd_data_mem[address];
+                data_out <= rd_data_mem[address];
             else
-                rd_data <= {6'b000000, nack, busy};
+                data_out <= {6'b000000, nack, busy};
         end
         if (busy == 0) begin
             counter <= 0;
@@ -164,14 +163,12 @@ endmodule
 
 module i2c_master_tb;
     reg clk, wr, rd, scl_in, sda_in;
-    wire scl, dsa;
+    wire scl, sda;
     reg [3:0] address;
     reg [7:0] data_out;
-    wire [7:0] data;
+    wire [7:0] data_in;
 
-    assign data = wr ? 8'bzzzzzzzz : data_out;
-
-    i2c #(.CLK_DIVIDER_BITS(2)) i(.clk(clk), .wr(wr), .rd(rd), .address(address), .data(data), .scl(scl), .sda(sda),
+    i2c #(.CLK_DIVIDER_BITS(2)) i(.clk(clk), .wr(wr), .rd(rd), .address(address), .data_in(data_out), .data_out(data_in), .scl(scl), .sda(sda),
             .scl_in(scl_in), .sda_in(sda_in));
 
     always #1 clk = ~clk;
