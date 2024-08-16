@@ -23,7 +23,7 @@ internal sealed class LoadfInstructionCreator() : InstructionCreator
     {
         if (parameters.Count == 0 || parameters[0].Type != TokenType.Name)
             throw new InstructionException("register name expected");
-        if (!GetRegisterNumber(parameters[0].StringValue, out var regNo))
+        if (!GetRegisterNumber(compiler, parameters[0].StringValue, out var regNo))
             throw new InstructionException("register name expected");
         return new LoadfInstruction(line, regNo);
     }

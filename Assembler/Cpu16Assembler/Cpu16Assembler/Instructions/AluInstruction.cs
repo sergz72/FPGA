@@ -34,10 +34,10 @@ internal sealed class AluInstructionCreator(uint aluOperation) : InstructionCrea
         if (parameters.Count < 3 || parameters[0].Type != TokenType.Name || !parameters[1].IsChar(','))
             throw new InstructionException("syntax error");
         
-        if (!GetRegisterNumber(parameters[0].StringValue, out var regNo))
+        if (!GetRegisterNumber(compiler, parameters[0].StringValue, out var regNo))
             throw new InstructionException("invalid register 1 name");
         
-        if (parameters[2].Type != TokenType.Name || !GetRegisterNumber(parameters[2].StringValue, out var regNo2))
+        if (parameters[2].Type != TokenType.Name || !GetRegisterNumber(compiler, parameters[2].StringValue, out var regNo2))
         {
             var v = (uint)compiler.CalculateExpression(parameters[2..]);
             return new AluImmediateInstruction(line, aluOperation, regNo, v);
@@ -46,16 +46,16 @@ internal sealed class AluInstructionCreator(uint aluOperation) : InstructionCrea
         if (parameters.Count != 5 || parameters[4].Type != TokenType.Name || !parameters[3].IsChar(','))
             throw new InstructionException("syntax error");
             
-        if (!GetRegisterNumber(parameters[4].StringValue, out var regNo3))
+        if (!GetRegisterNumber(compiler, parameters[4].StringValue, out var regNo3))
             throw new InstructionException("invalid register 3 name");
 
         return new AluRegisterInstruction(line, 0x60, aluOperation, regNo, regNo2, regNo3);
     }
 
-    private Instruction Create1Op(ICompiler _, string line, List<Token> parameters)
+    private Instruction Create1Op(ICompiler compiler, string line, List<Token> parameters)
     {
         if (parameters.Count != 1 || parameters[0].Type != TokenType.Name ||
-            !GetRegisterNumber(parameters[0].StringValue, out var regNo))
+            !GetRegisterNumber(compiler, parameters[0].StringValue, out var regNo))
             throw new InstructionException("register name expected");
         // register-register
         return new AluRegisterInstruction(line, 0x60, aluOperation, regNo, 0, 0);
@@ -64,8 +64,8 @@ internal sealed class AluInstructionCreator(uint aluOperation) : InstructionCrea
     private Instruction Create2OpRegReg(ICompiler compiler, string line, List<Token> parameters)
     {
         if (parameters.Count != 3 || parameters[0].Type != TokenType.Name || !parameters[1].IsChar(',') ||
-            !GetRegisterNumber(parameters[0].StringValue, out var regNo) ||
-            !GetRegisterNumber(parameters[2].StringValue, out var regNo2))
+            !GetRegisterNumber(compiler, parameters[0].StringValue, out var regNo) ||
+            !GetRegisterNumber(compiler, parameters[2].StringValue, out var regNo2))
             throw new InstructionException("syntax error");
         // register-register
         return new AluRegisterInstruction(line, 0x60, aluOperation, regNo, regNo2, 0);
@@ -74,9 +74,9 @@ internal sealed class AluInstructionCreator(uint aluOperation) : InstructionCrea
     private Instruction Create2Op(ICompiler compiler, string line, List<Token> parameters)
     {
         if (parameters.Count < 3 || parameters[0].Type != TokenType.Name || !parameters[1].IsChar(',') ||
-            !GetRegisterNumber(parameters[0].StringValue, out var regNo))
+            !GetRegisterNumber(compiler, parameters[0].StringValue, out var regNo))
             throw new InstructionException("syntax error");
-        if (parameters[2].Type != TokenType.Name || !GetRegisterNumber(parameters[2].StringValue, out var regNo2))
+        if (parameters[2].Type != TokenType.Name || !GetRegisterNumber(compiler, parameters[2].StringValue, out var regNo2))
         {
             // immediate and register
             var v = (uint)compiler.CalculateExpression(parameters[2..]);

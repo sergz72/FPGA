@@ -25,10 +25,10 @@ internal sealed class InInstructionCreator : InstructionCreator
     public override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
     {
         if (parameters.Count < 5 || parameters[0].Type != TokenType.Name || !parameters[1].IsChar(',') ||
-            !GetRegisterNumber(parameters[0].StringValue, out var regNo))
+            !GetRegisterNumber(compiler, parameters[0].StringValue, out var regNo))
             throw new InstructionException("register name and io address expected");
         var start = 2;
-        if (!GetRegisterNumberWithIoFlag(parameters, ref start, true, out var regNo2, out var offset, out var io))
+        if (!GetRegisterNumberWithIoFlag(compiler, parameters, ref start, true, out var regNo2, out var offset, out var io))
             throw new InstructionException("io address expected");
         if (!io)
             throw new InstructionException("incorrect io address format");
@@ -44,7 +44,7 @@ internal sealed class OutInstructionCreator() : InstructionCreator
         if (parameters.Count < 5)
             throw new InstructionException("io address and register name expected");
         int start = 0;
-        if (!GetRegisterNumberWithIoFlag(parameters, ref start, true, out var regNo, out var offset, out var io))
+        if (!GetRegisterNumberWithIoFlag(compiler, parameters, ref start, true, out var regNo, out var offset, out var io))
             throw new InstructionException("io address expected");
         if (!io)
             throw new InstructionException("incorrect io address");
@@ -52,7 +52,7 @@ internal sealed class OutInstructionCreator() : InstructionCreator
             throw new InstructionException(", expected");
         start++;
         if (start == parameters.Count || parameters[start].Type != TokenType.Name ||
-            !GetRegisterNumber(parameters[start].StringValue, out var regNo2))
+            !GetRegisterNumber(compiler, parameters[start].StringValue, out var regNo2))
             throw new InstructionException("register name expected");
 
         return new InOutInstruction(line, InstructionCodes.Out, regNo2, regNo, (uint)offset);

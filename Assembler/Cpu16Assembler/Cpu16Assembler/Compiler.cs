@@ -44,6 +44,7 @@ internal sealed class Cpu16Compiler: GenericCompiler
         {"ser", new RegisterLoadInstructionCreator(0xFFFF)},
         {"inc", new AluImmediateInstructionCreator(AluOperations.Add, 1)},
         {"dec", new AluImmediateInstructionCreator(AluOperations.Add, 0xFFFF)},
+        {"not", new AluImmediateInstructionCreator(AluOperations.Xor, 0xFFFF)},
 
         {"test", new AluInstructionCreator(AluOperations.Test)},
         {"neg", new AluInstructionCreator(AluOperations.Neg)},

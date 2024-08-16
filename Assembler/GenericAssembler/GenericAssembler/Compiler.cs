@@ -9,6 +9,7 @@ public enum OutputFormat
 public interface ICompiler
 {
     int CalculateExpression(List<Token> tokens);
+    string FindRegisterNumber(string registerName);
 }
 
 public class GenericCompiler: ICompiler
@@ -27,6 +28,8 @@ public class GenericCompiler: ICompiler
     protected readonly List<string> Sources;
     protected readonly string OutputFileName;
     protected readonly OutputFormat OutputFileFormat;
+    protected readonly Dictionary<string, int> Constants = [];
+    protected readonly Dictionary<string, string> RegisterNames = [];
 
     public GenericCompiler(List<string> sources, string outputFileName, OutputFormat outputFormat,
                             Dictionary<string, InstructionCreator> instructionCreators, IParser parser)
@@ -37,13 +40,23 @@ public class GenericCompiler: ICompiler
         InstructionCreators = instructionCreators;
         Parser = parser;
     }
-    
+
+    public string FindRegisterNumber(string registerName)
+    {
+        return RegisterNames.GetValueOrDefault(registerName, registerName);
+    }
+
     public int CalculateExpression(List<Token> tokens)
     {
-        if (tokens.Count != 1 || tokens[0].Type != TokenType.Number)
-            throw new InstructionException("only single number is supported");
+        if (tokens.Count != 1 || (tokens[0].Type != TokenType.Number && tokens[0].Type != TokenType.Name))
+            throw new CompilerException(CurrentFileName, CurrentLineNo, "only single number/constant name is supported");
         
-        var result = tokens[0].IntValue;
+        if (tokens[0].Type == TokenType.Number)
+            return tokens[0].IntValue;
+
+        var name = tokens[0].StringValue;
+        if (!Constants.TryGetValue(name, out var result))
+            throw new CompilerException(CurrentFileName, CurrentLineNo, $"undefined constant name: {name}");
 
         return result;
     }
@@ -131,12 +144,24 @@ public class GenericCompiler: ICompiler
 
     protected void CompileEqu(List<Token> tokens)
     {
-        throw new NotImplementedException();
+        if (tokens.Count < 2 || tokens[0].Type != TokenType.Name)
+            throw new CompilerException(CurrentFileName, CurrentLineNo, "syntax error");
+        var name = tokens[0].StringValue;
+        if (Constants.ContainsKey(name))
+            throw new CompilerException(CurrentFileName, CurrentLineNo, $"constant with name {name} already defined");
+        var value = CalculateExpression(tokens[1..]);
+        Constants.Add(name, value);
     }
 
     protected void CompileDef(List<Token> tokens)
     {
-        throw new NotImplementedException();
+        if (tokens.Count != 2 || tokens[0].Type != TokenType.Name || tokens[1].Type != TokenType.Name)
+            throw new CompilerException(CurrentFileName, CurrentLineNo, "syntax error");
+        var name = tokens[0].StringValue;
+        if (RegisterNames.ContainsKey(name))
+            throw new CompilerException(CurrentFileName, CurrentLineNo, $"register with name {name} already defined");
+        var rname = tokens[1].StringValue;
+        RegisterNames.Add(name, rname);
     }
     
     protected Instruction ParseInstruction(string line, List<Token> tokens)

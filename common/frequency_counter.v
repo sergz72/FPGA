@@ -1,109 +1,73 @@
-module frequency_counter_binary
-#(parameter CLK_COUNTER_WIDTH = 32, COUNTER_WIDTH = 32)
+module frequency_counter
+#(parameter CLK_COUNTER_WIDTH = 28, COUNTER_WIDTH = 28)
 (
     input wire clk,
     input wire iclk,
-    input wire reset,
-    input wire [CLK_COUNTER_WIDTH - 1:0] reset_value_div_2,
+    input wire [CLK_COUNTER_WIDTH - 3:0] clk_frequency_div4,
     output reg [COUNTER_WIDTH - 1:0] code,
-    output reg update
+    output reg interrupt = 0,
+    input wire interrupt_clear
 );
-    reg [CLK_COUNTER_WIDTH - 1:0] clk_counter;
-    reg [COUNTER_WIDTH - 1:0] counter;
-    reg [CLK_COUNTER_WIDTH - 1:0] reset_v;
+    reg [CLK_COUNTER_WIDTH - 1:0] clk_counter = 0;
+    reg [COUNTER_WIDTH - 1:0] counter = 0;
+    reg reset = 0;
+    reg stop = 0;
+    reg [1:0] reset_counter = 0;
 
-    always @(posedge iclk) begin
+    always @(posedge iclk or posedge reset) begin
         if (reset == 1)
-            counter = counter + 1;
+            counter <= 0;
+        else if (stop == 0)
+            counter <= counter + 1;
     end
 
-    always @(posedge clk or negedge reset) begin
-        if (reset == 0) begin
-            clk_counter = 0;
-            counter = 0;
-            code = 0;
-            update = 1;
-            reset_v = reset_value_div_2;
+    always @(posedge clk) begin
+        if (clk_counter[CLK_COUNTER_WIDTH - 1:2] == clk_frequency_div4) begin
+            case (reset_counter)
+                0: stop <= 1;
+                1: code <= counter;
+                2: reset <= 1;
+                3: begin
+                    stop <= 0;
+                    reset <= 0;
+                    clk_counter <= 0;
+                    interrupt <= 1;
+                end
+            endcase
+            reset_counter <= reset_counter + 1;
         end
         else begin
-            if (clk_counter == reset_v) begin
-                clk_counter = 0;
-                if (update == 0) begin
-                    code = counter;
-                    counter = 0;
-                end
-                update = ~update;
-            end
-            else
-                clk_counter = clk_counter + 1;
+            if (interrupt_clear == 1)
+                interrupt <= 0;
+            clk_counter <= clk_counter + 1;
         end
     end
 endmodule
 
-module frequency_counter_decade_counters
-#(parameter COUNT = 8, CLK_COUNTER_WIDTH = 32)
-(
-    input wire clk,
-    input wire iclk,
-    input wire reset,
-    input wire [CLK_COUNTER_WIDTH - 1:0] reset_value_div_2,
-    output reg [COUNT * 4 - 1:0] code,
-    output reg update
-);
-    reg [CLK_COUNTER_WIDTH - 1:0] clk_counter;
-    reg [CLK_COUNTER_WIDTH - 1 - 1:0] reset_v;
-    wire [COUNT * 4 - 1:0] value;
-    reg reset_counters;
-    wire counters_reset = reset & reset_counters;
+module frequency_counter_tb;
+    reg clk, iclk;
+    wire [27:0] code;
+    wire interrupt;
+    reg interrupt_clear;
 
-    decade_counters counters(.clk(iclk), .reset(counters_reset), .value(value));
+    frequency_counter fc(.clk(clk), .iclk(iclk), .clk_frequency_div4(26'd100), .code(code), .interrupt(interrupt), .interrupt_clear(interrupt_clear));
 
-    always @(posedge clk or negedge reset) begin
-        if (reset == 0) begin
-            reset_counters = 1;
-            reset_v = reset_value_div_2;
-            code = 0;
-            update = 1;
-            clk_counter = 0;
-        end
-        else begin
-            if (clk_counter == reset_v) begin
-                clk_counter = 0;
-                if (update == 0) begin
-                    code = value;
-                    reset_counters = 0;
-                end
-                update = ~update;
-            end
-            else begin
-                reset_counters = 1;
-                clk_counter = clk_counter + 1;
-            end
-        end
-    end
-endmodule
-
-module frequency_counters_tb;
-    reg clk, iclk, reset;
-    wire [31:0] binary_code;
-    wire [31:0] bcd_code;
-    wire binary_update;
-    wire bcd_update;
-
-    frequency_counter_binary fcb(.clk(clk), .iclk(iclk), .reset(reset), .reset_value_div_2(32'd500), .code(binary_code), .update(binary_update));
-    frequency_counter_decade_counters fcd(.clk(clk), .iclk(iclk), .reset(reset), .reset_value_div_2(32'd500), .code(bcd_code), .update(bcd_update));
-
-    always #1 clk = ~clk;
-    always #2 iclk = ~iclk;
+    always #2 clk = ~clk;
+    always #1 iclk = ~iclk;
 
     initial begin
-        $monitor("time=%t binary_code=%d binary_update=%d bcd_code=0x%0x bcd_update=%d", $time, binary_code, binary_update, bcd_code, bcd_update);
+        $monitor("time=%t code=%d interrupt=%d", $time, code, interrupt);
         clk = 0;
         iclk = 0;
-        reset = 0;
+        interrupt_clear = 0;
+        #1700
+        interrupt_clear = 1;
         #20
-        reset = 1;
-        #10000
+        interrupt_clear = 0;
+        #1700
+        interrupt_clear = 1;
+        #20
+        interrupt_clear = 0;
         $finish;
     end
 endmodule

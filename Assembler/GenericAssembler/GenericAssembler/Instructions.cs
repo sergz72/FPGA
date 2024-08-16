@@ -15,9 +15,10 @@ public abstract class InstructionCreator
 {
     public abstract Instruction Create(ICompiler compiler, string line, List<Token> parameters);
     
-    protected static bool GetRegisterNumber(string parameter, out uint regNo)
+    protected static bool GetRegisterNumber(ICompiler compiler, string parameter, out uint regNo)
     {
-        if ((parameter.StartsWith('r') || parameter.StartsWith('R')) && uint.TryParse(parameter[1..], out regNo))
+        var renamed = compiler.FindRegisterNumber(parameter);
+        if ((renamed.StartsWith('r') || renamed.StartsWith('R')) && uint.TryParse(renamed[1..], out regNo))
         {
             if (regNo > 255)
                 throw new InstructionException("invalid register number");
@@ -36,7 +37,7 @@ public abstract class InstructionCreator
         offset = parameters[start].IntValue;
     }
 
-    protected static bool GetRegisterNumberWithIoFlag(List<Token> parameters, ref int start, bool withOffset,
+    protected static bool GetRegisterNumberWithIoFlag(ICompiler compiler, List<Token> parameters, ref int start, bool withOffset,
                                                         out uint regNo, out int offset, out bool io)
     {
         if (start == parameters.Count)
@@ -53,7 +54,7 @@ public abstract class InstructionCreator
             throw new InstructionException("unexpected end of line");
 
         if (parameters[start].Type != TokenType.Name ||
-            !GetRegisterNumber(parameters[start].StringValue, out regNo))
+            !GetRegisterNumber(compiler, parameters[start].StringValue, out regNo))
         {
             if (io) throw new InstructionException("register name expected");
             regNo = 0;

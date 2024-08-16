@@ -29,13 +29,13 @@ internal sealed class MovInstructionCreator() : InstructionCreator
     {
         if (parameters.Count < 3 || parameters[0].Type != TokenType.Name)
             throw new InstructionException("register name and register/immediate expected");
-        if (!GetRegisterNumber(parameters[0].StringValue, out var regNo))
+        if (!GetRegisterNumber(compiler, parameters[0].StringValue, out var regNo))
             throw new InstructionException("register name expected");
         if (!parameters[1].IsChar(','))
             throw new InstructionException(", expected");
         if (parameters[2].StringValue.Equals("alu_out_2", StringComparison.CurrentCultureIgnoreCase))
             return new MovInstruction(line, InstructionCodes.MovAluOut2, regNo, 0, 0);
-        if (GetRegisterNumber(parameters[2].StringValue, out var regNo2))
+        if (GetRegisterNumber(compiler, parameters[2].StringValue, out var regNo2))
         {
             var adder = 0;
             if (parameters.Count > 3)

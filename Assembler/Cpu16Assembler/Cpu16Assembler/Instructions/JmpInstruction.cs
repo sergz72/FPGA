@@ -25,7 +25,7 @@ internal sealed class JmpInstructionCreator(uint addrCode, uint regCode) : Instr
     {
         if ((parameters.Count != 1 && parameters.Count != 3) || parameters[0].Type != TokenType.Name)
             throw new InstructionException("label name and/or register name expected");
-        if (GetRegisterNumber(parameters[0].StringValue, out var regNo))
+        if (GetRegisterNumber(compiler, parameters[0].StringValue, out var regNo))
         {
             string? labelName = null;
             
