@@ -2,8 +2,7 @@ module main
 #(parameter CLK_FREQUENCY_DIV4 = 27000000/4, RESET_COUNTER_BITS = 16)
 (
     input wire clk,
-    input wire comp_data_hi,
-    input wire comp_data_lo,
+    input wire iclk,
     output wire hlt,
     output wire error,
     output reg scl = 1,
@@ -16,11 +15,7 @@ module main
     output wire ks_cs2,
     output wire ks_e,
     output reg ks_reset = 0,
-    output reg [7:0] ks_data,
-    output wire led_one,
-    output wire led_zero,
-    output wire led_floating,
-    output wire led_pulse
+    output reg [7:0] ks_data
 );
     wire [15:0] address;
     reg [31:0] data;
@@ -54,13 +49,7 @@ module main
     cpu cpu16(.clk(clk), .rd(rd), .reset(ks_reset), .address(address), .data(data), .hlt(hlt), .io_rd(io_rd), .stage(stage),
                  .io_wr(io_wr), .io_data_out(io_data_in), .io_data_in(io_data_out), .io_address(io_address), .error(error), .interrupt(interrupt));
 
-    frequency_counter fc(.clk(clk), .iclk(comp_data_hi), .clk_frequency_div4(CLK_FREQUENCY_DIV4), .code(frequency_code), .interrupt(interrupt),
-                            .interrupt_clear(interrupt_clear));
-
-    logic_probe_led #(.COUNTER_WIDTH(19))
-        probe(.clk(clk), .comp_data_hi(comp_data_hi), .comp_data_lo(comp_data_lo),
-                .led_one(led_one), .led_zero(led_zero), .led_floating(led_floating),
-                .led_pulse(led_pulse));
+    frequency_counter fc(.clk(clk), .iclk(iclk), .clk_frequency_div4(CLK_FREQUENCY_DIV4), .code(frequency_code), .interrupt(interrupt), .interrupt_clear(interrupt_clear));
 
     always @(posedge clk) begin
         if (reset_counter == {RESET_COUNTER_BITS{1'b1}})
