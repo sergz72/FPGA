@@ -6,10 +6,8 @@ module main
     input wire comp_data_lo,
     output wire hlt,
     output wire error,
-    output reg scl = 1,
-    output reg sda = 1,
-    input wire scl_in,
-    input wire sda_in,
+    inout wire scl_io,
+    inout wire sda_io,
     // ks0108
     output wire ks_dc,
     output wire ks_cs1,
@@ -37,8 +35,10 @@ module main
     reg [RESET_COUNTER_BITS - 1:0] reset_counter = 0;
     wire ks_selected;
     wire [1:0] stage;
+    reg scl = 1;
+    reg sda = 1;
 
-    reg [31:0] rom [0:1023];
+    reg [31:0] rom [0:2047];
 
     reg [15:0] ram [0:511];
 
@@ -48,6 +48,9 @@ module main
         $readmemh("asm/a.out", rom);
         $readmemh("characters.mem", characters_rom);
     end
+
+    assign scl_io = scl ? 1'bz : 0;
+    assign sda_io = sda ? 1'bz : 0;
 
 	assign io_clk = io_rd & io_wr;
 
@@ -70,14 +73,14 @@ module main
     end
 
     always @(negedge rd) begin
-        data <= rom[address[9:0]];
+        data <= rom[address[10:0]];
     end
 
-    assign ks_selected = io_address[11:9] == 3;
+    assign ks_selected = io_address[12:10] == 3;
     assign {ks_dc, ks_cs1, ks_cs2, ks_e} = ks_selected ? {io_address[2:0], !io_wr} : 4'b0110;
 
     always @(negedge io_clk) begin
-        case (io_address[11:9])
+        case (io_address[12:10])
             0: begin
                 if (io_wr == 0)
                     ram[io_address[8:0]] <= io_data_in;
@@ -89,7 +92,7 @@ module main
                 if (io_wr == 0)
                     {scl, sda} <= io_data_in[1:0];
                 else
-                    io_data_out <= {14'b0, scl_in, sda_in};
+                    io_data_out <= {14'b0, scl_io, sda_io};
             end
             3: begin
                 if (io_wr == 0)
