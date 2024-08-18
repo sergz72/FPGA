@@ -73,7 +73,7 @@ prepare_freq_data:
     mov r16, frequency_code_lo
     call div3216
     mov r45, r19
-    add r45, 48 ; '0'
+    add r45, '0'
     call div3216
     mov r44, r19
     add r44, 48 ; '0'

@@ -42,7 +42,9 @@ public class GenericParser: IParser
         Name,
         Number,
         HexNumber,
-        Symbol
+        Symbol,
+        Char1,
+        Char2
     }
     
     protected ParserMode Mode;
@@ -146,6 +148,22 @@ public class GenericParser: IParser
         return false;
     }
 
+    protected bool ModeChar1Handler(char c)
+    {
+        IntValue = c;
+        Mode = ParserMode.Char2;
+        return false;
+    }
+
+    protected bool ModeChar2Handler(char c)
+    {
+        if (c != '\'')
+            throw new ParserException("' expected");
+        Result.Add(new Token(TokenType.Number, "", IntValue));
+        Mode = ParserMode.None;
+        return false;
+    }
+    
     protected bool ModeNoneHandler(char c)
     {
         switch (c)
@@ -182,6 +200,9 @@ public class GenericParser: IParser
             case ']':
                 Result.Add(new Token(c));
                 break;
+            case '\'':
+                Mode = ParserMode.Char1;
+                break;
             default:
                 throw new ParserException("unknown symbol " + c);
         }
@@ -205,6 +226,9 @@ public class GenericParser: IParser
                 Result.Add(new Token(TokenType.Symbol, Builder.ToString(), 0));
                 Builder.Clear();
                 break;
+            case ParserMode.Char1:
+            case ParserMode.Char2:
+                throw new ParserException("unexpected end of file");
         }
     }
     
@@ -221,7 +245,9 @@ public class GenericParser: IParser
                 ParserMode.Number => ModeNumberHandler(c),
                 ParserMode.HexNumber => ModeHexNumberHandler(c),
                 ParserMode.Name => ModeNameHandler(c),
-                ParserMode.Symbol => ModeSymbolHandler(c)
+                ParserMode.Symbol => ModeSymbolHandler(c),
+                ParserMode.Char1 => ModeChar1Handler(c),
+                ParserMode.Char2 => ModeChar2Handler(c)
             };
             if (exit)
                 break;
