@@ -6,7 +6,7 @@ using Cpu16EmulatorCommon;
 
 namespace Cpu16Emulator;
 
-public partial class MainWindow : Window
+public partial class MainWindow : Window, ILogger
 {
     private readonly Cpu16 _cpu;
     private readonly IODevice[] _devices;
@@ -28,7 +28,7 @@ public partial class MainWindow : Window
 
         foreach (var d in devices)
         {
-            var c = d.Device.Init(d.Parameters);
+            var c = d.Device.Init(d.Parameters, this);
             if (c != null)
                 SpIODevices.Children.Add(c);
         }
@@ -38,14 +38,18 @@ public partial class MainWindow : Window
     {
         foreach (var d in _devices)
             d.Device.IoRead(e);
-        LStatus.Content = $"IO read, address = {e.Address:X4}";
+        Info($"IO read, address = {e.Address:X4}");
+        if (e.Interrupt != null)
+            _cpu.Interrupt = (bool)e.Interrupt;
     }
 
     private void IoWrite(object? sender, IoEvent e)
     {
         foreach (var d in _devices)
             d.Device.IoWrite(e);
-        LStatus.Content = $"IO write, address = {e.Address:X4}, data = {e.Data:X4}";
+        Info($"IO write, address = {e.Address:X4}, data = {e.Data:X4}");
+        if (e.Interrupt != null)
+            _cpu.Interrupt = (bool)e.Interrupt;
     }
 
     private void TicksUpdate(object? sender, int ticks)
@@ -89,27 +93,48 @@ public partial class MainWindow : Window
 
     private void Step_OnClick(object? sender, RoutedEventArgs e)
     {
-        LStatus.Content = "";
         _cpu.Step();
         ViewsUpdate();
     }
 
     private void StepOver_OnClick(object? sender, RoutedEventArgs e)
     {
-        LStatus.Content = "";
         _cpu.StepOver();
         ViewsUpdate();
     }
 
     private void Reset_OnClick(object? sender, RoutedEventArgs e)
     {
-        LStatus.Content = "";
         _cpu.Reset();
         ViewsUpdate();
     }
 
     private void Stop_OnClick(object? sender, RoutedEventArgs e)
     {
-        LStatus.Content = "";
+    }
+
+    private void Log(string level, string message)
+    {
+        LbLog.Items.Add($"{_cpu.Ticks:d10} {level} {message}");
+    }
+    
+    public void Debug(string message)
+    {
+        Log("DEBUG", message);
+    }
+
+    public void Info(string message)
+    {
+        Log("INFO", message);
+    }
+
+    public void Warning(string message)
+    {
+        Log("WARN", message);
+    }
+
+    public void Error(string message)
+    {
+        Log("ERROR", message);
     }
 }

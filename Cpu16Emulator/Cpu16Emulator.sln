@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cpu16EmulatorCommon", "Cpu1
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODeviceMemory", "IODeviceMemory\IODeviceMemory.csproj", "{BDE5CB4E-9014-473D-ACF6-8F74455720E3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODeviceI2CSlave", "IODeviceI2CSlave\IODeviceI2CSlave.csproj", "{8D300DB3-63C4-4106-96C5-8AF65457A8C6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{BDE5CB4E-9014-473D-ACF6-8F74455720E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BDE5CB4E-9014-473D-ACF6-8F74455720E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BDE5CB4E-9014-473D-ACF6-8F74455720E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D300DB3-63C4-4106-96C5-8AF65457A8C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D300DB3-63C4-4106-96C5-8AF65457A8C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D300DB3-63C4-4106-96C5-8AF65457A8C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D300DB3-63C4-4106-96C5-8AF65457A8C6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

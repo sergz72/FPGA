@@ -2,9 +2,17 @@
 
 namespace Cpu16EmulatorCommon;
 
+public interface ILogger
+{
+    void Debug(string message);
+    void Info(string message);
+    void Warning(string message);
+    void Error(string message);
+}
+
 public interface IIODevice
 {
-    Control? Init(string parameters);
+    Control? Init(string parameters, ILogger logger);
     void IoRead(IoEvent ev);
     void IoWrite(IoEvent ev);
     bool? TicksUpdate(int cpuSped, int ticks);
@@ -32,6 +40,7 @@ public sealed class IoEvent
 {
     public ushort Address;
     public ushort Data;
+    public bool? Interrupt;
 }
 
 public class IODeviceException(string message): Exception(message)

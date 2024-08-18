@@ -9,7 +9,7 @@ public sealed class IODeviceMemory: IIODevice
     private ushort _startAddress, _endAddress;
     private ushort[] _memory = [];
     
-    public Control? Init(string parameters)
+    public Control? Init(string parameters, ILogger _)
     {
         var kv = IODeviceParametersParser.ParseParameters(parameters);
         if (!kv.TryGetValue("address", out var sAddress) ||
