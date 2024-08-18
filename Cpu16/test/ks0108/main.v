@@ -1,5 +1,7 @@
+`include "main.vh"
+
 module main
-#(parameter CLK_FREQUENCY_DIV4 = 27000000/4, RESET_COUNTER_BITS = 16)
+#(parameter CLK_FREQUENCY_DIV4 = 27000000/4, RESET_COUNTER_BITS = 16, ROM_BITS = 9, RAM_BITS = 9, CHARACTER_ROM_BITS = 8)
 (
     input wire clk,
     input wire comp_data_hi,
@@ -8,6 +10,7 @@ module main
     output wire error,
     inout wire scl_io,
     inout wire sda_io,
+    input wire button,
     // ks0108
     output wire ks_dc,
     output wire ks_cs1,
@@ -38,15 +41,21 @@ module main
     reg scl = 1;
     reg sda = 1;
 
-    reg [31:0] rom [0:2047];
+    reg [31:0] rom [0:(1<<ROM_BITS)-1];
 
-    reg [15:0] ram [0:511];
+`ifdef RAM
+    reg [15:0] ram [0:(1<<RAM_BITS)-1];
+`endif
 
-    reg [15:0] characters_rom [0:511];
+`ifdef CHARACTER_ROM
+    reg [15:0] characters_rom [0:(1<<CHARACTER_ROM_BITS)-1];
+`endif
 
     initial begin
         $readmemh("asm/a.out", rom);
+`ifdef CHARACTER_ROM
         $readmemh("characters.mem", characters_rom);
+`endif        
     end
 
     assign scl_io = scl ? 1'bz : 0;
@@ -73,39 +82,39 @@ module main
     end
 
     always @(negedge rd) begin
-        data <= rom[address[10:0]];
+        data <= rom[address[ROM_BITS-1:0]];
     end
 
-    assign ks_selected = io_address[12:10] == 3;
+    assign ks_selected = io_address[15:13] == 0;
     assign {ks_dc, ks_cs1, ks_cs2, ks_e} = ks_selected ? {io_address[2:0], !io_wr} : 4'b0110;
 
     always @(negedge io_clk) begin
-        case (io_address[12:10])
+        case (io_address[15:13])
             0: begin
                 if (io_wr == 0)
-                    ram[io_address[8:0]] <= io_data_in;
-                else
-                    io_data_out <= ram[io_address[8:0]];
+                    ks_data <= io_data_in[7:0];
             end
-            1: io_data_out <= characters_rom[io_address[8:0]];
+            1: begin
+                io_data_out <= io_address[0] ? {4'b0, frequency_code[27:16]} : frequency_code[15:0];
+                interrupt_clear <= !io_address[0];
+            end
             2: begin
                 if (io_wr == 0)
                     {scl, sda} <= io_data_in[1:0];
                 else
-                    io_data_out <= {14'b0, scl_io, sda_io};
+                    io_data_out <= {13'b0, button, scl_io, sda_io};
             end
+`ifdef RAM            
             3: begin
                 if (io_wr == 0)
-                    ks_data <= io_data_in[7:0];
+                    ram[io_address[RAM_BITS-1:0]] <= io_data_in;
+                else
+                    io_data_out <= ram[io_address[RAM_BITS-1:0]];
             end
-            4: begin
-                io_data_out <= frequency_code[15:0];
-                interrupt_clear <= 1;
-            end
-            default: begin
-                io_data_out <= {4'b0, frequency_code[27:16]};
-                interrupt_clear <= 0;
-            end
+`endif            
+`ifdef CHARACTER_ROM
+            4: io_data_out <= characters_rom[io_address[CHARACTER_ROM_BITS-1:0]];
+`endif            
         endcase
     end
 

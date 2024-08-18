@@ -56,7 +56,7 @@ module cpu
     output wire [BITS - 1:0] io_data_out,
     output reg [1:0] stage = 0
 );
-    parameter MICROCODE_WIDTH = 21;
+    localparam MICROCODE_WIDTH = 21;
 
     wire clk1, clk2, clk3, clk4;
 
