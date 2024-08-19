@@ -12,12 +12,10 @@ public sealed class IODeviceMemory: IIODevice
     public Control? Init(string parameters, ILogger _)
     {
         var kv = IODeviceParametersParser.ParseParameters(parameters);
-        if (!kv.TryGetValue("address", out var sAddress) ||
-            !ushort.TryParse(sAddress, NumberStyles.AllowHexSpecifier, null, out _startAddress))
-            throw new IODeviceException("missing or wrong address in parameters string");
-        if (!kv.TryGetValue("length", out var sLength) ||
-            !ushort.TryParse(sLength, NumberStyles.AllowHexSpecifier, null, out var length))
-            throw new IODeviceException("missing or wrong length in parameters string");
+        _startAddress = IODeviceParametersParser.ParseUShort(kv, "address") ?? 
+                        throw new IODeviceException("memory: missing or wrong address parameter");
+        var length = IODeviceParametersParser.ParseUShort(kv, "length") ?? 
+                        throw new IODeviceException("memory: missing or wrong length parameter");
         _endAddress = (ushort)(_startAddress + length - 1);
         _memory = new ushort[length];
         return null;

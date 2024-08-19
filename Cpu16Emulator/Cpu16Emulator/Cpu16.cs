@@ -1,38 +1,44 @@
 ﻿using System;
 using System.Globalization;
 using System.Linq;
+using Avalonia.Media;
 using Cpu16EmulatorCommon;
 
 namespace Cpu16Emulator;
 
+internal sealed class Cpu16Exception(string message): Exception(message)
+{}
+
+public sealed class CodeLine
+{
+    public readonly uint Pc;
+    public readonly uint Instruction;
+    public readonly string SourceCode;
+    
+    private readonly Cpu16 _cpu;
+    
+    public IBrush Background => Pc == _cpu.Pc ? Brushes.LightBlue : Brushes.White;
+        
+    internal CodeLine(string line, uint pc, Cpu16 cpu)
+    {
+        var parts = line.Split("//");
+        if (parts.Length != 2 || !uint.TryParse(parts[0], NumberStyles.HexNumber, null, out Instruction)
+                              || parts[1][0] != ' ' || !char.IsAsciiHexDigit(parts[1][1]) || !char.IsAsciiHexDigit(parts[1][2]) ||
+                              !char.IsAsciiHexDigit(parts[1][3]) || !char.IsAsciiHexDigit(parts[1][4]) || parts[1][5] != ' ')
+            throw new Cpu16Exception($"invalid code line: {line}");
+        SourceCode = parts[1][6..].Replace("\t", "");
+        Pc = pc;
+        _cpu = cpu;
+    }
+
+    public override string ToString()
+    {
+        return Pc.ToString("X4") + " " + SourceCode;
+    }
+}
+
 public sealed class Cpu16
 {
-    internal sealed class Cpu16Exception(string message): Exception(message)
-    {}
-    
-    public sealed class CodeLine
-    {
-        public readonly uint Pc;
-        public readonly uint Instruction;
-        public readonly string SourceCode;
-        
-        internal CodeLine(string line, uint pc)
-        {
-            var parts = line.Split("//");
-            if (parts.Length != 2 || !uint.TryParse(parts[0], NumberStyles.HexNumber, null, out Instruction)
-                || parts[1][0] != ' ' || !char.IsAsciiHexDigit(parts[1][1]) || !char.IsAsciiHexDigit(parts[1][2]) ||
-                !char.IsAsciiHexDigit(parts[1][3]) || !char.IsAsciiHexDigit(parts[1][4]) || parts[1][5] != ' ')
-                throw new Cpu16Exception($"invalid code line: {line}");
-            SourceCode = parts[1][6..].Replace("\t", "");
-            Pc = pc;
-        }
-
-        public override string ToString()
-        {
-            return Pc.ToString("X4") + " " + SourceCode;
-        }
-    }
-    
     private const int ALU_OP_TEST = 0;
     private const int ALU_OP_NEG = 1;
     private const int ALU_OP_ADD = 2;
@@ -90,7 +96,7 @@ public sealed class Cpu16
     
     public Cpu16(string[] code, int stackSize, int speed)
     {
-        Code = code.Select((c, i) => new CodeLine(c, (ushort)i)).ToArray();
+        Code = code.Select((c, i) => new CodeLine(c, (ushort)i, this)).ToArray();
         Registers = new ushort[256];
         Stack = new ushort[stackSize];
         var r = new Random();

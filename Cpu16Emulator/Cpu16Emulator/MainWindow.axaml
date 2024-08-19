@@ -24,7 +24,13 @@
         <ScrollViewer DockPanel.Dock="Left">
             <StackPanel Orientation="Vertical">
                 <Label Content="Code"/>
-                <ListBox Name="LbCode" SelectionMode="AlwaysSelected" AutoScrollToSelectedItem="True" Width="310" IsEnabled="False"/>
+                <cpu16Emulator:CodeControl Name="LbCode" Width="510">
+                    <cpu16Emulator:CodeControl.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Add breakpoint" Click="AddBreakpoint_OnClick"/>
+                        </ContextMenu>
+                    </cpu16Emulator:CodeControl.ContextMenu>
+                </cpu16Emulator:CodeControl>
             </StackPanel>
         </ScrollViewer>
         <ListBox Name="LbLog" DockPanel.Dock="Right"/>

@@ -2,6 +2,7 @@ using System;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Cpu16EmulatorCommon;
 
 namespace Cpu16Emulator;
@@ -18,8 +19,7 @@ public partial class MainWindow : Window, ILogger
         _cpu = cpu;
         _devices = devices;
 
-        foreach (var line in cpu.Code)
-            LbCode.Items.Add(line);
+        LbCode.Lines = _cpu.Code;
 
         CpuView.Cpu = cpu;
         cpu.IoReadEventHandler = IoRead;
@@ -79,7 +79,7 @@ public partial class MainWindow : Window, ILogger
     private void ViewsUpdate()
     {
         CpuView.Update();
-        LbCode.SelectedIndex = _cpu.Pc;
+        LbCode.InvalidateVisual();
     }
 
     private void Exit_OnClick(object? sender, RoutedEventArgs e)
@@ -136,5 +136,9 @@ public partial class MainWindow : Window, ILogger
     public void Error(string message)
     {
         Log("ERROR", message);
+    }
+
+    private void AddBreakpoint_OnClick(object? sender, RoutedEventArgs e)
+    {
     }
 }

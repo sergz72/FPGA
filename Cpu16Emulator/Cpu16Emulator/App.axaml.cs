@@ -21,7 +21,7 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            if (desktop.Args?.Length != 1)
+            if (desktop.Args?.Length != 2)
             {
                 desktop.MainWindow = new MessageBoxWindow("Error", "Invalid number of arguments");
             }
@@ -29,7 +29,8 @@ public partial class App : Application
             {
                 try
                 {
-                    var config = JsonSerializer.Deserialize<Configuration>(desktop.Args[0]);
+                    var stream = File.OpenRead(desktop.Args[0]);
+                    var config = JsonSerializer.Deserialize<Configuration>(stream);
                     if (config == null || config.CpuSpeed == 0)
                         throw new Exception("incorrect configuration file");
                     var ioDevices = LoadIODevices(config.IODevices);
@@ -54,7 +55,7 @@ public partial class App : Application
     
     private static IODevice[] LoadIODevices(IODeviceFile deviceFile)
     {
-        var assembly = Assembly.LoadFile(deviceFile.FileName);
+        var assembly = Assembly.LoadFile(Path.GetFullPath(deviceFile.FileName));
         return assembly.GetExportedTypes()
             .Where(t => typeof(IIODevice).IsAssignableFrom(t))
             .Select(t => new IODevice {

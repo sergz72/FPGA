@@ -1,24 +1,21 @@
-.equ FREQUENCY_CODE_LO_ADDRESS $2000
-.equ FREQUENCY_CODE_HI_ADDRESS $2001
+.equ FREQUENCY_CODE_ADDRESS $2000
 .equ DISPLAY_CONTROLLER_ADDRESS 0
 .equ MCP3425_ADDRESS1 0
 .equ MCP3425_ADDRESS2 0
 .equ V_MUL 3125
 .equ V_DIV 10000
 
-.def frequency_code_lo_address r64
-.def frequency_code_hi_address r65
-.def frequency_code_lo r66
-.def frequency_code_hi r67
-.def display_controller_address r68
+.def frequency_code_address r64
+.def frequency_code_lo r65
+.def frequency_code_hi r66
+.def display_controller_address r67
 
 jmp start
-    in frequency_code_lo, [frequency_code_lo_address]
-    in frequency_code_hi, [frequency_code_hi_address]
+    in frequency_code_lo, [frequency_code_address]
+    in frequency_code_hi, [frequency_code_address+1]
     reti
 start:
-    mov frequency_code_lo_address, FREQUENCY_CODE_LO_ADDRESS
-    mov frequency_code_hi_address, FREQUENCY_CODE_HI_ADDRESS
+    mov frequency_code_address, FREQUENCY_CODE_ADDRESS
     mov display_controller_address, DISPLAY_CONTROLLER_ADDRESS
 
     mov r17, $88

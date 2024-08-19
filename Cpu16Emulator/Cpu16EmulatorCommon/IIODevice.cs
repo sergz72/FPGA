@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls;
+﻿using System.Globalization;
+using Avalonia.Controls;
 
 namespace Cpu16EmulatorCommon;
 
@@ -33,6 +34,21 @@ public static class IODeviceParametersParser
         }
 
         return result;
+    }
+
+    public static ushort? ParseUShort(Dictionary<string, string> kv, string parameterName)
+    {
+        if (!kv.TryGetValue(parameterName, out var sValue))
+            return null;
+        if (sValue.StartsWith("0x"))
+        {
+            if (!ushort.TryParse(sValue[2..], NumberStyles.AllowHexSpecifier, null, out var hValue))
+                return null;
+            return hValue;
+        }
+        if (!ushort.TryParse(sValue, out var value))
+            return null;
+        return value;
     }
 }
 

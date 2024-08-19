@@ -10,6 +10,8 @@ public interface ICompiler
 {
     int CalculateExpression(List<Token> tokens);
     string FindRegisterNumber(string registerName);
+    int FindConstantValue(string name);
+    void RaiseException(string errorMessage);
 }
 
 public class GenericCompiler: ICompiler
@@ -30,6 +32,9 @@ public class GenericCompiler: ICompiler
     protected readonly OutputFormat OutputFileFormat;
     protected readonly Dictionary<string, int> Constants = [];
     protected readonly Dictionary<string, string> RegisterNames = [];
+    protected bool Skip = false;
+    protected bool AllowElse = false;
+    protected ExpressionParser EParser;
 
     public GenericCompiler(List<string> sources, string outputFileName, OutputFormat outputFormat,
                             Dictionary<string, InstructionCreator> instructionCreators, IParser parser)
@@ -39,6 +44,26 @@ public class GenericCompiler: ICompiler
         OutputFileFormat = outputFormat;
         InstructionCreators = instructionCreators;
         Parser = parser;
+        EParser = new ExpressionParser(256, this);
+    }
+
+    public GenericCompiler()
+    {
+        Sources = [];
+        OutputFileName = "";
+        OutputFileFormat = OutputFormat.Hex;
+        InstructionCreators = [];
+        Parser = new GenericParser();
+        EParser = new ExpressionParser(256, this);
+    }
+
+    public void RaiseException(string errorMessage) => throw new CompilerException(CurrentFileName, CurrentLineNo, errorMessage);
+
+    public int FindConstantValue(string name)
+    {
+        if (!Constants.TryGetValue(name, out var result))
+            throw new CompilerException(CurrentFileName, CurrentLineNo, $"undefined constant name: {name}");
+        return result;
     }
 
     public string FindRegisterNumber(string registerName)
@@ -48,17 +73,7 @@ public class GenericCompiler: ICompiler
 
     public int CalculateExpression(List<Token> tokens)
     {
-        if (tokens.Count != 1 || (tokens[0].Type != TokenType.Number && tokens[0].Type != TokenType.Name))
-            throw new CompilerException(CurrentFileName, CurrentLineNo, "only single number/constant name is supported");
-        
-        if (tokens[0].Type == TokenType.Number)
-            return tokens[0].IntValue;
-
-        var name = tokens[0].StringValue;
-        if (!Constants.TryGetValue(name, out var result))
-            throw new CompilerException(CurrentFileName, CurrentLineNo, $"undefined constant name: {name}");
-
-        return result;
+        return EParser.Parse(tokens);
     }
     
     public void Compile()
@@ -102,12 +117,12 @@ public class GenericCompiler: ICompiler
         return bytes;
     }
     
-    protected void Compile(string fileName)
+    public void Compile(string fileName, string[]? inLines = null)
     {
         CurrentFileName = fileName;
         CurrentLineNo = 0;
         
-        var lines = File.ReadAllLines(fileName);
+        var lines = inLines ?? File.ReadAllLines(fileName);
         
         foreach (var line in lines)
         {
@@ -119,29 +134,81 @@ public class GenericCompiler: ICompiler
                 throw new CompilerException(fileName, CurrentLineNo, "unexpected token " + tokens[0]);
             switch (tokens[0].StringValue)
             {
-                case ".equ":
-                    CompileEqu(tokens[1..]);
+                case ".else":
+                    CompileElse(tokens[1..]);
                     break;
-                case ".def":
-                    CompileDef(tokens[1..]);
+                case ".endif":
+                    CompileEndif(tokens[1..]);
                     break;
                 default:
-                    if (tokens.Count >= 2 && tokens[1].IsChar(':')) // label
+                    if (!Skip)
                     {
-                        if (!Labels.TryAdd(tokens[0].StringValue, Pc))
-                            throw new CompilerException(fileName, CurrentLineNo, "duplicate label");
-                        if (tokens.Count == 2)
-                            continue;
-                        tokens = tokens[2..];
+                        switch (tokens[0].StringValue)
+                        {
+                            case ".equ":
+                                CompileEqu(tokens[1..]);
+                                break;
+                            case ".def":
+                                CompileDef(tokens[1..]);
+                                break;
+                            case ".include":
+                                CompileInclude(tokens[1..]);
+                                break;
+                            case ".if":
+                                CompileIf(tokens[1..]);
+                                break;
+                            default:
+                                if (tokens.Count >= 2 && tokens[1].IsChar(':')) // label
+                                {
+                                    if (!Labels.TryAdd(tokens[0].StringValue, Pc))
+                                        throw new CompilerException(fileName, CurrentLineNo, "duplicate label");
+                                    if (tokens.Count == 2)
+                                        continue;
+                                    tokens = tokens[2..];
+                                }
+
+                                var instruction = ParseInstruction(line, tokens);
+                                Instructions.Add(instruction);
+                                Pc++;
+                                break;
+                        }
                     }
-                    var instruction = ParseInstruction(line, tokens);
-                    Instructions.Add(instruction);
-                    Pc++;
                     break;
             }
         }
     }
 
+    private void CompileInclude(List<Token> tokens)
+    {
+        if (tokens.Count != 1 || tokens[0].Type != TokenType.String)
+            throw new CompilerException(CurrentFileName, CurrentLineNo, "file name expected");
+        var savedFileName = CurrentFileName;
+        var savedLineNo = CurrentLineNo;
+        Compile(tokens[0].StringValue);
+        CurrentFileName = savedFileName;
+        CurrentLineNo = savedLineNo;
+    }
+
+    private void CompileIf(List<Token> tokens)
+    {
+        var value = CalculateExpression(tokens);
+        Skip = value == 0;
+        AllowElse = true;
+    }
+
+    private void CompileElse(List<Token> tokens)
+    {
+        if (!AllowElse)
+            throw new CompilerException(CurrentFileName, CurrentLineNo, "unexpected else");
+        AllowElse = false;
+        Skip = !Skip;
+    }
+
+    private void CompileEndif(List<Token> tokens)
+    {
+        Skip = false;
+    }
+    
     protected void CompileEqu(List<Token> tokens)
     {
         if (tokens.Count < 2 || tokens[0].Type != TokenType.Name)

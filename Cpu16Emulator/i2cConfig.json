@@ -1,0 +1,5 @@
+[
+  {"DeviceName": "MCP4725", "DeviceType": "MCP4725", "Address": 2, "Parameters": ""},
+  {"DeviceName": "MCP3425_1", "DeviceType": "MCP3425", "Address": 4, "Parameters": "value=12345"},
+  {"DeviceName": "MCP3425_2", "DeviceType": "MCP3425", "Address": 6, "Parameters": "value=54321"}
+]

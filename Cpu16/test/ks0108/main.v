@@ -1,7 +1,7 @@
 `include "main.vh"
 
 module main
-#(parameter CLK_FREQUENCY_DIV4 = 27000000/4, RESET_COUNTER_BITS = 16, ROM_BITS = 9, RAM_BITS = 9, CHARACTER_ROM_BITS = 8)
+#(parameter CLK_FREQUENCY_DIV4 = 27000000/4, CLK_DIVIDER_BITS = 16, ROM_BITS = 9, RAM_BITS = 9, CHARACTER_ROM_BITS = 8)
 (
     input wire clk,
     input wire comp_data_hi,
@@ -35,7 +35,7 @@ module main
     wire interrupt;
     reg interrupt_clear = 0;
     wire [27:0] frequency_code;
-    reg [RESET_COUNTER_BITS - 1:0] reset_counter = 0;
+    reg [CLK_DIVIDER_BITS - 1:0] clk_divider = 0;
     wire ks_selected;
     wire [1:0] stage;
     reg scl = 1;
@@ -63,7 +63,8 @@ module main
 
 	assign io_clk = io_rd & io_wr;
 
-    cpu cpu16(.clk(clk), .rd(rd), .reset(ks_reset), .address(address), .data(data), .hlt(hlt), .io_rd(io_rd), .stage(stage),
+    // cpu clock = 27M/32 = 843750Hz, cpu cpeed = 843750/4=210937 op/sec
+    cpu cpu16(.clk(clk_divider[4]), .rd(rd), .reset(ks_reset), .address(address), .data(data), .hlt(hlt), .io_rd(io_rd), .stage(stage),
                  .io_wr(io_wr), .io_data_out(io_data_in), .io_data_in(io_data_out), .io_address(io_address), .error(error), .interrupt(interrupt));
 
     frequency_counter fc(.clk(clk), .iclk(comp_data_hi), .clk_frequency_div4(CLK_FREQUENCY_DIV4), .code(frequency_code), .interrupt(interrupt),
@@ -75,10 +76,9 @@ module main
                 .led_pulse(led_pulse));
 
     always @(posedge clk) begin
-        if (reset_counter == {RESET_COUNTER_BITS{1'b1}})
+        if (clk_divider == {CLK_DIVIDER_BITS{1'b1}})
             ks_reset <= 1;
-        else
-            reset_counter <= reset_counter + 1;
+        reset_counter <= reset_counter + 1;
     end
 
     always @(negedge rd) begin

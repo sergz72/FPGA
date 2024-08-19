@@ -11,7 +11,8 @@ public enum TokenType
 {
     Name,
     Number,
-    Symbol
+    Symbol,
+    String
 }
 
 public record Token(TokenType Type, string StringValue, int IntValue)
@@ -44,7 +45,8 @@ public class GenericParser: IParser
         HexNumber,
         Symbol,
         Char1,
-        Char2
+        Char2,
+        String
     }
     
     protected ParserMode Mode;
@@ -123,8 +125,26 @@ public class GenericParser: IParser
     {
         switch (c)
         {
+            case '=':
+                if (c == Builder[0] || Builder[0] == '<' || Builder[0] == '>' || Builder[0] == '!')
+                {
+                    Builder.Append(c);
+                    Result.Add(new Token(TokenType.Symbol, Builder.ToString(), 0));
+                }
+                else
+                {
+                    Result.Add(new Token(TokenType.Symbol, Builder.ToString(), 0));
+                    Result.Add(new Token(c));
+                }
+                Mode = ParserMode.None;
+                Builder.Clear();
+                break;
             case '+':
             case '-':
+            case '<':
+            case '>':
+            case '|':
+            case '&':
                 if (c == Builder[0])
                 {
                     Builder.Append(c);
@@ -163,6 +183,19 @@ public class GenericParser: IParser
         Mode = ParserMode.None;
         return false;
     }
+
+    protected bool ModeStringHandler(char c)
+    {
+        if (c != '"')
+            Builder.Append(c);
+        else
+        {
+            Result.Add(new Token(TokenType.String, Builder.ToString(), 0));
+            Builder.Clear();
+            Mode = ParserMode.None;
+        }
+        return false;
+    }
     
     protected bool ModeNoneHandler(char c)
     {
@@ -189,6 +222,12 @@ public class GenericParser: IParser
                 break;
             case '+':
             case '-':
+            case '<':
+            case '>':
+            case '|':
+            case '&':
+            case '=':
+            case '!':
                 Mode = ParserMode.Symbol;
                 Builder.Append(c);
                 break;
@@ -198,10 +237,16 @@ public class GenericParser: IParser
             case ':':
             case '[':
             case ']':
+            case '(':
+            case ')':
+            case '^':
                 Result.Add(new Token(c));
                 break;
             case '\'':
                 Mode = ParserMode.Char1;
+                break;
+            case '"':
+                Mode = ParserMode.String;
                 break;
             default:
                 throw new ParserException("unknown symbol " + c);
@@ -226,8 +271,9 @@ public class GenericParser: IParser
                 Result.Add(new Token(TokenType.Symbol, Builder.ToString(), 0));
                 Builder.Clear();
                 break;
-            case ParserMode.Char1:
-            case ParserMode.Char2:
+            case ParserMode.None:
+                break;
+            default:
                 throw new ParserException("unexpected end of file");
         }
     }
@@ -247,7 +293,8 @@ public class GenericParser: IParser
                 ParserMode.Name => ModeNameHandler(c),
                 ParserMode.Symbol => ModeSymbolHandler(c),
                 ParserMode.Char1 => ModeChar1Handler(c),
-                ParserMode.Char2 => ModeChar2Handler(c)
+                ParserMode.Char2 => ModeChar2Handler(c),
+                ParserMode.String => ModeStringHandler(c)
             };
             if (exit)
                 break;
