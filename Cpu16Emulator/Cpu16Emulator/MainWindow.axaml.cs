@@ -79,7 +79,7 @@ public partial class MainWindow : Window, ILogger
     private void ViewsUpdate()
     {
         CpuView.Update();
-        LbCode.InvalidateVisual();
+        LbCode.Update(_cpu.Pc);
     }
 
     private void Exit_OnClick(object? sender, RoutedEventArgs e)

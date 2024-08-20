@@ -16,7 +16,11 @@ module main
     output wire ks_cs1,
     output wire ks_cs2,
     output wire ks_e,
+`ifdef INTEL
+    input wire ks_reset,
+`else
     output reg ks_reset = 0,
+`endif
     output reg [7:0] ks_data,
     output wire led_one,
     output wire led_zero,
@@ -76,10 +80,14 @@ module main
                 .led_pulse(led_pulse));
 
     always @(posedge clk) begin
-        if (clk_divider == {CLK_DIVIDER_BITS{1'b1}})
-            ks_reset <= 1;
-        reset_counter <= reset_counter + 1;
+        clk_divider <= clk_divider + 1;
     end
+
+`ifndef INTEL
+    always @(negedge clk_divider[CLK_DIVIDER_BITS-1]) begin
+        ks_reset <= 1;
+    end
+`endif
 
     always @(negedge rd) begin
         data <= rom[address[ROM_BITS-1:0]];

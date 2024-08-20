@@ -15,11 +15,7 @@ public sealed class CodeLine
     public readonly uint Instruction;
     public readonly string SourceCode;
     
-    private readonly Cpu16 _cpu;
-    
-    public IBrush Background => Pc == _cpu.Pc ? Brushes.LightBlue : Brushes.White;
-        
-    internal CodeLine(string line, uint pc, Cpu16 cpu)
+    internal CodeLine(string line, uint pc)
     {
         var parts = line.Split("//");
         if (parts.Length != 2 || !uint.TryParse(parts[0], NumberStyles.HexNumber, null, out Instruction)
@@ -28,7 +24,6 @@ public sealed class CodeLine
             throw new Cpu16Exception($"invalid code line: {line}");
         SourceCode = parts[1][6..].Replace("\t", "");
         Pc = pc;
-        _cpu = cpu;
     }
 
     public override string ToString()
@@ -96,7 +91,7 @@ public sealed class Cpu16
     
     public Cpu16(string[] code, int stackSize, int speed)
     {
-        Code = code.Select((c, i) => new CodeLine(c, (ushort)i, this)).ToArray();
+        Code = code.Select((c, i) => new CodeLine(c, (ushort)i)).ToArray();
         Registers = new ushort[256];
         Stack = new ushort[stackSize];
         var r = new Random();

@@ -6,13 +6,16 @@ using Avalonia.Media;
 
 namespace Cpu16Emulator;
 
-public class CodeControl: Control
+public sealed class CodeControl: Control
 {
     public CodeLine[]? Lines { get; set; }
+    public List<ushort>? Breakpoints { get; set; }
+    
     private int _topLine;
     private Typeface _font;
     private double _fontHeight;
     private double _rowHeight;
+    private ushort _pc;
 
     public CodeControl()
     {
@@ -31,17 +34,32 @@ public class CodeControl: Control
         double y = 0;
         for (var i = _topLine; i < Lines.Length; i++)
         {
+            var l = Lines[i];
             var point = new Point(0, y);
-            var formattedText = new FormattedText(Lines[i].ToString(), CultureInfo.InvariantCulture,
+            var r = new Rect(point, new Size(Width, _rowHeight));
+            context.FillRectangle(GetFillBrush(l), r);
+            var formattedText = new FormattedText(l.ToString(), CultureInfo.InvariantCulture,
                 FlowDirection.LeftToRight, _font, _fontHeight, Brushes.Black);
             context.DrawText(formattedText, point);
             y += _rowHeight;
         }
     }
 
+    private IBrush GetFillBrush(CodeLine l)
+    {
+        return _pc == l.Pc ? Brushes.LightBlue :
+            (Breakpoints?.Contains(_pc) ?? false) ? Brushes.Red : Brushes.White;
+    }
+
     protected override Size MeasureOverride(Size availableSize)
     {
         var h = Lines?.Length * _rowHeight ?? 0;
         return new Size(Width, h);
+    }
+
+    internal void Update(ushort pc)
+    {
+        _pc = pc;
+        InvalidateVisual();
     }
 }
