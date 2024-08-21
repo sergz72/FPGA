@@ -5,10 +5,10 @@ namespace Cpu16Emulator;
 
 public partial class CPUView : UserControl
 {
-    internal class Register(Cpu16 cpu, byte index)
+    internal class Register(Cpu16Lite cpu, byte index)
     {
         private readonly byte _index = index;
-        private readonly Cpu16 _cpu = cpu;
+        private readonly Cpu16Lite _cpu = cpu;
 
         public override string ToString()
         {
@@ -16,8 +16,8 @@ public partial class CPUView : UserControl
         }
     }
 
-    private Cpu16? _cpu;
-    public Cpu16? Cpu
+    private Cpu16Lite? _cpu;
+    public Cpu16Lite? Cpu
     {
         get => _cpu;
         set
@@ -43,17 +43,6 @@ public partial class CPUView : UserControl
             };
             GRegisters.Children.Add(l);
         }
-        
-        for (var i = 0; i < 16; i++)
-        {
-            var l = new Label
-            {
-                [Grid.RowProperty] = 0,
-                [Grid.ColumnProperty] = i,
-                Content = "0000"
-            };
-            GStack.Children.Add(l);
-        }
     }
 
     private string GetRegistersContent(int row, int col)
@@ -70,7 +59,8 @@ public partial class CPUView : UserControl
         if (_cpu == null)
             return;
         LbPc.Content = _cpu.Pc.ToString("X4");
-        UpdateContent(LbSp, _cpu.Sp, markChangesAsBold);
+        UpdateContent(LbSp, _cpu.Sp, markChangesAsBold, "X2");
+        UpdateContent(LbRp, _cpu.Rp, markChangesAsBold, "X2");
         UpdateContent(LbHlt, _cpu.Hlt, markChangesAsBold);
         UpdateContent(LbError, _cpu.Error, markChangesAsBold);
         UpdateContent(LbC, _cpu.C, markChangesAsBold);
@@ -81,16 +71,13 @@ public partial class CPUView : UserControl
         for (var row = 1; row < 17; row++)
         {
             for (var col = 1; col < 17; col++)
-                UpdateContent((Label)GRegisters.Children[row * 17 + col], _cpu.Registers[idx++], markChangesAsBold);
+                UpdateContent((Label)GRegisters.Children[row * 17 + col], _cpu.Registers[idx++], markChangesAsBold, "X4");
         }
-
-        for (var i = 0; i < 16; i++)
-            UpdateContent((Label)GStack.Children[i], _cpu.Stack[i], markChangesAsBold);
     }
 
-    private static void UpdateContent(Label l, ushort v, bool markChangesAsBold)
+    private static void UpdateContent(Label l, ushort v, bool markChangesAsBold, string format)
     {
-        var text = v.ToString("X4");
+        var text = v.ToString(format);
         if (text != l.Content?.ToString())
         {
             l.Content = text;

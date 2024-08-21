@@ -35,7 +35,7 @@ public partial class App : Application
                         throw new Exception("incorrect configuration file");
                     var ioDevices = LoadIODevices(config.IODevices);
                     var code = File.ReadAllLines(desktop.Args[1]);
-                    var cpu = new Cpu16(code, 16, config.CpuSpeed * 1000);
+                    var cpu = new Cpu16Lite(code, 16, config.CpuSpeed * 1000);
                     desktop.MainWindow = new MainWindow(cpu, ioDevices);
                 }
                 catch (Exception e)

@@ -16,7 +16,7 @@ internal sealed class JmpInstruction : Instruction
     
     public override uint BuildCode(ushort labelAddress)
     {
-        return _type | (_regNo << 16) | (_adder << 24) | ((uint)labelAddress << 16);
+        return _type | (_regNo << 8) | (_adder << 16) | ((uint)labelAddress << 16);
     }
 }
 

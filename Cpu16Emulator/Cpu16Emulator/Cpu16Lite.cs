@@ -32,7 +32,7 @@ public sealed class CodeLine
     }
 }
 
-public sealed class Cpu16
+public sealed class Cpu16Lite
 {
     private const int ALU_OP_TEST = 0;
     private const int ALU_OP_NEG = 1;
@@ -46,24 +46,20 @@ public sealed class Cpu16
     private const int ALU_OP_OR  = 9;
     private const int ALU_OP_XOR = 10;
     private const int ALU_OP_CMP = 11;
-    private const int ALU_OP_MUL = 12;
-    private const int ALU_OP_DIV = 13;
-    private const int ALU_OP_REM = 14;
-    private const int ALU_OP_SETF = 15;
-    private const int ALU_OP_RLC = 17;
-    private const int ALU_OP_RRC = 18;
-    private const int ALU_OP_SHLC = 19;
-    private const int ALU_OP_SHRC = 20;
+    private const int ALU_OP_SETF = 12;
+    private const int ALU_OP_RLC = 13;
+    private const int ALU_OP_RRC = 14;
+    private const int ALU_OP_SHLC = 15;
+    private const int ALU_OP_SHRC = 16;
 
     public readonly CodeLine[] Code;
     public ushort Pc { get; private set; }
     public ushort Sp { get; private set; }
+    public ushort Rp { get; private set; }
 
     public ushort AluOut { get; private set; }
-    public ushort AluOut2 { get; private set; }
-    
+
     public readonly ushort[] Registers;
-    public readonly ushort[] Stack;
     public bool Hlt { get; private set; }
     public bool Error { get; private set; }
     
@@ -89,16 +85,13 @@ public sealed class Cpu16
     public EventHandler<IoEvent>? IoReadEventHandler;
     public EventHandler<int>? TicksEventHandler;
     
-    public Cpu16(string[] code, int stackSize, int speed)
+    public Cpu16Lite(string[] code, int stackSize, int speed)
     {
         Code = code.Select((c, i) => new CodeLine(c, (ushort)i)).ToArray();
         Registers = new ushort[256];
-        Stack = new ushort[stackSize];
         var r = new Random();
         for (var i = 0; i < Registers.Length; i++)
             Registers[i] = (ushort)r.Next(0xFFFF);
-        for (var i = 0; i < Stack.Length; i++)
-            Stack[i] = (ushort)r.Next(0xFFFF);
         Speed = speed;
         Reset();
     }
@@ -122,6 +115,7 @@ public sealed class Cpu16
         else
             Step();
     }
+    
     public void Step()
     {
         Ticks++;
@@ -146,25 +140,25 @@ public sealed class Cpu16
                 if (!ConditionMatch(opSubtype))
                     Pc = (ushort)(Pc + 1);
                 else
-                    Pc = (ushort)(instruction >> 16);
+                    Pc = immediate;
                 break;
             case 1: // jmp reg
                 if (!ConditionMatch(opSubtype))
                     Pc = (ushort)(Pc + 1);
                 else
-                    Pc = (ushort)(Registers[regNo2] + adder);
+                    Pc = (ushort)(Registers[regNo1] + immediate);
                 break;
             case 2: // call addr
                 if (!ConditionMatch(opSubtype))
                     Pc = (ushort)(Pc + 1);
                 else
-                    Call((ushort)(instruction >> 16));
+                    Call(immediate);
                 break;
             case 3: // call reg
                 if (!ConditionMatch(opSubtype))
                     Pc = (ushort)(Pc + 1);
                 else
-                    Call((ushort)(Registers[regNo2] + adder));
+                    Call((ushort)(Registers[regNo1] + immediate));
                 break;
             case 4: // ret
                 if (!ConditionMatch(opSubtype))
@@ -182,8 +176,16 @@ public sealed class Cpu16
                         else
                             Ret();
                         break;
-                    case 0x0A: // mov reg alu_out_2
-                        Registers[regNo1] = AluOut2;
+                    case 0x08: // inc rp
+                        IncRp();
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    case 0x09: // dec rp
+                        DecRp();
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    case 0x0A: // load rp
+                        Rp = adder;
                         Pc = (ushort)(Pc + 1);
                         break;
                     case 0x0B: // mov flags to register
@@ -220,25 +222,122 @@ public sealed class Cpu16
                 AluOperation(instruction & 0x1F, regNo1, Registers[regNo1], immediate);
                 Pc = (ushort)(Pc + 1);
                 break;
+            case 14: // mov with rp
+                switch (opSubtype)
+                {
+                    case 0:
+                        Registers[Rp] = immediate;
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    case 1:
+                        Registers[Rp] = immediate;
+                        IncRp();
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    case 2:
+                        DecRp();
+                        Registers[Rp] = immediate;
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    case 4:
+                        Registers[Rp] = (ushort)(Registers[regNo1] + immediate);
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    case 5:
+                        Registers[Rp] = (ushort)(Registers[regNo1] + immediate);
+                        IncRp();
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    case 6:
+                        DecRp();
+                        Registers[Rp] = (ushort)(Registers[regNo1] + immediate);
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    case 8:
+                        Registers[regNo1] = (ushort)(Registers[Rp] + immediate);
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    case 9:
+                        Registers[regNo1] = (ushort)(Registers[Rp] + immediate);
+                        IncRp();
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    case 10:
+                        DecRp();
+                        Registers[regNo1] = (ushort)(Registers[Rp] + immediate);
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    default:
+                        Hlt = Error = true;
+                        break;
+                }
+                break;
             case 15: // operations without ALU with io
-                ushort ioAddress;
+                var ioAddress = (ushort)(Registers[regNo2] + adder);
                 IoEvent ev;
                 switch (opSubtype)
                 {
                     case 0: //in io->register
                         if (IoReadEventHandler == null)
                             throw new Cpu16Exception("null IoReadEventHandler");
-                        ioAddress = (ushort)(Registers[regNo2] + adder);
                         ev = new IoEvent { Address = ioAddress };
                         IoReadEventHandler(this, ev);
                         Registers[regNo1] = ev.Data;
                         Pc = (ushort)(Pc + 1);
                         break;
-                    case 1: //out register->io
+                    case 1: //in io->@rp
+                        if (IoReadEventHandler == null)
+                            throw new Cpu16Exception("null IoReadEventHandler");
+                        ev = new IoEvent { Address = ioAddress };
+                        IoReadEventHandler(this, ev);
+                        Registers[Rp] = ev.Data;
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    case 2: //in io->@rp++
+                        if (IoReadEventHandler == null)
+                            throw new Cpu16Exception("null IoReadEventHandler");
+                        ev = new IoEvent { Address = ioAddress };
+                        IoReadEventHandler(this, ev);
+                        Registers[Rp] = ev.Data;
+                        IncRp();
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    case 3: //in io->@--rp
+                        if (IoReadEventHandler == null)
+                            throw new Cpu16Exception("null IoReadEventHandler");
+                        ev = new IoEvent { Address = ioAddress };
+                        IoReadEventHandler(this, ev);
+                        DecRp();
+                        Registers[Rp] = ev.Data;
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    case 4: //out register->io
                         if (IoWriteEventHandler == null)
                             throw new Cpu16Exception("null IoWriteEventHandler");
-                        ioAddress = (ushort)(Registers[regNo2] + adder);
                         ev = new IoEvent { Address = ioAddress, Data = Registers[regNo1] };
+                        IoWriteEventHandler(this, ev);
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    case 5: //out @rp->io
+                        if (IoWriteEventHandler == null)
+                            throw new Cpu16Exception("null IoWriteEventHandler");
+                        ev = new IoEvent { Address = ioAddress, Data = Registers[Rp] };
+                        IoWriteEventHandler(this, ev);
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    case 6: //out @rp++->io
+                        if (IoWriteEventHandler == null)
+                            throw new Cpu16Exception("null IoWriteEventHandler");
+                        ev = new IoEvent { Address = ioAddress, Data = Registers[Rp] };
+                        IoWriteEventHandler(this, ev);
+                        IncRp();
+                        Pc = (ushort)(Pc + 1);
+                        break;
+                    case 7: //out @--rp->io
+                        if (IoWriteEventHandler == null)
+                            throw new Cpu16Exception("null IoWriteEventHandler");
+                        DecRp();
+                        ev = new IoEvent { Address = ioAddress, Data = Registers[Rp] };
                         IoWriteEventHandler(this, ev);
                         Pc = (ushort)(Pc + 1);
                         break;
@@ -312,21 +411,6 @@ public sealed class Cpu16
                 Z = (op2 & 2) != 0;
                 N = (op2 & 1) != 0;
                 break;
-            case ALU_OP_MUL:
-                uv = (uint)(op2 * op3);
-                AluOut = (ushort)uv;
-                AluOut2 = (ushort)(uv >> 16);
-                break;
-            case ALU_OP_DIV:
-                uv = (uint)(((op3 << 16) | op2) / op1);
-                AluOut = (ushort)uv;
-                AluOut2 = (ushort)(uv >> 16);
-                break;
-            case ALU_OP_REM:
-                uv = (uint)(((op3 << 16) | op2) % op1);
-                AluOut = (ushort)uv;
-                AluOut2 = (ushort)(uv >> 16);
-                break;
             case ALU_OP_RLC:
                 savedc = C;
                 C = (op2 & 0x8000) != 0;
@@ -352,7 +436,7 @@ public sealed class Cpu16
         }
         Z = AluOut == 0;
         N = (AluOut & 0x8000) != 0;
-        if (opId != ALU_OP_TEST && opId != ALU_OP_CMP)
+        if (opId != ALU_OP_TEST && opId != ALU_OP_CMP && opId != ALU_OP_SETF)
             Registers[regNo1] = AluOut;
     }
 
@@ -368,8 +452,8 @@ public sealed class Cpu16
 
     private void Ret()
     {
-        Pc = Stack[Sp];
-        if (Sp == Stack.Length - 1)
+        Pc = Registers[Sp];
+        if (Sp == Registers.Length - 1)
             Sp = 0;
         else
             Sp++;
@@ -378,10 +462,10 @@ public sealed class Cpu16
     private void Call(ushort address)
     {
         if (Sp == 0)
-            Sp = (ushort)(Stack.Length - 1);
+            Sp = (ushort)(Registers.Length - 1);
         else
             Sp--;
-        Stack[Sp] = (ushort)(Pc + 1);
+        Registers[Sp] = (ushort)(Pc + 1);
         Pc = address;
     }
     
@@ -403,6 +487,22 @@ public sealed class Cpu16
         return false;
     }
 
+    private void IncRp()
+    {
+        if (Rp == 255)
+            Rp = 0;
+        else
+            Rp++;
+    }
+
+    private void DecRp()
+    {
+        if (Rp == 0)
+            Rp = 255;
+        else
+            Rp--;
+    }
+    
     public void Run()
     {
         
@@ -416,7 +516,7 @@ public sealed class Cpu16
     public void Reset()
     {
         Ticks = 0;
-        Pc = Sp = 0;
+        Pc = Sp = Rp = 0;
         Hlt = Error = _interrupt = false;
     }
 }

@@ -1,18 +1,20 @@
-using System;
+using System.Collections.Generic;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Media;
 using Cpu16EmulatorCommon;
 
 namespace Cpu16Emulator;
 
 public partial class MainWindow : Window, ILogger
 {
-    private readonly Cpu16 _cpu;
+    private readonly Cpu16Lite _cpu;
     private readonly IODevice[] _devices;
+    private readonly HashSet<ushort> _breakpoints = [];
+    private Point _mousePosition;
     
-    public MainWindow(Cpu16 cpu, IODevice[] devices)
+    public MainWindow(Cpu16Lite cpu, IODevice[] devices)
     {
         InitializeComponent();
 
@@ -20,6 +22,7 @@ public partial class MainWindow : Window, ILogger
         _devices = devices;
 
         LbCode.Lines = _cpu.Code;
+        LbCode.Breakpoints = _breakpoints;
 
         CpuView.Cpu = cpu;
         cpu.IoReadEventHandler = IoRead;
@@ -140,5 +143,26 @@ public partial class MainWindow : Window, ILogger
 
     private void AddBreakpoint_OnClick(object? sender, RoutedEventArgs e)
     {
+        var pc = LbCode.GetPc(_mousePosition);
+        if (pc != null)
+        {
+            _breakpoints.Add((ushort)pc);
+            LbCode.Update(_cpu.Pc);
+        }
+    }
+
+    private void LbCode_OnContextRequested(object? sender, ContextRequestedEventArgs e)
+    {
+        e.TryGetPosition(LbCode, out _mousePosition);
+    }
+
+    private void DeleteBreakpoint_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var pc = LbCode.GetPc(_mousePosition);
+        if (pc != null && _breakpoints.Contains((ushort)pc))
+        {
+            _breakpoints.Remove((ushort)pc);
+            LbCode.Update(_cpu.Pc);
+        }
     }
 }

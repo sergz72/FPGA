@@ -44,8 +44,8 @@ internal sealed class Cpu16Compiler: GenericCompiler
         
         {"clr", new RegisterLoadInstructionCreator(0)},
         {"ser", new RegisterLoadInstructionCreator(0xFFFF)},
-        {"inc", new AluImmediateInstructionCreator(AluOperations.Add, 1)},
-        {"dec", new AluImmediateInstructionCreator(AluOperations.Add, 0xFFFF)},
+        {"inc", new IncInstructionCreator()},
+        {"dec", new DecInstructionCreator()},
         {"not", new AluImmediateInstructionCreator(AluOperations.Xor, 0xFFFF)},
 
         {"test", new AluInstructionCreator(AluOperations.Test)},
@@ -60,16 +60,16 @@ internal sealed class Cpu16Compiler: GenericCompiler
         {"and", new AluInstructionCreator(AluOperations.And)},
         {"or", new AluInstructionCreator(AluOperations.Or)},
         {"xor", new AluInstructionCreator(AluOperations.Xor)},
-        {"setf", new AluInstructionCreator(AluOperations.Setf)},
+        {"setf", new SetfRegisterInstructionCreator()},
         {"rlc", new AluInstructionCreator(AluOperations.Rlc)},
         {"rrc", new AluInstructionCreator(AluOperations.Rrc)},
         {"shlc", new AluInstructionCreator(AluOperations.Shlc)},
         {"shrc", new AluInstructionCreator(AluOperations.Shrc)},
         
-        {"setc", new Setf2InstructionCreator(4)},
-        {"setz", new Setf2InstructionCreator(2)},
-        {"setn", new Setf2InstructionCreator(1)},
-        {"clrf", new Setf2InstructionCreator(0)},
+        {"setc", new SetfImmediateInstructionCreator(4)},
+        {"setz", new SetfImmediateInstructionCreator(2)},
+        {"setn", new SetfImmediateInstructionCreator(1)},
+        {"clrf", new SetfImmediateInstructionCreator(0)},
         
         {"in", new InInstructionCreator()},
         {"out", new OutInstructionCreator()},

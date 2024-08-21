@@ -9,9 +9,8 @@ namespace Cpu16Emulator;
 public sealed class CodeControl: Control
 {
     public CodeLine[]? Lines { get; set; }
-    public List<ushort>? Breakpoints { get; set; }
+    public HashSet<ushort>? Breakpoints { get; set; }
     
-    private int _topLine;
     private Typeface _font;
     private double _fontHeight;
     private double _rowHeight;
@@ -19,7 +18,6 @@ public sealed class CodeControl: Control
 
     public CodeControl()
     {
-        _topLine = 0;
         _font = Typeface.Default;
         _fontHeight = 16;
         var formattedText = new FormattedText("Test", CultureInfo.InvariantCulture,
@@ -32,9 +30,8 @@ public sealed class CodeControl: Control
         if (Lines == null)
             return;
         double y = 0;
-        for (var i = _topLine; i < Lines.Length; i++)
+        foreach (var l in Lines)
         {
-            var l = Lines[i];
             var point = new Point(0, y);
             var r = new Rect(point, new Size(Width, _rowHeight));
             context.FillRectangle(GetFillBrush(l), r);
@@ -48,7 +45,7 @@ public sealed class CodeControl: Control
     private IBrush GetFillBrush(CodeLine l)
     {
         return _pc == l.Pc ? Brushes.LightBlue :
-            (Breakpoints?.Contains(_pc) ?? false) ? Brushes.Red : Brushes.White;
+            (Breakpoints?.Contains((ushort)l.Pc) ?? false) ? Brushes.Red : Brushes.White;
     }
 
     protected override Size MeasureOverride(Size availableSize)
@@ -61,5 +58,13 @@ public sealed class CodeControl: Control
     {
         _pc = pc;
         InvalidateVisual();
+    }
+
+    public int? GetPc(Point mousePosition)
+    {
+        var pc = (int)(mousePosition.X / _rowHeight);
+        if (pc < 0 || pc >= (Lines?.Length ?? 0))
+            return null;
+        return pc;
     }
 }

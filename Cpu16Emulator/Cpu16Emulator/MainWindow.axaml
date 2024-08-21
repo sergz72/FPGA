@@ -24,19 +24,22 @@
         <ScrollViewer DockPanel.Dock="Left">
             <StackPanel Orientation="Vertical">
                 <Label Content="Code"/>
-                <cpu16Emulator:CodeControl Name="LbCode" Width="510">
+                <cpu16Emulator:CodeControl Name="LbCode" Width="510" ContextRequested="LbCode_OnContextRequested">
                     <cpu16Emulator:CodeControl.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="Add breakpoint" Click="AddBreakpoint_OnClick"/>
+                            <MenuItem Header="Delete breakpoint" Click="DeleteBreakpoint_OnClick"/>
                         </ContextMenu>
                     </cpu16Emulator:CodeControl.ContextMenu>
                 </cpu16Emulator:CodeControl>
             </StackPanel>
         </ScrollViewer>
-        <ListBox Name="LbLog" DockPanel.Dock="Right"/>
-        <StackPanel Orientation="Vertical">
-            <cpu16Emulator:CPUView Name="CpuView"/>
-            <StackPanel Name="SpIODevices" Orientation="Horizontal"/>
-        </StackPanel>
+        <DockPanel>
+            <StackPanel Orientation="Vertical" DockPanel.Dock="Top">
+                <cpu16Emulator:CPUView Name="CpuView"/>
+                <StackPanel Name="SpIODevices" Orientation="Horizontal"/>
+            </StackPanel>
+            <ListBox Name="LbLog" DockPanel.Dock="Bottom"/>
+        </DockPanel>
     </DockPanel>
 </Window>

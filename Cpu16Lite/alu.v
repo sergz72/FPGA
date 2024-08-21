@@ -26,10 +26,6 @@ module alu
             `ALU_OP_OR: out <= op1 | op2;
             `ALU_OP_XOR: out <= op1 ^ op2;
             `ALU_OP_SETF: begin
-                c <= op1[2];
-                out <= op1[1] ? 0 : (op1[0] ? 'h8000 : 1);
-            end
-            `ALU_OP_SETF2: begin
                 c <= op2[2];
                 out <= op2[1] ? 0 : (op2[0] ? 'h8000 : 1);
             end

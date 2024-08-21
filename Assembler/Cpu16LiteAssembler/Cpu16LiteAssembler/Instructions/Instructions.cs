@@ -17,11 +17,10 @@ internal static class AluOperations
     internal const uint Xor = 10;
     internal const uint Cmp = 11;
     internal const uint Setf = 12;
-    internal const uint Setf2 = 13;
-    internal const uint Rlc   = 14;
-    internal const uint Rrc   = 15;
-    internal const uint Shlc  = 16;
-    internal const uint Shrc  = 17;
+    internal const uint Rlc   = 13;
+    internal const uint Rrc   = 14;
+    internal const uint Shlc  = 15;
+    internal const uint Shrc  = 16;
 }
 
 internal static class InstructionCodes
@@ -41,37 +40,39 @@ internal static class InstructionCodes
     internal const uint JmpGtReg = 0x15;
     internal const uint JmpLeReg = 0x16;
 
-    internal const uint CallAddr = 0xFF20;
-    internal const uint CallcAddr = 0xFF21;
-    internal const uint CallncAddr = 0xFF22;
-    internal const uint CallzAddr = 0xFF23;
-    internal const uint CallnzAddr = 0xFF24;
-    internal const uint CallGtAddr = 0xFF25;
-    internal const uint CallLeAddr = 0xFF26;
-    internal const uint CallReg = 0xFF30;
-    internal const uint CallcReg = 0xFF31;
-    internal const uint CallncReg = 0xFF32;
-    internal const uint CallzReg = 0xFF33;
-    internal const uint CallnzReg = 0xFF34;
-    internal const uint CallGtReg = 0xFF35;
-    internal const uint CallLeReg = 0xFF36;
+    internal const uint CallAddr = 0x20;
+    internal const uint CallcAddr = 0x21;
+    internal const uint CallncAddr = 0x22;
+    internal const uint CallzAddr = 0x23;
+    internal const uint CallnzAddr = 0x24;
+    internal const uint CallGtAddr = 0x25;
+    internal const uint CallLeAddr = 0x26;
+    internal const uint CallReg = 0x30;
+    internal const uint CallcReg = 0x31;
+    internal const uint CallncReg = 0x32;
+    internal const uint CallzReg = 0x33;
+    internal const uint CallnzReg = 0x34;
+    internal const uint CallGtReg = 0x35;
+    internal const uint CallLeReg = 0x36;
 
-    internal const uint Ret = 0xFF40;
-    internal const uint Retc = 0xFF41;
-    internal const uint Retnc = 0xFF42;
-    internal const uint Retz = 0xFF43;
-    internal const uint Retnz = 0xFF44;
-    internal const uint RetGt = 0xFF45;
-    internal const uint RetLe = 0xFF46;
+    internal const uint Ret = 0x40;
+    internal const uint Retc = 0x41;
+    internal const uint Retnc = 0x42;
+    internal const uint Retz = 0x43;
+    internal const uint Retnz = 0x44;
+    internal const uint RetGt = 0x45;
+    internal const uint RetLe = 0x46;
 
-    internal const uint Reti = 0xFF50;
-    internal const uint Retic = 0xFF51;
-    internal const uint Retinc = 0xFF52;
-    internal const uint Retiz = 0xFF53;
-    internal const uint Retinz = 0xFF54;
-    internal const uint RetiGt = 0xFF55;
-    internal const uint RetiLe = 0xFF56;
+    internal const uint Reti = 0x50;
+    internal const uint Retic = 0x51;
+    internal const uint Retinc = 0x52;
+    internal const uint Retiz = 0x53;
+    internal const uint Retinz = 0x54;
+    internal const uint RetiGt = 0x55;
+    internal const uint RetiLe = 0x56;
     
+    internal const uint IncRp = 0x58;
+    internal const uint DecRp = 0x59;
     internal const uint LoadRp = 0x5A;
     internal const uint Loadf = 0x5B;
     internal const uint Nop = 0x5C;
@@ -84,8 +85,9 @@ internal static class InstructionCodes
     internal const uint InRpInc = 0xF2;
     internal const uint InRpDec = 0xF3;
     internal const uint Out = 0xF4;
-    internal const uint OutRpInc = 0xF5;
-    internal const uint OutRpDec = 0xF6;
+    internal const uint OutRp = 0xF5;
+    internal const uint OutRpInc = 0xF6;
+    internal const uint OutRpDec = 0xF7;
 
     internal const uint MovRpImmediate = 0xE0;
     internal const uint MovRpImmediateRpInc = 0xE1;

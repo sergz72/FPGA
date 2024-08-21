@@ -77,15 +77,30 @@ internal sealed class MovInstructionCreator : InstructionCreator
         
         idx++;
 
+        if (idx == parameters.Count)
+            throw new InstructionException("rp expected");
+        
         decrement = parameters[idx].IsChar("--");
         if (decrement)
             idx++;
+
+        if (idx == parameters.Count)
+            throw new InstructionException("rp expected");
+
         if (parameters[idx].Type != TokenType.Name || parameters[idx].StringValue != "rp")
             throw new InstructionException("rp expected");
         idx++;
+
+        if (idx == parameters.Count)
+        {
+            increment = false;
+            return true;
+        }
+
         increment = parameters[idx].IsChar("++");
         if (increment)
             idx++;
+        
         return true;
     }
 
@@ -100,10 +115,10 @@ internal sealed class MovInstructionCreator : InstructionCreator
             adder = compiler.CalculateExpression(parameters[idx..]);
         }
         if (increment)
-            return new MovInstruction(line, InstructionCodes.MovRegisterRpRpInc, regNo, (uint)adder, 0xFE);
+            return new MovInstruction(line, InstructionCodes.MovRegisterRpRpInc, regNo, (uint)adder, 0);
         if (decrement)
-            return new MovInstruction(line, InstructionCodes.MovRegisterRpRpDec, regNo, (uint)adder, 0xFF);
-        return new MovInstruction(line, InstructionCodes.MovRegisterRp, regNo, (uint)adder, 0xFE);
+            return new MovInstruction(line, InstructionCodes.MovRegisterRpRpDec, regNo, (uint)adder, 0);
+        return new MovInstruction(line, InstructionCodes.MovRegisterRp, regNo, (uint)adder, 0);
     }
     
     private Instruction CreateIndirect1(ICompiler compiler, string line, List<Token> parameters,
@@ -125,10 +140,10 @@ internal sealed class MovInstructionCreator : InstructionCreator
             }
 
             if (increment)
-                return new MovInstruction(line, InstructionCodes.MovRpRegisterRpInc, 0, regNo, (uint)adder);
+                return new MovInstruction(line, InstructionCodes.MovRpRegisterRpInc, regNo, (uint)adder, 0);
             if (decrement)
-                return new MovInstruction(line, InstructionCodes.MovRpRegisterRpDec, 0, regNo, (uint)adder);
-            return new MovInstruction(line, InstructionCodes.MovRpRegister, 0, regNo, (uint)adder);
+                return new MovInstruction(line, InstructionCodes.MovRpRegisterRpDec, regNo, (uint)adder, 0);
+            return new MovInstruction(line, InstructionCodes.MovRpRegister, regNo, (uint)adder, 0);
         }
 
         var value2 = compiler.CalculateExpression(parameters[1..]);

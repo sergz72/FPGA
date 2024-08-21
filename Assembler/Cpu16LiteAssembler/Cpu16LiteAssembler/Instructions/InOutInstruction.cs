@@ -64,6 +64,10 @@ internal sealed class OutInstructionCreator : InstructionCreator
 
     private Instruction CreateIndirect(string line, uint regNo, int offset, bool increment, bool decrement)
     {
-        return new InOutInstruction(line, InstructionCodes.Out, regNo, (uint)offset, 0xFF);
+        if (increment)
+            return new InOutInstruction(line, InstructionCodes.OutRpInc, 0, regNo, (uint)offset);
+        if (decrement)
+            return new InOutInstruction(line, InstructionCodes.OutRpDec, 0, regNo, (uint)offset);
+        return new InOutInstruction(line, InstructionCodes.OutRp, 0, regNo, (uint)offset);
     }
 }

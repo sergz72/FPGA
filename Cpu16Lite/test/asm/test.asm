@@ -18,6 +18,7 @@ l5:	mov rp, 203
 	mov @--rp, 3
 	mov @--rp, 4
 	mov r2, 100
+	out [r2], r2
 	out [r2], @rp
 	out [r2], @rp++
 	out [r2], @rp++
