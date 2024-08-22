@@ -1,0 +1,172 @@
+00040000 // 0000 jmp start
+004041f0 // 0001     in frequency_code_lo, [frequency_code_address]
+014042f0 // 0002     in frequency_code_hi, [frequency_code_address+1]
+00000050 // 0003     reti
+2000405d // 0004     mov frequency_code_address, FREQUENCY_CODE_ADDRESS
+0000435d // 0005     mov display_controller_address, DISPLAY_CONTROLLER_ADDRESS
+0088115d // 0006     mov r17, $88
+00d0105d // 0007     mov r16, MCP3425_ADDRESS1
+007a0020 // 0008     call i2c_master_write1
+0088115d // 0009     mov r17, $88
+00d4105d // 000a     mov r16, MCP3425_ADDRESS2
+007a0020 // 000b     call i2c_master_write1
+0000005f // 000c     hlt
+002e0020 // 000d     call prepare_freq_data
+0080115d // 000e     mov r17, $80 ; first row
+00430020 // 000f     call show_row
+00140020 // 0010     call prepare_adc_data
+00c0115d // 0011     mov r17, $C0 ; second row
+00430020 // 0012     call show_row
+000c0000 // 0013     jmp main_loop
+00562d5d // 0014     mov r45, 86 ; 'V'
+00322e5d // 0015     mov r46, 50 ; '2'
+00342f5d // 0016     mov r47, 52 ; '4'
+2d00005a // 0017     mov rp, 45
+00d0105d // 0018     mov r16, MCP3425_ADDRESS1
+00260020 // 0019     call get_adc_channel_data
+00200020 // 001a     call save_adc_channel_data
+00d4105d // 001b     mov r16, MCP3425_ADDRESS2
+005600e2 // 001c     mov @--rp, 'V'
+00260020 // 001d     call get_adc_channel_data
+00200020 // 001e     call save_adc_channel_data
+00000040 // 001f     ret
+000a125d // 0020     mov r18, 10
+003c0020 // 0021     call save31
+002e00e2 // 0022     mov @--rp, '.'
+0002165d // 0023     mov r22, 2
+003d0020 // 0024     call save32
+00000040 // 0025     ret
+00890020 // 0026     call i2c_master_read2
+0c35105d // 0027     mov r16, V_MUL
+009e0020 // 0028     call mul1616
+0012105e // 0029     mov r16, r18
+0013115e // 002a     mov r17, r19
+2710125d // 002b     mov r18, V_DIV
+00910020 // 002c     call div3216
+00000040 // 002d     ret
+00482e5d // 002e     mov r46, 72 ; 'H'
+007a2f5d // 002f     mov r47, 122 ; 'z'
+002e2a5d // 0030     mov r42, 46 ; .
+002e265d // 0031     mov r38, 46 ; .
+0020225d // 0032     mov r34, 32 ; space
+0020215d // 0033     mov r33, 32 ; space
+0020205d // 0034     mov r32, 32 ; space
+000a125d // 0035     mov r18, 10
+0042115e // 0036     mov r17, frequency_code_hi
+0041105e // 0037     mov r16, frequency_code_lo
+2e00005a // 0038     mov rp, 46
+003c0020 // 0039     call save31
+003b0020 // 003a     call save3
+00000059 // 003b     dec rp
+0003165d // 003c     mov r22, 3
+00910020 // 003d     call div3216
+00301382 // 003e     add r19, '0'
+000013e6 // 003f     mov @--rp, r19
+ffff1682 // 0040     dec r22
+003d0004 // 0041     jmpnz save32
+00000040 // 0042     ret
+2000005a // 0043     mov rp, 32
+0010105d // 0044     mov r16, 16
+014311f4 // 0045     out [display_controller_address+DISPLAY_CONTROLLER_E], r17
+004311f4 // 0046     out [display_controller_address], r17
+034300f5 // 0047     out [display_controller_address+DISPLAY_CONTROLLER_RS+DISPLAY_CONTROLLER_E], @rp
+024300f6 // 0048     out [display_controller_address+DISPLAY_CONTROLLER_RS], @rp++
+ffff1082 // 0049     dec r16
+00470004 // 004a     jmpnz show_row2
+00000040 // 004b     ret
+00801080 // 004c     test r16, $80
+00500004 // 004d     jmpnz i2c_send1
+0000135d // 004e     clr r19
+00510000 // 004f     jmp i2c_send2
+0001135d // 0050     mov r19, SDA_BIT
+001413f4 // 0051     out [r20], r19
+00021389 // 0052     or r19, SCL_BIT
+001413f4 // 0053     out [r20], r19 ; scl high
+fffd1388 // 0054     and r19, ~SCL_BIT
+001413f4 // 0055     out [r20], r19 ; scl low
+00000040 // 0056     ret
+0008155d // 0057     mov r21, 8
+004c0020 // 0058     call i2c_send_bit
+00011086 // 0059     shl r16, 1
+ffff1582 // 005a     dec r21
+00580004 // 005b     jmpnz i2c_send_byte_loop
+0080105d // 005c     mov r16, $80
+004c0020 // 005d     call i2c_send_bit ; ack
+00000040 // 005e     ret
+0003135d // 005f     mov r19, SCL_BIT | SDA_BIT
+001413f4 // 0060     out [r20], r19 ; scl high, sda high
+001412f0 // 0061     in r18, [r20]
+00011288 // 0062     and r18, SDA_BIT
+12101069 // 0063     or  r16, r16, r18
+fffd1388 // 0064     and r19, ~SCL_BIT
+001413f4 // 0065     out [r20], r19 ; scl low
+00000040 // 0066     ret
+0008155d // 0067     mov r21, 8
+0000105d // 0068     clr r16
+00011086 // 0069     shl r16, 1
+005f0020 // 006a     call i2c_read_bit
+ffff1582 // 006b     dec r21
+00690004 // 006c     jmpnz i2c_read_byte_loop
+0010125e // 006d     mov  r18, r16
+0000105d // 006e     clr  r16
+004c0020 // 006f     call i2c_send_bit ; ack
+0001135d // 0070     mov r19, SDA_BIT
+001413f4 // 0071     out [r20], r19 ; sda high
+00000040 // 0072     ret
+4000145d // 0073     mov r20, I2C_PORT_ADDRESS
+0002135d // 0074     mov r19, SCL_BIT
+001413f4 // 0075     out [r20], r19
+0000135d // 0076     clr r19
+001413f4 // 0077     out [r20], r19 ; scl low
+00570020 // 0078     call i2c_send_byte
+00000040 // 0079     ret
+00730020 // 007a     call i2c_start
+00800000 // 007b     jmp i2c_w1
+00730020 // 007c     call i2c_start
+0011105e // 007d     mov r16, byte12
+00570020 // 007e     call i2c_send_byte
+00081187 // 007f     shr byte12, 8
+0011105e // 0080     mov r16, byte12
+00570020 // 0081     call i2c_send_byte
+0000135d // 0082     clr r19
+001413f4 // 0083     out [r20], r19 ; sda low
+0002135d // 0084     mov r19, SCL_BIT
+001413f4 // 0085     out [r20], r19 ; scl high
+0003135d // 0086     mov r19, SCL_BIT | SDA_BIT
+001413f4 // 0087     out [r20], r19 ; sda high
+00000040 // 0088     ret
+00011089 // 0089     or   r16, 1
+00730020 // 008a     call i2c_start
+00670020 // 008b     call i2c_read_byte
+0012115e // 008c     mov r17, r18
+00081186 // 008d     shl r17, 8
+00670020 // 008e     call i2c_read_byte
+12111169 // 008f     or r17, r17, r18
+00820000 // 0090     jmp i2c_stop
+0000135d // 0091 div3216:        clr     R19
+0020155d // 0092                 mov     R21, 32
+0010106f // 0093 div_l2:		shlc    R16, R16
+0011116d // 0094 		rlc     R17, R17
+0013136d // 0095 		rlc	R19, R19
+12131464 // 0096 		sub     R20, R19, R18
+80001480 // 0097 		test	R20, $8000
+009b0004 // 0098 		jmpnz   div_l1
+00011089 // 0099 		or      R16, 1
+0014135e // 009a 		mov     R19, R20
+ffff1582 // 009b div_l1:		dec     R21
+00000043 // 009c 		retz
+00930000 // 009d 		jmp     div_l2
+10100060 // 009e     test r16, r16
+00000043 // 009f     retz
+0000125d // 00a0     clr r18
+0000135d // 00a1     clr r19
+0000145d // 00a2     clr r20
+00011180 // 00a3     test r17, 1
+00a70003 // 00a4     jmpz mul1616_next
+10121262 // 00a5     add r18, r18, r16
+14131363 // 00a6     adc r19, r19, r20
+0010106f // 00a7     shlc r16, r16
+0014146d // 00a8     rlc  r20, r20
+00011187 // 00a9     shr  r17, 1
+00a30004 // 00aa     jmpnz mul1616_next2
+00000040 // 00ab     ret

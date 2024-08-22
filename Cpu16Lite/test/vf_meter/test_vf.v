@@ -14,6 +14,9 @@ module vf_tb;
     main #(.CLK_FREQUENCY_DIV4(800000), .CLK_DIVIDER_BITS(9)) m(.clk(clk), .comp_data_hi(clk), .comp_data_lo(0), .hlt(hlt), .error(error), .scl_io(scl_io), .sda_io(sda_io), .hd_dc(hd_dc),
             .hd_e(hd_e), .hd_data(hd_data), .led_one(led_one), .led_zero(led_zero), .led_pulse(led_pulse), .led_floating(led_floating), .button(button));
 
+    pullup(scl_io);
+    pullup(sda_io);
+
     always #1 clk = ~clk;
 
     initial begin

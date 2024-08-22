@@ -1,7 +1,8 @@
 `include "main.vh"
 
 module main
-#(parameter CLK_FREQUENCY_DIV4 = 27000000/4, CLK_DIVIDER_BITS = 16, ROM_BITS = 9, RAM_BITS = 9, CHARACTER_ROM_BITS = 8)
+#(parameter CLK_FREQUENCY_DIV4 = 27000000/4, TIMER_BITS = 23, RESET_DELAY_BIT = 15, CPU_CLOCK_BIT = 4,
+    LOGIC_PROBE_COUNTER_WIDTH = 19, ROM_BITS = 9)
 (
     input wire clk,
     input wire comp_data_hi,
@@ -35,10 +36,12 @@ module main
     wire [15:0] io_address;
     reg [15:0] io_data_out;
 	wire io_clk;
-    wire interrupt;
+    reg interrupt = 0;
     reg interrupt_clear = 0;
+    wire fc_interrupt;
+    reg fc_interrupt_clear = 0;
     wire [27:0] frequency_code;
-    reg [CLK_DIVIDER_BITS - 1:0] clk_divider = 0;
+    reg [TIMER_BITS - 1:0] timer = 0;
     wire hd_selected;
     wire [1:0] stage;
     reg scl = 1;
@@ -46,23 +49,9 @@ module main
 
     reg [31:0] rom [0:(1<<ROM_BITS)-1];
 
-`ifdef RAM
-    reg [15:0] ram [0:(1<<RAM_BITS)-1];
-`endif
-
-`ifdef CHARACTER_ROM
-    reg [15:0] characters_rom [0:(1<<CHARACTER_ROM_BITS)-1];
-`endif
-
     initial begin
         $readmemh("asm/a.out", rom);
-`ifdef CHARACTER_ROM
-        $readmemh("characters.mem", characters_rom);
-`endif        
     end
-
-    pullup(scl_io);
-    pullup(sda_io);
 
     assign scl_io = scl ? 1'bz : 0;
     assign sda_io = sda ? 1'bz : 0;
@@ -70,23 +59,27 @@ module main
 	assign io_clk = io_rd & io_wr;
 
     // cpu clock = 27M/64 = 421875Hz, cpu cpeed = 421875/4=105468 op/sec
-    cpu cpu16(.clk(clk_divider[5]), .rd(rd), .reset(reset), .address(address), .data(data), .hlt(hlt), .io_rd(io_rd), .stage(stage),
+    cpu cpu16(.clk(timer[CPU_CLOCK_BIT]), .rd(rd), .reset(reset), .address(address), .data(data), .hlt(hlt), .io_rd(io_rd), .stage(stage),
                  .io_wr(io_wr), .io_data_out(io_data_in), .io_data_in(io_data_out), .io_address(io_address), .error(error), .interrupt(interrupt));
 
-    frequency_counter fc(.clk(clk), .iclk(comp_data_hi), .clk_frequency_div4(CLK_FREQUENCY_DIV4), .code(frequency_code), .interrupt(interrupt),
-                            .interrupt_clear(interrupt_clear));
+    frequency_counter fc(.clk(clk), .iclk(comp_data_hi), .clk_frequency_div4(CLK_FREQUENCY_DIV4), .code(frequency_code), .interrupt(fc_interrupt),
+                            .interrupt_clear(fc_interrupt_clear));
 
-    logic_probe_led #(.COUNTER_WIDTH(19))
+    logic_probe_led #(.COUNTER_WIDTH(LOGIC_PROBE_COUNTER_WIDTH))
         probe(.clk(clk), .comp_data_hi(comp_data_hi), .comp_data_lo(comp_data_lo),
                 .led_one(led_one), .led_zero(led_zero), .led_floating(led_floating),
                 .led_pulse(led_pulse));
 
     always @(posedge clk) begin
-        clk_divider <= clk_divider + 1;
+        if (timer == {TIMER_BITS{1'b1}})
+            interrupt <= 1;
+        else if (interrupt_clear)
+            interrupt <= 0;
+        timer <= timer + 1;
     end
 
 `ifndef INTEL
-    always @(negedge clk_divider[CLK_DIVIDER_BITS-1]) begin
+    always @(negedge timer[RESET_DELAY_BIT]) begin
         reset <= 1;
     end
 `endif
@@ -96,7 +89,7 @@ module main
     end
 
     always @(negedge io_clk) begin
-        case (io_address[15:13])
+        case (io_address[15:14])
             0: begin
                 if (io_wr == 0) begin
                     hd_data <= io_data_in[7:0];
@@ -104,8 +97,8 @@ module main
                 end
             end
             1: begin
-                io_data_out <= io_address[0] ? {4'b0, frequency_code[27:16]} : frequency_code[15:0];
-                interrupt_clear <= !io_address[0];
+                io_data_out <= io_address[0] ? {fc_interrupt, 3'b0, frequency_code[27:16]} : frequency_code[15:0];
+                fc_interrupt_clear <= !io_address[0];
             end
             2: begin
                 if (io_wr == 0)
@@ -113,17 +106,7 @@ module main
                 else
                     io_data_out <= {13'b0, button, scl_io, sda_io};
             end
-`ifdef RAM            
-            3: begin
-                if (io_wr == 0)
-                    ram[io_address[RAM_BITS-1:0]] <= io_data_in;
-                else
-                    io_data_out <= ram[io_address[RAM_BITS-1:0]];
-            end
-`endif            
-`ifdef CHARACTER_ROM
-            4: io_data_out <= characters_rom[io_address[CHARACTER_ROM_BITS-1:0]];
-`endif            
+            3: interrupt_clear <= io_data_in[0];
         endcase
     end
 
