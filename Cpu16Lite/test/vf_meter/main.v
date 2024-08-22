@@ -11,22 +11,21 @@ module main
     inout wire scl_io,
     inout wire sda_io,
     input wire button,
-    // ks0108
-    output wire ks_dc,
-    output wire ks_cs1,
-    output wire ks_cs2,
-    output wire ks_e,
+    // hd44780
+    output reg hd_dc = 0,
+    output reg hd_e = 0,
 `ifdef INTEL
-    input wire ks_reset,
-`else
-    output reg ks_reset = 0,
+    input wire reset,
 `endif
-    output reg [7:0] ks_data,
+    output reg [7:0] hd_data,
     output wire led_one,
     output wire led_zero,
     output wire led_floating,
     output wire led_pulse
 );
+`ifndef INTEL
+    reg reset = 0;
+`endif
     wire [15:0] address;
     reg [31:0] data;
     wire rd;
@@ -40,7 +39,7 @@ module main
     reg interrupt_clear = 0;
     wire [27:0] frequency_code;
     reg [CLK_DIVIDER_BITS - 1:0] clk_divider = 0;
-    wire ks_selected;
+    wire hd_selected;
     wire [1:0] stage;
     reg scl = 1;
     reg sda = 1;
@@ -62,13 +61,16 @@ module main
 `endif        
     end
 
+    pullup(scl_io);
+    pullup(sda_io);
+
     assign scl_io = scl ? 1'bz : 0;
     assign sda_io = sda ? 1'bz : 0;
 
 	assign io_clk = io_rd & io_wr;
 
-    // cpu clock = 27M/32 = 843750Hz, cpu cpeed = 843750/4=210937 op/sec
-    cpu cpu16(.clk(clk_divider[4]), .rd(rd), .reset(ks_reset), .address(address), .data(data), .hlt(hlt), .io_rd(io_rd), .stage(stage),
+    // cpu clock = 27M/64 = 421875Hz, cpu cpeed = 421875/4=105468 op/sec
+    cpu cpu16(.clk(clk_divider[5]), .rd(rd), .reset(reset), .address(address), .data(data), .hlt(hlt), .io_rd(io_rd), .stage(stage),
                  .io_wr(io_wr), .io_data_out(io_data_in), .io_data_in(io_data_out), .io_address(io_address), .error(error), .interrupt(interrupt));
 
     frequency_counter fc(.clk(clk), .iclk(comp_data_hi), .clk_frequency_div4(CLK_FREQUENCY_DIV4), .code(frequency_code), .interrupt(interrupt),
@@ -85,7 +87,7 @@ module main
 
 `ifndef INTEL
     always @(negedge clk_divider[CLK_DIVIDER_BITS-1]) begin
-        ks_reset <= 1;
+        reset <= 1;
     end
 `endif
 
@@ -93,14 +95,13 @@ module main
         data <= rom[address[ROM_BITS-1:0]];
     end
 
-    assign ks_selected = io_address[15:13] == 0;
-    assign {ks_dc, ks_cs1, ks_cs2, ks_e} = ks_selected ? {io_address[2:0], !io_wr} : 4'b0110;
-
     always @(negedge io_clk) begin
         case (io_address[15:13])
             0: begin
-                if (io_wr == 0)
-                    ks_data <= io_data_in[7:0];
+                if (io_wr == 0) begin
+                    hd_data <= io_data_in[7:0];
+                    {hd_dc, hd_e} <= io_address[1:0];
+                end
             end
             1: begin
                 io_data_out <= io_address[0] ? {4'b0, frequency_code[27:16]} : frequency_code[15:0];

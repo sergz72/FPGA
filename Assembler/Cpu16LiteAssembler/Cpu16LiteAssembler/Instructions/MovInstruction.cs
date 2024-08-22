@@ -37,7 +37,8 @@ internal sealed class MovInstructionCreator : InstructionCreator
             throw new InstructionException(", expected");
         if (parameters[0].StringValue == "rp")
         {
-            var rp = compiler.CalculateExpression(parameters[2..]);
+            var start = 2;
+            var rp = compiler.CalculateExpression(parameters, ref start);
             if (rp is < 0 or > 255)
                 throw new InstructionException("rp value is out of range");
             return new MovInstruction(line, InstructionCodes.LoadRp, 0, 0, (uint)rp);
@@ -56,13 +57,15 @@ internal sealed class MovInstructionCreator : InstructionCreator
                     throw new InstructionException("invalid number of parameters");
                 if (!parameters[3].IsChar('+'))
                     throw new InstructionException("+ expected");
-                adder = compiler.CalculateExpression(parameters[4..]);
+                var start = 4;
+                adder = compiler.CalculateExpression(parameters, ref start);
             }
 
             return new MovInstruction(line, InstructionCodes.MovReg, regNo, regNo2, (uint)adder);
         }
 
-        var value2 = compiler.CalculateExpression(parameters[2..]);
+        var start2 = 2;
+        var value2 = compiler.CalculateExpression(parameters, ref start2);
         return new MovInstruction(line, InstructionCodes.MovImmediate, regNo, (uint)value2, 0);
     }
 
@@ -112,7 +115,7 @@ internal sealed class MovInstructionCreator : InstructionCreator
         {
             if (!parameters[idx++].IsChar('+'))
                 throw new InstructionException("+ expected");
-            adder = compiler.CalculateExpression(parameters[idx..]);
+            adder = compiler.CalculateExpression(parameters, ref idx);
         }
         if (increment)
             return new MovInstruction(line, InstructionCodes.MovRegisterRpRpInc, regNo, (uint)adder, 0);
@@ -136,7 +139,8 @@ internal sealed class MovInstructionCreator : InstructionCreator
                     throw new InstructionException("invalid number of parameters");
                 if (!parameters[2].IsChar('+'))
                     throw new InstructionException("+ expected");
-                adder = compiler.CalculateExpression(parameters[3..]);
+                var start = 3;
+                adder = compiler.CalculateExpression(parameters, ref start);
             }
 
             if (increment)
@@ -146,7 +150,8 @@ internal sealed class MovInstructionCreator : InstructionCreator
             return new MovInstruction(line, InstructionCodes.MovRpRegister, regNo, (uint)adder, 0);
         }
 
-        var value2 = compiler.CalculateExpression(parameters[1..]);
+        var start1 = 1;
+        var value2 = compiler.CalculateExpression(parameters, ref start1);
         if (increment)
             return new MovInstruction(line, InstructionCodes.MovRpImmediateRpInc, 0, (uint)value2, 0);
         if (decrement)

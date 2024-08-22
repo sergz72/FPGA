@@ -18,12 +18,13 @@
                 <MenuItem Header="Step" Click="Step_OnClick"/>
                 <MenuItem Header="Step over" Click="StepOver_OnClick"/>
                 <MenuItem Header="Reset" Click="Reset_OnClick"/>
+                <MenuItem Header="Run" Click="Run_OnClick"/>
                 <MenuItem Header="Stop" Click="Stop_OnClick"/>
             </MenuItem>
         </Menu>
-        <ScrollViewer DockPanel.Dock="Left">
-            <StackPanel Orientation="Vertical">
-                <Label Content="Code"/>
+        <DockPanel DockPanel.Dock="Left">
+            <Label Content="Code" DockPanel.Dock="Top"/>
+            <ScrollViewer DockPanel.Dock="Left">
                 <cpu16Emulator:CodeControl Name="LbCode" Width="510" ContextRequested="LbCode_OnContextRequested">
                     <cpu16Emulator:CodeControl.ContextMenu>
                         <ContextMenu>
@@ -32,14 +33,20 @@
                         </ContextMenu>
                     </cpu16Emulator:CodeControl.ContextMenu>
                 </cpu16Emulator:CodeControl>
-            </StackPanel>
-        </ScrollViewer>
+            </ScrollViewer>
+        </DockPanel>
         <DockPanel>
             <StackPanel Orientation="Vertical" DockPanel.Dock="Top">
                 <cpu16Emulator:CPUView Name="CpuView"/>
                 <StackPanel Name="SpIODevices" Orientation="Horizontal"/>
             </StackPanel>
-            <ListBox Name="LbLog" DockPanel.Dock="Bottom"/>
+            <ListBox Name="LbLog" DockPanel.Dock="Bottom">
+                <ListBox.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Clear" Click="ClearLog_OnClick"/>
+                    </ContextMenu>
+                </ListBox.ContextMenu>
+            </ListBox>
         </DockPanel>
     </DockPanel>
 </Window>

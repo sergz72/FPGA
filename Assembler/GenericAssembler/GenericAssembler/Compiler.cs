@@ -8,7 +8,7 @@ public enum OutputFormat
 
 public interface ICompiler
 {
-    int CalculateExpression(List<Token> tokens);
+    int CalculateExpression(List<Token> tokens, ref int start);
     string FindRegisterNumber(string registerName);
     int FindConstantValue(string name);
     void RaiseException(string errorMessage);
@@ -71,9 +71,9 @@ public class GenericCompiler: ICompiler
         return RegisterNames.GetValueOrDefault(registerName, registerName);
     }
 
-    public int CalculateExpression(List<Token> tokens)
+    public int CalculateExpression(List<Token> tokens, ref int start)
     {
-        return EParser.Parse(tokens);
+        return EParser.Parse(tokens, ref start);
     }
     
     public void Compile()
@@ -191,7 +191,8 @@ public class GenericCompiler: ICompiler
 
     private void CompileIf(List<Token> tokens)
     {
-        var value = CalculateExpression(tokens);
+        var start = 0;
+        var value = CalculateExpression(tokens, ref start);
         Skip = value == 0;
         AllowElse = true;
     }
@@ -216,7 +217,8 @@ public class GenericCompiler: ICompiler
         var name = tokens[0].StringValue;
         if (Constants.ContainsKey(name))
             throw new CompilerException(CurrentFileName, CurrentLineNo, $"constant with name {name} already defined");
-        var value = CalculateExpression(tokens[1..]);
+        var start = 1;
+        var value = CalculateExpression(tokens, ref start);
         Constants.Add(name, value);
     }
 

@@ -5,21 +5,23 @@ public sealed class ExpressionParser
 {
     private static readonly Dictionary<string, int> Priorities = new()
     {
-        { "*", 6 },
-        { "/", 6 },
+        { "*", 7 },
+        { "/", 7 },
         
-        { "+", 5 },
-        { "-", 5 },
+        { "+", 6 },
+        { "-", 6 },
 
-        { "<<", 4 },
-        { ">>", 4 },
+        { "<<", 5 },
+        { ">>", 5 },
 
-        { ">=", 3 },
-        { "<=", 3 },
-        { ">", 3 },
-        { "<", 3 },
-        { "==", 3 },
-        { "!=", 3 },
+        { ">=", 4 },
+        { "<=", 4 },
+        { ">", 4 },
+        { "<", 4 },
+        { "==", 4 },
+        { "!=", 4 },
+        
+        { "~", 3 },
         
         { "&", 2 },
         { "^", 2 },
@@ -28,6 +30,15 @@ public sealed class ExpressionParser
         { "||", 1 },
         { "&&", 1 }
     };
+
+    private static readonly HashSet<string> AllowedSymbols;
+
+    static ExpressionParser()
+    {
+        AllowedSymbols = Priorities.Select(p => p.Key).ToHashSet();
+        AllowedSymbols.Add("(");
+        AllowedSymbols.Add(")");
+    }
     
     private record OutputItem(string? Op, int Value);
 
@@ -63,12 +74,14 @@ public sealed class ExpressionParser
     
     private void SyntaxError() => _compiler.RaiseException("syntax error");
     
-    public int Parse(List<Token> tokens)
+    public int Parse(List<Token> tokens, ref int start)
     {
         _outputPointer = _opStackPointer = 0;
-        _prevOp = false;
-        foreach (var token in tokens)
+        _prevOp = true;
+        while (start < tokens.Count)
         {
+            var token = tokens[start];
+            var finish = false;
             switch (token.Type)
             {
                 case TokenType.Number:
@@ -78,6 +91,11 @@ public sealed class ExpressionParser
                     StoreNumber(_compiler.FindConstantValue(token.StringValue));
                     break;
                 case TokenType.Symbol:
+                    if (!AllowedSymbols.Contains(token.StringValue))
+                    {
+                        finish = true;
+                        break;
+                    }
                     if (token.StringValue == "(")
                     {
                         CheckOperationStack();
@@ -95,7 +113,7 @@ public sealed class ExpressionParser
                     }
                     else
                     {
-                        if (_prevOp)
+                        if (_prevOp && token.StringValue != "~")
                             SyntaxError();
                         Operation(token.StringValue);
                         _prevOp = true;
@@ -105,6 +123,9 @@ public sealed class ExpressionParser
                     SyntaxError();
                     break;
             }
+            if (finish)
+                break;
+            start++;
         }
         return Finish();
     }
@@ -125,6 +146,9 @@ public sealed class ExpressionParser
                     if (_opStackPointer >= _stackSize)
                         _compiler.RaiseException("data stack overflow");
                     _dataStack[_opStackPointer++] = data.Value;
+                    break;
+                case "~":
+                    _dataStack[_opStackPointer - 1] = ~_dataStack[_opStackPointer - 1];
                     break;
                 case "+":
                     _opStackPointer--;

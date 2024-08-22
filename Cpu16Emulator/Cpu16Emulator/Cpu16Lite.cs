@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Avalonia.Media;
@@ -53,6 +54,9 @@ public sealed class Cpu16Lite
     private const int ALU_OP_SHRC = 16;
 
     public readonly CodeLine[] Code;
+    
+    public readonly HashSet<ushort> Breakpoints = [];
+
     public ushort Pc { get; private set; }
     public ushort Sp { get; private set; }
     public ushort Rp { get; private set; }
@@ -70,16 +74,9 @@ public sealed class Cpu16Lite
     public readonly int Speed;
     public int Ticks { get; private set; }
     
-    private bool _interrupt;
-    public bool Interrupt
-    {
-        get => _interrupt;
-        set {
-            _interrupt = value;
-            if (value)
-                Hlt = false;
-        }
-    }
+    private bool _inInterrupt;
+    
+    public bool Interrupt { get; set; }
 
     public EventHandler<IoEvent>? IoWriteEventHandler;
     public EventHandler<IoEvent>? IoReadEventHandler;
@@ -115,7 +112,12 @@ public sealed class Cpu16Lite
         else
             Step();
     }
-    
+
+    public void Run()
+    {
+        while (!Error & (Hlt | (!Hlt & !Breakpoints.Contains(Pc))))
+            Step();
+    }
     public void Step()
     {
         Ticks++;
@@ -123,10 +125,22 @@ public sealed class Cpu16Lite
             throw new Cpu16Exception("null TicksEventHandler");
         TicksEventHandler(this, Ticks);
         
-        if (Hlt | Error)
+        if (Error)
+            return;
+
+        var instruction = Code[Pc].Instruction;
+
+        if (Interrupt && !_inInterrupt)
+        {
+            _inInterrupt = true;
+            Hlt = false;
+            instruction = 0x00010020; // call 1
+            Pc--;
+        }
+        
+        if (Hlt)
             return;
         
-        var instruction = Code[Pc].Instruction;
         var opType = (instruction >> 4) & 0x0F;
         var opSubtype = instruction & 0x0F;
         var regNo1 = (instruction >> 8) & 0xFF;
@@ -174,7 +188,10 @@ public sealed class Cpu16Lite
                         if (!ConditionMatch(opSubtype))
                             Pc = (ushort)(Pc + 1);
                         else
+                        {
                             Ret();
+                            _inInterrupt = false;
+                        }
                         break;
                     case 0x08: // inc rp
                         IncRp();
@@ -503,11 +520,6 @@ public sealed class Cpu16Lite
             Rp--;
     }
     
-    public void Run()
-    {
-        
-    }
-
     public void Stop()
     {
         
@@ -517,6 +529,6 @@ public sealed class Cpu16Lite
     {
         Ticks = 0;
         Pc = Sp = Rp = 0;
-        Hlt = Error = _interrupt = false;
+        Hlt = Error = Interrupt = _inInterrupt = false;
     }
 }

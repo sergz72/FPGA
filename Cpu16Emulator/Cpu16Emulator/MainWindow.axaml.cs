@@ -11,7 +11,6 @@ public partial class MainWindow : Window, ILogger
 {
     private readonly Cpu16Lite _cpu;
     private readonly IODevice[] _devices;
-    private readonly HashSet<ushort> _breakpoints = [];
     private Point _mousePosition;
     
     public MainWindow(Cpu16Lite cpu, IODevice[] devices)
@@ -22,7 +21,7 @@ public partial class MainWindow : Window, ILogger
         _devices = devices;
 
         LbCode.Lines = _cpu.Code;
-        LbCode.Breakpoints = _breakpoints;
+        LbCode.Breakpoints = _cpu.Breakpoints;
 
         CpuView.Cpu = cpu;
         cpu.IoReadEventHandler = IoRead;
@@ -69,6 +68,9 @@ public partial class MainWindow : Window, ILogger
     {
         switch (e.Key)
         {
+            case Key.F5:
+                Run_OnClick(null, new RoutedEventArgs());
+                break;
             case Key.F10:
                 StepOver_OnClick(null, new RoutedEventArgs());
                 break;
@@ -109,9 +111,21 @@ public partial class MainWindow : Window, ILogger
     private void Reset_OnClick(object? sender, RoutedEventArgs e)
     {
         _cpu.Reset();
+        LbLog.Items.Clear();
         ViewsUpdate();
     }
 
+    private void Run_OnClick(object? sender, RoutedEventArgs e)
+    {
+        _cpu.Run();
+        ViewsUpdate();
+    }
+
+    private void ClearLog_OnClick(object? sender, RoutedEventArgs e)
+    {
+        LbLog.Items.Clear();
+    }
+    
     private void Stop_OnClick(object? sender, RoutedEventArgs e)
     {
     }
@@ -146,7 +160,7 @@ public partial class MainWindow : Window, ILogger
         var pc = LbCode.GetPc(_mousePosition);
         if (pc != null)
         {
-            _breakpoints.Add((ushort)pc);
+            _cpu.Breakpoints.Add((ushort)pc);
             LbCode.Update(_cpu.Pc);
         }
     }
@@ -159,9 +173,9 @@ public partial class MainWindow : Window, ILogger
     private void DeleteBreakpoint_OnClick(object? sender, RoutedEventArgs e)
     {
         var pc = LbCode.GetPc(_mousePosition);
-        if (pc != null && _breakpoints.Contains((ushort)pc))
+        if (pc != null && _cpu.Breakpoints.Contains((ushort)pc))
         {
-            _breakpoints.Remove((ushort)pc);
+            _cpu.Breakpoints.Remove((ushort)pc);
             LbCode.Update(_cpu.Pc);
         }
     }

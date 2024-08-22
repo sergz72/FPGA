@@ -28,13 +28,11 @@ public abstract class InstructionCreator
         return false;
     }
 
-    private static void ReadOffset(List<Token> parameters, int start, out int offset)
+    private static void ReadOffset(ICompiler compiler, List<Token> parameters, ref int start, out int offset)
     {
         if (start == parameters.Count)
             throw new InstructionException("unexpected end of line");
-        if (parameters[start].Type != TokenType.Number)
-            throw new InstructionException("offset expected");
-        offset = parameters[start].IntValue;
+        offset = compiler.CalculateExpression(parameters, ref start);
     }
 
     protected static bool GetRegisterNumberWithIoFlag(ICompiler compiler, List<Token> parameters, ref int start, bool withOffset,
@@ -78,14 +76,12 @@ public abstract class InstructionCreator
             if (parameters[start].IsChar('+'))
             {
                 start++;
-                ReadOffset(parameters, start, out offset);
-                start++;
+                ReadOffset(compiler, parameters, ref start, out offset);
             }
             else if (parameters[start].IsChar('-'))
             {
                 start++;
-                ReadOffset(parameters, start, out var off);
-                start++;
+                ReadOffset(compiler, parameters, ref start, out var off);
                 offset = -off;
             }
             else

@@ -39,7 +39,8 @@ internal sealed class AluInstructionCreator(uint aluOperation) : InstructionCrea
         
         if (parameters[2].Type != TokenType.Name || !GetRegisterNumber(compiler, parameters[2].StringValue, out var regNo2))
         {
-            var v = (uint)compiler.CalculateExpression(parameters[2..]);
+            var start = 2;
+            var v = (uint)compiler.CalculateExpression(parameters, ref start);
             return new AluImmediateInstruction(line, aluOperation, regNo, v);
         }
         
@@ -79,7 +80,8 @@ internal sealed class AluInstructionCreator(uint aluOperation) : InstructionCrea
         if (parameters[2].Type != TokenType.Name || !GetRegisterNumber(compiler, parameters[2].StringValue, out var regNo2))
         {
             // immediate and register
-            var v = (uint)compiler.CalculateExpression(parameters[2..]);
+            var start = 2;
+            var v = (uint)compiler.CalculateExpression(parameters, ref start);
             return new AluImmediateInstruction(line, aluOperation, regNo, v);
         }
         // register-register

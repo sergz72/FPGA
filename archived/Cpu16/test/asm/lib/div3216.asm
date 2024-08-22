@@ -19,7 +19,7 @@ div_l2:		shlc    R16, R16
 		sub     R20, R19, R18
 ; Step-4: Then the most significant bit of the C is checked if it is 0 the least significant bit of Q is set to 1 and A = C otherwise
 ; if it is 1 the least significant bit of Q is set to 0
-		test	R20, $80
+		test	R20, $8000
 		jmpnz   div_l1
 		or      R16, 1
 		mov     R19, R20

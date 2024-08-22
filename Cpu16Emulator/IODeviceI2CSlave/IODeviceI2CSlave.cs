@@ -10,6 +10,7 @@ public class IODeviceI2CSlave: IIODevice
     private enum Mode
     {
         None,
+        Start,
         Address,
         Write,
         Read
@@ -23,7 +24,7 @@ public class IODeviceI2CSlave: IIODevice
 
     public record I2CDeviceData(string Name, I2CDevice Device);
     
-    public record I2CDeviceConfiguration(string DeviceName, string DeviceType, int Address, string Parameters)
+    public record I2CDeviceConfiguration(string DeviceName, string DeviceType, string Address, string Parameters)
     {
         internal I2CDeviceData BuildDevice()
         {
@@ -75,7 +76,8 @@ public class IODeviceI2CSlave: IIODevice
         var devices = JsonSerializer.Deserialize<I2CDeviceConfiguration[]>(stream);
         if (devices == null)
             throw new IODeviceException("could not read devices configuration");
-        _devices = devices.ToDictionary(d => d.Address, d => d.BuildDevice());
+        _devices = devices.ToDictionary(d => int.Parse(d.Address, NumberStyles.HexNumber) << 1,
+            d => d.BuildDevice());
     }
 
     public void IoRead(IoEvent ev)
@@ -97,52 +99,85 @@ public class IODeviceI2CSlave: IIODevice
             var scl = (ev.Data & 2) != 0;
             if (_prevScl && scl && _prevSda != sda)
             {
-                _mode = sda ? Mode.Address : Mode.None;
-                _logger?.Info(sda ? "I2C slave start" : "I2C slave stop");
-                _bitCounter = 0;
-            }
-
-            if (_mode != Mode.None && _prevScl && !scl)
-            {
-                if (_bitCounter < 8)
+                _sentData = true;
+                if (sda)
                 {
-                    if (_mode is Mode.Address or Mode.Write)
-                    {
-                        _data <<= 1;
-                        if (sda)
-                            _data |= 1;
-                    }
-                    else
-                    {
-                        _sentData = (_readData & 0x80) != 0;
-                        _readData <<= 1;
-                    }
+                    _mode = Mode.None;
+                    _logger?.Info("I2C slave stop");
                 }
                 else
+                    _mode = Mode.Start;
+            }
+            else
+            {
+                switch (_mode)
                 {
-                    if (_mode == Mode.Address)
-                    {
-                        _mode = (_data & 1) != 0 ? Mode.Read : Mode.Write;
-                        _ack = GetAck();
-                    }
-                    else
-                    {
-                        if (_currentDevice == null)
-                            throw new IODeviceException("null currentDevice");
-                        if (_mode == Mode.Read)
+                    case Mode.Start:
+                        if (!scl)
                         {
-                            _readData = _currentDevice.Device.Read(_logger!, _currentDevice.Name, _byteCounter + 1);
-                            _ack = false;
+                            _mode = Mode.Address;
+                            _logger?.Info("I2C slave start");
+                            _bitCounter = 0;
+                            _byteCounter = 0;
                         }
-                        else
-                            _currentDevice.Device.Write(_logger!, _currentDevice.Name, _byteCounter, (byte)_data);
-                        _byteCounter++;
-                    }
-                    _sentData = !_ack;
-                    _bitCounter = 0;
+                        break;
+                    case Mode.Address:
+                    case Mode.Write:
+                        if (_prevScl && !scl)
+                        {
+                            if (_bitCounter < 8)
+                            {
+                                _data <<= 1;
+                                if (sda)
+                                    _data |= 1;
+                                _bitCounter++;
+                            }
+                            else
+                            {
+                                if (_mode == Mode.Address)
+                                {
+                                    _mode = (_data & 1) != 0 ? Mode.Read : Mode.Write;
+                                    _ack = GetAck();
+                                }
+                                else
+                                {
+                                    if (_currentDevice == null)
+                                        throw new IODeviceException("null currentDevice");
+                                    _currentDevice.Device.Write(_logger!, _currentDevice.Name, _byteCounter++, (byte)_data);
+                                }
+
+                                _sentData = !_ack;
+                                _bitCounter = 0;
+                            }
+                        }
+                        break;
+                    case Mode.Read:
+                        if (!_prevScl && scl)
+                        {
+                            if (_bitCounter < 8)
+                            {
+                                if (_bitCounter == 0)
+                                {
+                                    if (_currentDevice == null)
+                                        throw new IODeviceException("null currentDevice");
+                                    _readData = _currentDevice.Device.Read(_logger!, _currentDevice.Name,
+                                        _byteCounter++);
+                                }
+
+                                _sentData = (_readData & 0x80) != 0;
+                                _readData <<= 1;
+                                _bitCounter++;
+                            }
+                            else
+                            {
+                                _sentData = false;
+                                _bitCounter = 0;
+                            }
+                        }
+                        break;
                 }
             }
-            
+
             _prevScl = scl;
             _prevSda = sda;
         }
@@ -153,13 +188,10 @@ public class IODeviceI2CSlave: IIODevice
         if (!_devices.TryGetValue(_data & 0xFE, out _currentDevice))
         {
             _currentDevice = null;
-            _logger?.Error($"unknown I2C Device address: {_data}");
+            _logger?.Error($"unknown I2C Device address: {_data:X2}");
             return false;
         }
 
-        if (_mode == Mode.Read)
-            _readData = _currentDevice.Device.Read(_logger!, _currentDevice.Name, 0);
-        
         return true;
     }
 

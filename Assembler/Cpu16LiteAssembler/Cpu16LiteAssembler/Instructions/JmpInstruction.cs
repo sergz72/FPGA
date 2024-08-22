@@ -34,7 +34,8 @@ internal sealed class JmpInstructionCreator(uint addrCode, uint regCode) : Instr
             {
                 if (!parameters[1].IsChar('+'))
                     throw new InstructionException("+ expected");
-                adder = (uint)compiler.CalculateExpression(parameters[2..]);
+                var start = 2;
+                adder = (uint)compiler.CalculateExpression(parameters, ref start);
             }   
             return new JmpInstruction(line, regCode, regNo, adder, null);
         }

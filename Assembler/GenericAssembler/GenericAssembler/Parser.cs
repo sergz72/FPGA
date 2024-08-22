@@ -241,6 +241,7 @@ public class GenericParser: IParser
             case ')':
             case '^':
             case '@':
+            case '~':
                 Result.Add(new Token(c));
                 break;
             case '\'':

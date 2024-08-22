@@ -57,12 +57,20 @@ public sealed class CodeControl: Control
     internal void Update(ushort pc)
     {
         _pc = pc;
+        if (Parent is ScrollViewer sv)
+        {
+            var y = pc * _rowHeight;
+            var offset = sv.Offset.Y;
+            var h = sv.Viewport.Height;
+            if (y < offset || y > offset + h)
+                sv.Offset = new Point(0, y);
+        }
         InvalidateVisual();
     }
 
     public int? GetPc(Point mousePosition)
     {
-        var pc = (int)(mousePosition.X / _rowHeight);
+        var pc = (int)(mousePosition.Y / _rowHeight);
         if (pc < 0 || pc >= (Lines?.Length ?? 0))
             return null;
         return pc;
