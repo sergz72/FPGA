@@ -62,6 +62,11 @@ ROM_BITS = 9)
         $readmemh("asm/a.out", rom);
     end
 
+    assign led_one = !led_onen;
+    assign led_zero = !led_zeron;
+    assign led_floating = !led_floatingn;
+    assign led_pulse = !led_pulsen;
+
     assign scl_io = scl ? 1'bz : 0;
     assign sda_io = sda ? 1'bz : 0;
 
@@ -76,8 +81,8 @@ ROM_BITS = 9)
 
     logic_probe_led #(.COUNTER_WIDTH(LOGIC_PROBE_COUNTER_WIDTH))
         probe(.clk(clk), .comp_data_hi(comp_data_hi), .comp_data_lo(comp_data_lo),
-                .led_one(led_one), .led_zero(led_zero), .led_floating(led_floating),
-                .led_pulse(led_pulse));
+                .led_one(led_onen), .led_zero(led_zeron), .led_floating(led_floatingn),
+                .led_pulse(led_pulsen));
 
     always @(posedge clk) begin
         if (timer == {TIMER_BITS{1'b1}})
