@@ -25,6 +25,8 @@ internal sealed class Cpu16Compiler: GenericCompiler
         {"retne", new OpCodeInstructionCreator(InstructionCodes.Retnz)},
         {"retgt", new OpCodeInstructionCreator(InstructionCodes.RetGt)},
         {"retle", new OpCodeInstructionCreator(InstructionCodes.RetLe)},
+        {"retmi", new OpCodeInstructionCreator(InstructionCodes.RetMi)},
+        {"retpl", new OpCodeInstructionCreator(InstructionCodes.RetPl)},
 
         {"reti", new OpCodeInstructionCreator(InstructionCodes.Reti)},
         {"retic", new OpCodeInstructionCreator(InstructionCodes.Retic)},
@@ -37,6 +39,8 @@ internal sealed class Cpu16Compiler: GenericCompiler
         {"retine", new OpCodeInstructionCreator(InstructionCodes.Retinz)},
         {"retigt", new OpCodeInstructionCreator(InstructionCodes.RetiGt)},
         {"retile", new OpCodeInstructionCreator(InstructionCodes.RetiLe)},
+        {"retimi", new OpCodeInstructionCreator(InstructionCodes.RetiMi)},
+        {"retipl", new OpCodeInstructionCreator(InstructionCodes.RetiPl)},
         
         {"mov", new MovInstructionCreator()},
         {"loada", new LoadAddressInstructionCreator()},
@@ -85,6 +89,8 @@ internal sealed class Cpu16Compiler: GenericCompiler
         {"jmpne", new JmpInstructionCreator(InstructionCodes.JmpnzAddr, InstructionCodes.JmpnzReg)},
         {"jmpgt", new JmpInstructionCreator(InstructionCodes.JmpGtAddr, InstructionCodes.JmpGtReg)},
         {"jmple", new JmpInstructionCreator(InstructionCodes.JmpLeAddr, InstructionCodes.JmpLeReg)},
+        {"jmpmi", new JmpInstructionCreator(InstructionCodes.JmpMiAddr, InstructionCodes.JmpMiReg)},
+        {"jmppl", new JmpInstructionCreator(InstructionCodes.JmpPlAddr, InstructionCodes.JmpPlReg)},
 
         {"call", new JmpInstructionCreator(InstructionCodes.CallAddr, InstructionCodes.CallReg)},
         {"callc", new JmpInstructionCreator(InstructionCodes.CallcAddr, InstructionCodes.CallcReg)},
@@ -96,6 +102,8 @@ internal sealed class Cpu16Compiler: GenericCompiler
         {"callnz", new JmpInstructionCreator(InstructionCodes.CallnzAddr, InstructionCodes.CallnzReg)},
         {"callne", new JmpInstructionCreator(InstructionCodes.CallnzAddr, InstructionCodes.CallnzReg)},
         {"callgt", new JmpInstructionCreator(InstructionCodes.CallGtAddr, InstructionCodes.CallGtReg)},
-        {"callle", new JmpInstructionCreator(InstructionCodes.CallLeAddr, InstructionCodes.CallLeReg)}
+        {"callle", new JmpInstructionCreator(InstructionCodes.CallLeAddr, InstructionCodes.CallLeReg)},
+        {"callmi", new JmpInstructionCreator(InstructionCodes.CallMiAddr, InstructionCodes.CallMiReg)},
+        {"callpl", new JmpInstructionCreator(InstructionCodes.CallPlAddr, InstructionCodes.CallPlReg)}
     };
 }

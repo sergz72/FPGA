@@ -5,6 +5,7 @@
         xmlns:cpu16Emulator="clr-namespace:Cpu16Emulator"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="Cpu16Emulator.MainWindow"
+        Height="1000"
         KeyDown="InputElement_OnKeyDown"
         Title="Cpu16 emulator">
     <DockPanel>

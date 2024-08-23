@@ -160,6 +160,10 @@ int BuildCondition(int opSubType)
         5 => conditonFlagC | conditonFlagZ | conditionNeg,
         // z == 1 || c == 1
         6 => conditonFlagC | conditonFlagZ,
+        // n == 1
+        7 => conditonFlagN,
+        // n == 0
+        8 => conditonFlagN | conditionNeg,
         _ => hlt | error
     };
 }

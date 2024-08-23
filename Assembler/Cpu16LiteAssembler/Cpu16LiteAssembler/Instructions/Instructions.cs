@@ -32,6 +32,8 @@ internal static class InstructionCodes
     internal const uint JmpnzAddr = 4;
     internal const uint JmpGtAddr = 5;
     internal const uint JmpLeAddr = 6;
+    internal const uint JmpMiAddr = 7;
+    internal const uint JmpPlAddr = 8;
     internal const uint JmpReg = 0x10;
     internal const uint JmpcReg = 0x11;
     internal const uint JmpncReg = 0x12;
@@ -39,6 +41,8 @@ internal static class InstructionCodes
     internal const uint JmpnzReg = 0x14;
     internal const uint JmpGtReg = 0x15;
     internal const uint JmpLeReg = 0x16;
+    internal const uint JmpMiReg = 0x17;
+    internal const uint JmpPlReg = 0x18;
 
     internal const uint CallAddr = 0x20;
     internal const uint CallcAddr = 0x21;
@@ -47,6 +51,8 @@ internal static class InstructionCodes
     internal const uint CallnzAddr = 0x24;
     internal const uint CallGtAddr = 0x25;
     internal const uint CallLeAddr = 0x26;
+    internal const uint CallMiAddr = 0x27;
+    internal const uint CallPlAddr = 0x28;
     internal const uint CallReg = 0x30;
     internal const uint CallcReg = 0x31;
     internal const uint CallncReg = 0x32;
@@ -54,6 +60,8 @@ internal static class InstructionCodes
     internal const uint CallnzReg = 0x34;
     internal const uint CallGtReg = 0x35;
     internal const uint CallLeReg = 0x36;
+    internal const uint CallMiReg = 0x37;
+    internal const uint CallPlReg = 0x38;
 
     internal const uint Ret = 0x40;
     internal const uint Retc = 0x41;
@@ -62,6 +70,8 @@ internal static class InstructionCodes
     internal const uint Retnz = 0x44;
     internal const uint RetGt = 0x45;
     internal const uint RetLe = 0x46;
+    internal const uint RetMi = 0x47;
+    internal const uint RetPl = 0x48;
 
     internal const uint Reti = 0x50;
     internal const uint Retic = 0x51;
@@ -70,6 +80,8 @@ internal static class InstructionCodes
     internal const uint Retinz = 0x54;
     internal const uint RetiGt = 0x55;
     internal const uint RetiLe = 0x56;
+    internal const uint RetiMi = 0x57;
+    internal const uint RetiPl = 0x58;
     
     internal const uint IncRp = 0x58;
     internal const uint DecRp = 0x59;

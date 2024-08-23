@@ -1,0 +1,6 @@
+{
+  "CpuSpeed": 100,
+  "IODevices": [
+    { "FileName": "IODeviceMemory/bin/Debug/net8.0/IODeviceMemory.dll", "Parameters": "address=0 size=512 control=LCD1,128,4" }
+  ]
+}

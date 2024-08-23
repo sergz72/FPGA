@@ -66,6 +66,7 @@ public partial class CPUView : UserControl
         UpdateContent(LbC, _cpu.C, markChangesAsBold);
         UpdateContent(LbZ, _cpu.Z, markChangesAsBold);
         UpdateContent(LbN, _cpu.N, markChangesAsBold);
+        UpdateContent(LbInterrupt, _cpu.Interrupt, markChangesAsBold);
         LbTicks.Content = _cpu.Ticks.ToString();
         var idx = 0;
         for (var row = 1; row < 17; row++)

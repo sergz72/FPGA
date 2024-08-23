@@ -1,64 +1,93 @@
 .include "main16x2.asmh"
 
-.equ FREQUENCY_CODE_ADDRESS $2000
-.equ DISPLAY_CONTROLLER_ADDRESS 0
-.equ MCP4725_ADDRESS1 $60 << 1
-.equ MCP3425_ADDRESS1 $68 << 1
-.equ MCP3425_ADDRESS2 $6A << 1
-.equ V_MUL 3125
-.equ V_DIV 10000
-.equ DISPLAY_CONTROLLER_E  1
-.equ DISPLAY_CONTROLLER_RS 2
-
 .def frequency_code_address r64
 .def frequency_code_lo r65
 .def frequency_code_hi r66
 .def display_controller_address r67
+.def timer_interrupt_clear_address r68
+.def zero r69
+.def one r70
+.def current_channel r71
 
 jmp start
-    in frequency_code_lo, [frequency_code_address]
-    in frequency_code_hi, [frequency_code_address+1]
+    out [timer_interrupt_clear_address], one
+    out [timer_interrupt_clear_address], zero
     reti
 start:
     mov frequency_code_address, FREQUENCY_CODE_ADDRESS
     mov display_controller_address, DISPLAY_CONTROLLER_ADDRESS
+    mov timer_interrupt_clear_address, TIMER_INTERRUPT_CLEAR_ADDRESS
+    clr zero
+    mov one, 1
 
-    mov r17, $88
-    mov r16, MCP3425_ADDRESS1
-    call i2c_master_write1
-    mov r17, $88
-    mov r16, MCP3425_ADDRESS2
-    call i2c_master_write1
+    call hd_init
+    call set_channel0
 
-    ; the above code requires 534 cpu ops
+    ; the above code requires 2000 cpu ops
 main_loop:
-    ; about 7530 cpu operations
-    ; with reserve ~32000 ops
-    ; CPU clock should be about 128000 Hz
+    ; about 5100 cpu operations
+    ; with reserve ~20000 ops
+    ; CPU clock should be about 100000 Hz
     hlt
+    call prepare_adc_data
+    test current_channel, current_channel
+    jmpz to_freq_data
+    mov r17, $C0 ; second row
+    mov rp, 48
+    call show_row
+
+to_freq_data:
+    in frequency_code_hi, [frequency_code_address+1]
+    test frequency_code_hi, $8000
+    jmpz change_channel
+    in frequency_code_lo, [frequency_code_address]
+    in frequency_code_hi, [frequency_code_address+1]
+    and frequency_code_hi, $7FFF
+
     call prepare_freq_data
     mov r17, $80 ; first row
+    mov rp, 32
     call show_row
-    call prepare_adc_data
-    mov r17, $C0 ; second row
-    call show_row
+
+change_channel:
+    test current_channel, current_channel
+    jmpz set_ch1
+    call set_channel0
+    jmp main_loop
+set_ch1:
+    call set_channel1    
     jmp main_loop
 
+set_channel0:
+    clr current_channel
+    mov r17, MCP3426_CHANNEL0_CODE
+set_channel:    
+    mov r16, MCP3426_ADDRESS
+    call i2c_master_write1
+    ret
+
+set_channel1:
+    mov current_channel, 1
+    mov r17, MCP3426_CHANNEL1_CODE
+    jmp set_channel
+
 prepare_adc_data:
-    mov r45, 86 ; 'V'
-    mov r46, 50 ; '2'
-    mov r47, 52 ; '4'
-
-    mov rp, 45
-
-    mov r16, MCP3425_ADDRESS1
-    call get_adc_channel_data
-    call save_adc_channel_data
-    mov r16, MCP3425_ADDRESS2
-    mov @--rp, 'V'
+    test current_channel, current_channel
+    jmpz prepare_adc_data_channel0
+    mov r61, 86 ; 'V'
+    mov r62, 50 ; '2'
+    mov r63, 52 ; '4'
+    mov rp, 61
+adc_get_save:
+    mov r16, MCP3426_ADDRESS
     call get_adc_channel_data
     call save_adc_channel_data
     ret
+
+prepare_adc_data_channel0:
+    mov r54, 86 ; 'V'
+    mov rp, 54
+    jmp adc_get_save
 
 save_adc_channel_data:
     mov r18, 10
@@ -106,7 +135,6 @@ save32:
     ret
 
 show_row:
-    mov rp, 32
     mov r16, 16
     ; ddram address set command
     out [display_controller_address+DISPLAY_CONTROLLER_E], r17
@@ -116,4 +144,36 @@ show_row2:
     out [display_controller_address+DISPLAY_CONTROLLER_RS], @rp++
     dec r16
     jmpnz show_row2
+    ret
+
+hd_init:
+    mov r17, $38 ; 2 rows
+    out [display_controller_address+DISPLAY_CONTROLLER_E], r17
+    out [display_controller_address], r17
+    mov r16, 5 * DELAY_MS_OPS
+    call delay
+    out [display_controller_address+DISPLAY_CONTROLLER_E], r17
+    out [display_controller_address], r17
+    mov r16, 1 * DELAY_MS_OPS
+    call delay
+    out [display_controller_address+DISPLAY_CONTROLLER_E], r17
+    out [display_controller_address], r17
+    out [display_controller_address+DISPLAY_CONTROLLER_E], r17
+    out [display_controller_address], r17
+    mov r17, 1 ; clear display
+    out [display_controller_address+DISPLAY_CONTROLLER_E], r17
+    out [display_controller_address], r17
+    mov r16, 2 * DELAY_MS_OPS
+    call delay
+;    mov r17, 6 ; entry mode address increment
+;    out [display_controller_address+DISPLAY_CONTROLLER_E], r17
+;    out [display_controller_address], r17
+    mov r17, 9 ; display on
+    out [display_controller_address+DISPLAY_CONTROLLER_E], r17
+    out [display_controller_address], r17
+    ret
+
+delay:
+    dec r16
+    jmpnz delay
     ret

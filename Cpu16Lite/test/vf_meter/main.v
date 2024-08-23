@@ -1,8 +1,17 @@
 `include "main.vh"
 
 module main
-#(parameter CLK_FREQUENCY_DIV4 = 27000000/4, TIMER_BITS = 23, RESET_DELAY_BIT = 15, CPU_CLOCK_BIT = 4,
-    LOGIC_PROBE_COUNTER_WIDTH = 19, ROM_BITS = 9)
+#(parameter CLK_FREQUENCY_DIV4 = 27000000/4,
+// 3.375 interrupts/sec
+TIMER_BITS = 23,
+// about 20 ms delay
+RESET_DELAY_BIT = 19,
+// div = 64
+CPU_CLOCK_BIT = 5,
+// 50 hz refresh rate
+LOGIC_PROBE_COUNTER_WIDTH = 19,
+// 512 bytes ROM
+ROM_BITS = 9)
 (
     input wire clk,
     input wire comp_data_hi,

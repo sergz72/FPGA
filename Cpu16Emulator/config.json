@@ -1,7 +1,0 @@
-{
-  "CpuSpeed": 100,
-  "IODevices": [
-    { "FileName": "IODeviceFrequencyCounter/bin/Debug/net8.0/IODeviceFrequencyCounter.dll", "Parameters": "address=0x2000 value=123456789" },
-    { "FileName": "IODeviceI2CSlave/bin/Debug/net8.0/IODeviceI2CSlave.dll", "Parameters": "address=0x4000 devices=i2cConfig.json" }
-  ]
-}

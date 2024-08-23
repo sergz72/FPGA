@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
              x:Class="Cpu16Emulator.CPUView">
-    <Grid ColumnDefinitions="30,45,30,30,30,30,30,20,40,20,20,20,20,20,20,20,50,*" RowDefinitions="Auto,Auto,Auto">
+    <Grid ColumnDefinitions="30,45,30,30,30,30,30,20,40,20,20,20,20,20,20,20,70,20,50,*" RowDefinitions="Auto,Auto,Auto">
         <Label Content="Registers" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="16"/>
         <Grid Name="GRegisters" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="16"
               ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
@@ -25,7 +25,9 @@
         <Label Name="LbZ" Grid.Column="13" Grid.Row="2"  Content="0"/>
         <Label Content="N" Grid.Column="14" Grid.Row="2"/>
         <Label Name="LbN" Grid.Column="15" Grid.Row="2"  Content="0"/>
-        <Label Content="Ticks" Grid.Column="16" Grid.Row="2"/>
-        <Label Name="LbTicks" Grid.Column="17" Grid.Row="2"  Content="0"/>
+        <Label Content="Interrupt" Grid.Column="16" Grid.Row="2"/>
+        <Label Name="LbInterrupt" Grid.Column="17" Grid.Row="2"  Content="0"/>
+        <Label Content="Ticks" Grid.Column="18" Grid.Row="2"/>
+        <Label Name="LbTicks" Grid.Column="19" Grid.Row="2"  Content="0"/>
     </Grid>
 </UserControl>

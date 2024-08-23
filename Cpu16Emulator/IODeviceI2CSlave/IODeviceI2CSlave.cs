@@ -36,6 +36,7 @@ public class IODeviceI2CSlave: IIODevice
             return DeviceType switch
             {
                 "MCP3425" => new MCP3425(Parameters),
+                "MCP3426" => new MCP3426(Parameters),
                 "MCP4725" => new MCP4725(Parameters),
                 _ => throw new IODeviceException("Unknown I2C device type: " + DeviceType)
             };

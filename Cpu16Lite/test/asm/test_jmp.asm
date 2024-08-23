@@ -24,5 +24,13 @@ next4:	mov r0, 2
 	hlt
 next5:	cmp r0, 2
 	jmpgt error
-	jmple start
+	jmple next6
+	hlt
+next6:  test r0, r0
+	jmpmi error
+	jmppl next7
+	hlt
+next7:	not r0
+	jmppl error
+	jmpmi start
 error:	hlt

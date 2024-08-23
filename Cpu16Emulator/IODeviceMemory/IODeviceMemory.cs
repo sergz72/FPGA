@@ -14,10 +14,17 @@ public sealed class IODeviceMemory: IIODevice
         var kv = IODeviceParametersParser.ParseParameters(parameters);
         _startAddress = IODeviceParametersParser.ParseUShort(kv, "address") ?? 
                         throw new IODeviceException("memory: missing or wrong address parameter");
-        var length = IODeviceParametersParser.ParseUShort(kv, "length") ?? 
-                        throw new IODeviceException("memory: missing or wrong length parameter");
-        _endAddress = (ushort)(_startAddress + length - 1);
-        _memory = new ushort[length];
+        var size = IODeviceParametersParser.ParseUShort(kv, "size") ?? 
+                        throw new IODeviceException("memory: missing or wrong size parameter");
+        if (!kv.TryGetValue("control", out var control))
+            throw new IODeviceException("IODeviceMemory: missing control parameter");
+
+        _endAddress = (ushort)(_startAddress + size - 1);
+        _memory = new ushort[size];
+
+        if (control.StartsWith("LCD1,"))
+            return LCD1.Create(_memory, control[5..]);
+        
         return null;
     }
 

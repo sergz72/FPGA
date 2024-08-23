@@ -497,6 +497,8 @@ public sealed class Cpu16Lite
             case 4: return !Z;
             case 5: return !C & !Z;
             case 6: return Z | C;
+            case 7: return N;
+            case 8: return !N;
             default:
                 Hlt = Error = true;
                 break;

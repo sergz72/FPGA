@@ -8,6 +8,8 @@ public class IODeviceFrequencyCounter: IIODevice
 {
     private int _value;
     private ushort _address;
+    private int _interrupt;
+    private ILogger? _logger;
     
     public Control? Init(string parameters, ILogger logger)
     {
@@ -17,6 +19,8 @@ public class IODeviceFrequencyCounter: IIODevice
         if (!kv.TryGetValue("value", out var sValue) ||
             !int.TryParse(sValue, out _value))
             throw new IODeviceException("frequencyCounter: missing or wrong value parameter");
+        _interrupt = 0;
+        _logger = logger;
         return null;
     }
 
@@ -24,17 +28,22 @@ public class IODeviceFrequencyCounter: IIODevice
     {
         if ((ushort)(ev.Address & 0xFFFE) == _address)
         {
-            ev.Data = (ev.Address & 1) == 0 ? (ushort)(_value & 0xFFFF) : (ushort)(_value >> 16);
-            ev.Interrupt = false;
+            ev.Data = (ev.Address & 1) == 0 ? (ushort)(_value & 0xFFFF) : (ushort)((_value >> 16) | _interrupt);
+            if (ev.Address == _address)
+                _interrupt = 0;
         }
     }
 
     public void IoWrite(IoEvent ev)
     {
+        if ((ushort)(ev.Address & 0xFFFE) == _address)
+            _logger?.Error("Frequency counter io write");
     }
 
     public bool? TicksUpdate(int cpuSpeed, int ticks)
     {
-        return ticks % cpuSpeed == 0 ? true : null;
+        if ((ticks % cpuSpeed) == 0)
+            _interrupt = 0x8000;
+        return null;
     }
 }
