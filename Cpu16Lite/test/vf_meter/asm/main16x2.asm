@@ -139,9 +139,11 @@ show_row:
     ; ddram address set command
     out [display_controller_address+DISPLAY_CONTROLLER_E], r17
     out [display_controller_address], r17
+    call hd_delay
 show_row2:
     out [display_controller_address+DISPLAY_CONTROLLER_RS+DISPLAY_CONTROLLER_E], @rp
     out [display_controller_address+DISPLAY_CONTROLLER_RS], @rp++
+    call hd_delay
     dec r16
     jmpnz show_row2
     ret
@@ -158,6 +160,7 @@ hd_init:
     call delay
     out [display_controller_address+DISPLAY_CONTROLLER_E], r17
     out [display_controller_address], r17
+    call hd_delay
     out [display_controller_address+DISPLAY_CONTROLLER_E], r17
     out [display_controller_address], r17
     mov r17, 1 ; clear display
@@ -168,9 +171,10 @@ hd_init:
 ;    mov r17, 6 ; entry mode address increment
 ;    out [display_controller_address+DISPLAY_CONTROLLER_E], r17
 ;    out [display_controller_address], r17
-    mov r17, 9 ; display on
+    mov r17, $0C ; display on
     out [display_controller_address+DISPLAY_CONTROLLER_E], r17
     out [display_controller_address], r17
+hd_delay:
     ret
 
 delay:

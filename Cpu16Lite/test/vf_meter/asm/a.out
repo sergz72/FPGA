@@ -7,7 +7,7 @@
 c000445d // 0006     mov timer_interrupt_clear_address, TIMER_INTERRUPT_CLEAR_ADDRESS
 0000455d // 0007     clr zero
 0001465d // 0008     mov one, 1
-00620020 // 0009     call hd_init
+00640020 // 0009     call hd_init
 00220020 // 000a     call set_channel0
 0000005f // 000b     hlt
 002a0020 // 000c     call prepare_adc_data
@@ -35,7 +35,7 @@ c000445d // 0006     mov timer_interrupt_clear_address, TIMER_INTERRUPT_CLEAR_AD
 0000475d // 0022     clr current_channel
 0018115d // 0023     mov r17, MCP3426_CHANNEL0_CODE
 00d0105d // 0024     mov r16, MCP3426_ADDRESS
-00a90020 // 0025     call i2c_master_write1
+00ac0020 // 0025     call i2c_master_write1
 00000040 // 0026     ret
 0001475d // 0027     mov current_channel, 1
 0038115d // 0028     mov r17, MCP3426_CHANNEL1_CODE
@@ -59,13 +59,13 @@ c000445d // 0006     mov timer_interrupt_clear_address, TIMER_INTERRUPT_CLEAR_AD
 0002165d // 003a     mov r22, 2
 00540020 // 003b     call save32
 00000040 // 003c     ret
-00b80020 // 003d     call i2c_master_read2
+00bb0020 // 003d     call i2c_master_read2
 0c35105d // 003e     mov r16, V_MUL
-00cc0020 // 003f     call mul1616
+00cf0020 // 003f     call mul1616
 0012105e // 0040     mov r16, r18
 0013115e // 0041     mov r17, r19
 2710125d // 0042     mov r18, V_DIV
-00c00020 // 0043     call div3216
+00c30020 // 0043     call div3216
 00000040 // 0044     ret
 00482e5d // 0045     mov r46, 72 ; 'H'
 007a2f5d // 0046     mov r47, 122 ; 'z'
@@ -82,7 +82,7 @@ c000445d // 0006     mov timer_interrupt_clear_address, TIMER_INTERRUPT_CLEAR_AD
 00520020 // 0051     call save3
 00000059 // 0052     dec rp
 0003165d // 0053     mov r22, 3
-00c00020 // 0054     call div3216
+00c30020 // 0054     call div3216
 00301382 // 0055     add r19, '0'
 000013e6 // 0056     mov @--rp, r19
 ffff1682 // 0057     dec r22
@@ -91,128 +91,131 @@ ffff1682 // 0057     dec r22
 0010105d // 005a     mov r16, 16
 014311f4 // 005b     out [display_controller_address+DISPLAY_CONTROLLER_E], r17
 004311f4 // 005c     out [display_controller_address], r17
-034300f5 // 005d     out [display_controller_address+DISPLAY_CONTROLLER_RS+DISPLAY_CONTROLLER_E], @rp
-024300f6 // 005e     out [display_controller_address+DISPLAY_CONTROLLER_RS], @rp++
-ffff1082 // 005f     dec r16
-005d0004 // 0060     jmpnz show_row2
-00000040 // 0061     ret
-0038115d // 0062     mov r17, $38 ; 2 rows
-014311f4 // 0063     out [display_controller_address+DISPLAY_CONTROLLER_E], r17
-004311f4 // 0064     out [display_controller_address], r17
-0212105d // 0065     mov r16, 5 * DELAY_MS_OPS
-00780020 // 0066     call delay
-014311f4 // 0067     out [display_controller_address+DISPLAY_CONTROLLER_E], r17
-004311f4 // 0068     out [display_controller_address], r17
-006a105d // 0069     mov r16, 1 * DELAY_MS_OPS
-00780020 // 006a     call delay
-014311f4 // 006b     out [display_controller_address+DISPLAY_CONTROLLER_E], r17
-004311f4 // 006c     out [display_controller_address], r17
+007a0020 // 005d     call hd_delay
+034300f5 // 005e     out [display_controller_address+DISPLAY_CONTROLLER_RS+DISPLAY_CONTROLLER_E], @rp
+024300f6 // 005f     out [display_controller_address+DISPLAY_CONTROLLER_RS], @rp++
+007a0020 // 0060     call hd_delay
+ffff1082 // 0061     dec r16
+005e0004 // 0062     jmpnz show_row2
+00000040 // 0063     ret
+0038115d // 0064     mov r17, $38 ; 2 rows
+014311f4 // 0065     out [display_controller_address+DISPLAY_CONTROLLER_E], r17
+004311f4 // 0066     out [display_controller_address], r17
+0212105d // 0067     mov r16, 5 * DELAY_MS_OPS
+007b0020 // 0068     call delay
+014311f4 // 0069     out [display_controller_address+DISPLAY_CONTROLLER_E], r17
+004311f4 // 006a     out [display_controller_address], r17
+006a105d // 006b     mov r16, 1 * DELAY_MS_OPS
+007b0020 // 006c     call delay
 014311f4 // 006d     out [display_controller_address+DISPLAY_CONTROLLER_E], r17
 004311f4 // 006e     out [display_controller_address], r17
-0001115d // 006f     mov r17, 1 ; clear display
+007a0020 // 006f     call hd_delay
 014311f4 // 0070     out [display_controller_address+DISPLAY_CONTROLLER_E], r17
 004311f4 // 0071     out [display_controller_address], r17
-00d4105d // 0072     mov r16, 2 * DELAY_MS_OPS
-00780020 // 0073     call delay
-0009115d // 0074     mov r17, 9 ; display on
-014311f4 // 0075     out [display_controller_address+DISPLAY_CONTROLLER_E], r17
-004311f4 // 0076     out [display_controller_address], r17
-00000040 // 0077     ret
-ffff1082 // 0078     dec r16
-00780004 // 0079     jmpnz delay
+0001115d // 0072     mov r17, 1 ; clear display
+014311f4 // 0073     out [display_controller_address+DISPLAY_CONTROLLER_E], r17
+004311f4 // 0074     out [display_controller_address], r17
+00d4105d // 0075     mov r16, 2 * DELAY_MS_OPS
+007b0020 // 0076     call delay
+000c115d // 0077     mov r17, $0C ; display on
+014311f4 // 0078     out [display_controller_address+DISPLAY_CONTROLLER_E], r17
+004311f4 // 0079     out [display_controller_address], r17
 00000040 // 007a     ret
-00801080 // 007b     test r16, $80
-007f0004 // 007c     jmpnz i2c_send1
-0000135d // 007d     clr r19
-00800000 // 007e     jmp i2c_send2
-0001135d // 007f     mov r19, SDA_BIT
-001413f4 // 0080     out [r20], r19
-00021389 // 0081     or r19, SCL_BIT
-001413f4 // 0082     out [r20], r19 ; scl high
-fffd1388 // 0083     and r19, ~SCL_BIT
-001413f4 // 0084     out [r20], r19 ; scl low
-00000040 // 0085     ret
-0008155d // 0086     mov r21, 8
-007b0020 // 0087     call i2c_send_bit
-00011086 // 0088     shl r16, 1
-ffff1582 // 0089     dec r21
-00870004 // 008a     jmpnz i2c_send_byte_loop
-0080105d // 008b     mov r16, $80
-007b0020 // 008c     call i2c_send_bit ; ack
-00000040 // 008d     ret
-0003135d // 008e     mov r19, SCL_BIT | SDA_BIT
-001413f4 // 008f     out [r20], r19 ; scl high, sda high
-001412f0 // 0090     in r18, [r20]
-00011288 // 0091     and r18, SDA_BIT
-12101069 // 0092     or  r16, r16, r18
-fffd1388 // 0093     and r19, ~SCL_BIT
-001413f4 // 0094     out [r20], r19 ; scl low
-00000040 // 0095     ret
-0008155d // 0096     mov r21, 8
-0000105d // 0097     clr r16
-00011086 // 0098     shl r16, 1
-008e0020 // 0099     call i2c_read_bit
-ffff1582 // 009a     dec r21
-00980004 // 009b     jmpnz i2c_read_byte_loop
-0010125e // 009c     mov  r18, r16
-0000105d // 009d     clr  r16
-007b0020 // 009e     call i2c_send_bit ; ack
-0001135d // 009f     mov r19, SDA_BIT
-001413f4 // 00a0     out [r20], r19 ; sda high
-00000040 // 00a1     ret
-8000145d // 00a2     mov r20, I2C_PORT_ADDRESS
-0002135d // 00a3     mov r19, SCL_BIT
-001413f4 // 00a4     out [r20], r19
-0000135d // 00a5     clr r19
-001413f4 // 00a6     out [r20], r19 ; scl low
-00860020 // 00a7     call i2c_send_byte
-00000040 // 00a8     ret
-00a20020 // 00a9     call i2c_start
-00af0000 // 00aa     jmp i2c_w1
-00a20020 // 00ab     call i2c_start
-0011105e // 00ac     mov r16, byte12
-00860020 // 00ad     call i2c_send_byte
-00081187 // 00ae     shr byte12, 8
+ffff1082 // 007b     dec r16
+007b0004 // 007c     jmpnz delay
+00000040 // 007d     ret
+00801080 // 007e     test r16, $80
+00820004 // 007f     jmpnz i2c_send1
+0000135d // 0080     clr r19
+00830000 // 0081     jmp i2c_send2
+0001135d // 0082     mov r19, SDA_BIT
+001413f4 // 0083     out [r20], r19
+00021389 // 0084     or r19, SCL_BIT
+001413f4 // 0085     out [r20], r19 ; scl high
+fffd1388 // 0086     and r19, ~SCL_BIT
+001413f4 // 0087     out [r20], r19 ; scl low
+00000040 // 0088     ret
+0008155d // 0089     mov r21, 8
+007e0020 // 008a     call i2c_send_bit
+00011086 // 008b     shl r16, 1
+ffff1582 // 008c     dec r21
+008a0004 // 008d     jmpnz i2c_send_byte_loop
+0080105d // 008e     mov r16, $80
+007e0020 // 008f     call i2c_send_bit ; ack
+00000040 // 0090     ret
+0003135d // 0091     mov r19, SCL_BIT | SDA_BIT
+001413f4 // 0092     out [r20], r19 ; scl high, sda high
+001412f0 // 0093     in r18, [r20]
+00011288 // 0094     and r18, SDA_BIT
+12101069 // 0095     or  r16, r16, r18
+fffd1388 // 0096     and r19, ~SCL_BIT
+001413f4 // 0097     out [r20], r19 ; scl low
+00000040 // 0098     ret
+0008155d // 0099     mov r21, 8
+0000105d // 009a     clr r16
+00011086 // 009b     shl r16, 1
+00910020 // 009c     call i2c_read_bit
+ffff1582 // 009d     dec r21
+009b0004 // 009e     jmpnz i2c_read_byte_loop
+0010125e // 009f     mov  r18, r16
+0000105d // 00a0     clr  r16
+007e0020 // 00a1     call i2c_send_bit ; ack
+0001135d // 00a2     mov r19, SDA_BIT
+001413f4 // 00a3     out [r20], r19 ; sda high
+00000040 // 00a4     ret
+8000145d // 00a5     mov r20, I2C_PORT_ADDRESS
+0002135d // 00a6     mov r19, SCL_BIT
+001413f4 // 00a7     out [r20], r19
+0000135d // 00a8     clr r19
+001413f4 // 00a9     out [r20], r19 ; scl low
+00890020 // 00aa     call i2c_send_byte
+00000040 // 00ab     ret
+00a50020 // 00ac     call i2c_start
+00b20000 // 00ad     jmp i2c_w1
+00a50020 // 00ae     call i2c_start
 0011105e // 00af     mov r16, byte12
-00860020 // 00b0     call i2c_send_byte
-0000135d // 00b1     clr r19
-001413f4 // 00b2     out [r20], r19 ; sda low
-0002135d // 00b3     mov r19, SCL_BIT
-001413f4 // 00b4     out [r20], r19 ; scl high
-0003135d // 00b5     mov r19, SCL_BIT | SDA_BIT
-001413f4 // 00b6     out [r20], r19 ; sda high
-00000040 // 00b7     ret
-00011089 // 00b8     or   r16, 1
-00a20020 // 00b9     call i2c_start
-00960020 // 00ba     call i2c_read_byte
-0012115e // 00bb     mov r17, r18
-00081186 // 00bc     shl r17, 8
-00960020 // 00bd     call i2c_read_byte
-12111169 // 00be     or r17, r17, r18
-00b10000 // 00bf     jmp i2c_stop
-0000135d // 00c0 div3216:    clr   R19
-0020155d // 00c1 			mov   R21, 32
-0010106f // 00c2 div_l2:		shlc  R16, R16
-0011116d // 00c3 			rlc   R17, R17
-0013136d // 00c4 			rlc	  R19, R19
-12131464 // 00c5 			sub   R20, R19, R18
-00c90007 // 00c6 			jmpmi div_l1
-00011089 // 00c7 			or    R16, 1
-0014135e // 00c8 			mov   R19, R20
-ffff1582 // 00c9 div_l1:		dec   R21
-00000043 // 00ca 			retz
-00c20000 // 00cb 			jmp   div_l2
-10100060 // 00cc     test r16, r16
-00000043 // 00cd     retz
-0000125d // 00ce     clr r18
-0000135d // 00cf     clr r19
-0000145d // 00d0     clr r20
-00011180 // 00d1     test r17, 1
-00d50003 // 00d2     jmpz mul1616_next
-10121262 // 00d3     add r18, r18, r16
-14131363 // 00d4     adc r19, r19, r20
-0010106f // 00d5     shlc r16, r16
-0014146d // 00d6     rlc  r20, r20
-00011187 // 00d7     shr  r17, 1
-00d10004 // 00d8     jmpnz mul1616_next2
-00000040 // 00d9     ret
+00890020 // 00b0     call i2c_send_byte
+00081187 // 00b1     shr byte12, 8
+0011105e // 00b2     mov r16, byte12
+00890020 // 00b3     call i2c_send_byte
+0000135d // 00b4     clr r19
+001413f4 // 00b5     out [r20], r19 ; sda low
+0002135d // 00b6     mov r19, SCL_BIT
+001413f4 // 00b7     out [r20], r19 ; scl high
+0003135d // 00b8     mov r19, SCL_BIT | SDA_BIT
+001413f4 // 00b9     out [r20], r19 ; sda high
+00000040 // 00ba     ret
+00011089 // 00bb     or   r16, 1
+00a50020 // 00bc     call i2c_start
+00990020 // 00bd     call i2c_read_byte
+0012115e // 00be     mov r17, r18
+00081186 // 00bf     shl r17, 8
+00990020 // 00c0     call i2c_read_byte
+12111169 // 00c1     or r17, r17, r18
+00b40000 // 00c2     jmp i2c_stop
+0000135d // 00c3 div3216:    clr   R19
+0020155d // 00c4 			mov   R21, 32
+0010106f // 00c5 div_l2:		shlc  R16, R16
+0011116d // 00c6 			rlc   R17, R17
+0013136d // 00c7 			rlc	  R19, R19
+12131464 // 00c8 			sub   R20, R19, R18
+00cc0007 // 00c9 			jmpmi div_l1
+00011089 // 00ca 			or    R16, 1
+0014135e // 00cb 			mov   R19, R20
+ffff1582 // 00cc div_l1:		dec   R21
+00000043 // 00cd 			retz
+00c50000 // 00ce 			jmp   div_l2
+10100060 // 00cf     test r16, r16
+00000043 // 00d0     retz
+0000125d // 00d1     clr r18
+0000135d // 00d2     clr r19
+0000145d // 00d3     clr r20
+00011180 // 00d4     test r17, 1
+00d80003 // 00d5     jmpz mul1616_next
+10121262 // 00d6     add r18, r18, r16
+14131363 // 00d7     adc r19, r19, r20
+0010106f // 00d8     shlc r16, r16
+0014146d // 00d9     rlc  r20, r20
+00011187 // 00da     shr  r17, 1
+00d40004 // 00db     jmpnz mul1616_next2
+00000040 // 00dc     ret
