@@ -7,6 +7,7 @@ public class IODeviceLCD1: IIODevice
 {
     public Control? Init(string parameters, ILogger logger)
     {
+        return null;
     }
 
     public void IoRead(IoEvent ev)

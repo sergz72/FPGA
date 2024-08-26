@@ -11,13 +11,8 @@ i2c_wait_loop:
 .endif
 
 i2c_send_bit:
-    test r16, $80
-    jmpnz i2c_send1
-    clr r19
-    jmp i2c_send2
-i2c_send1:
-    mov r19, SDA_BIT
-i2c_send2:    
+    mov r19, r16
+    shr r19, 7
     out [r20], r19
 .if I2C_WAIT_COUNTER > 0
     call i2c_wait
@@ -56,7 +51,7 @@ i2c_read_bit:
     and r18, SDA_BIT
     or  r16, r16, r18
 
-    and r19, ~SCL_BIT
+    mov r19, SDA_BIT
     out [r20], r19 ; scl low
 .if I2C_WAIT_COUNTER > 0
     call i2c_wait
@@ -85,9 +80,9 @@ i2c_read_byte_loop:
 i2c_start:
     mov r20, I2C_PORT_ADDRESS
     mov r19, SCL_BIT
-    out [r20], r19
+    out [r20], r19 ; sda low
 .if I2C_WAIT_COUNTER > 0
-    call i2c_wait ; sda low
+    call i2c_wait
 .endif
     clr r19
     out [r20], r19 ; scl low

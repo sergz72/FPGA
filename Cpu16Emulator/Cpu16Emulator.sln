@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODeviceTimer", "IODeviceTi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODeviceLCD1", "IODeviceLCD1\IODeviceLCD1.csproj", "{C10049A3-F76E-4ACE-B5F6-4B112D15FF40}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODeviceLcdHD44780", "IODeviceLcdHD44780\IODeviceLcdHD44780.csproj", "{7DB8CD64-AB9A-461F-9591-097965E70675}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,5 +50,9 @@ Global
 		{C10049A3-F76E-4ACE-B5F6-4B112D15FF40}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C10049A3-F76E-4ACE-B5F6-4B112D15FF40}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C10049A3-F76E-4ACE-B5F6-4B112D15FF40}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7DB8CD64-AB9A-461F-9591-097965E70675}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7DB8CD64-AB9A-461F-9591-097965E70675}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7DB8CD64-AB9A-461F-9591-097965E70675}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7DB8CD64-AB9A-461F-9591-097965E70675}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

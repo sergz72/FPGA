@@ -56,6 +56,8 @@ ROM_BITS = 9)
     reg scl = 1;
     reg sda = 1;
 
+    wire led_onen, led_pulsen, led_zeron, led_floatingn;
+
     reg [31:0] rom [0:(1<<ROM_BITS)-1];
 
     initial begin
