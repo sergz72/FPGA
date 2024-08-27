@@ -13,6 +13,7 @@ i2c_wait_loop:
 i2c_send_bit:
     mov r19, r16
     shr r19, 7
+    and r19, SDA_BIT
     out [r20], r19
 .if I2C_WAIT_COUNTER > 0
     call i2c_wait
@@ -41,8 +42,13 @@ i2c_send_byte_loop:
     ret
 
 i2c_read_bit:
+    mov r19, SDA_BIT
+    out [r20], r19 ; sda high
+.if I2C_WAIT_COUNTER > 0
+    call i2c_wait
+.endif
     mov r19, SCL_BIT | SDA_BIT
-    out [r20], r19 ; scl high, sda high
+    out [r20], r19 ; scl high
 .if I2C_WAIT_COUNTER > 0
     call i2c_wait
 .endif
@@ -68,7 +74,7 @@ i2c_read_byte_loop:
     dec r21
     jmpnz i2c_read_byte_loop
     mov  r18, r16
-    clr  r16
+    mov  r16, r23
     call i2c_send_bit ; ack
     mov r19, SDA_BIT
     out [r20], r19 ; sda high
@@ -130,10 +136,12 @@ i2c_master_read2:
     or   r16, 1
     call i2c_start
 ; byte1
+    clr r23
     call i2c_read_byte
     mov r17, r18
     shl r17, 8
 ; byte2
+    mov r23, $80
     call i2c_read_byte
     or r17, r17, r18
     jmp i2c_stop

@@ -21,8 +21,8 @@ module vf_tb;
     always #1 clk = ~clk;
 
     initial begin
-//        $dumpfile("vf_tb.vcd");
-//        $dumpvars(0, vf_tb);
+        $dumpfile("vf_tb.vcd");
+        $dumpvars(0, vf_tb);
         $monitor("time=%t hlt=%d error=%d scl_io=%d sda_io=%d hd_dc=%d hd_e=%d hd_data=%x", $time, hlt, error, scl_io, sda_io, hd_dc, hd_e, hd_data);
         clk = 0;
         button = 1;

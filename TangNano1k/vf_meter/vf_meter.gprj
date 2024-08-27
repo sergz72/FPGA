@@ -1,0 +1,18 @@
+<?xml version="1" encoding="UTF-8"?>
+<!DOCTYPE gowin-fpga-project>
+<Project>
+    <Template>FPGA</Template>
+    <Version>5</Version>
+    <Device name="GW1NZ-1" pn="GW1NZ-LV1QN48C6/I5">gw1nz1-015</Device>
+    <FileList>
+        <File path="src/alu.v" type="file.verilog" enable="1"/>
+        <File path="src/alu.vh" type="file.verilog" enable="1"/>
+        <File path="src/cpu16.v" type="file.verilog" enable="1"/>
+        <File path="src/frequency_counter.v" type="file.verilog" enable="1"/>
+        <File path="src/logic_probe_led.v" type="file.verilog" enable="1"/>
+        <File path="src/main.v" type="file.verilog" enable="1"/>
+        <File path="src/main.vh" type="file.verilog" enable="1"/>
+        <File path="src/register_file.v" type="file.verilog" enable="1"/>
+        <File path="src/nano_1k.cst" type="file.cst" enable="1"/>
+    </FileList>
+</Project>
