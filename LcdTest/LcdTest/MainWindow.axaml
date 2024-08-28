@@ -1,0 +1,13 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lcdTest="clr-namespace:LcdTest"
+        mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="600"
+        x:Class="LcdTest.MainWindow"
+        WindowStartupLocation="CenterScreen"
+        SizeToContent="WidthAndHeight"
+        CanResize="False"
+        Title="LcdTest">
+        <lcdTest:TwoColorLcd Name="Lcd" Width="1024" Height="512"/>
+</Window>
