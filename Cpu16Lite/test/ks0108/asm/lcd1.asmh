@@ -1,3 +1,4 @@
-.def char r48
-.def x r49
-.def y r50
+.def lcd_char r28
+.def lcd_x r29
+.def lcd_y r30
+.def inverted_colors r31

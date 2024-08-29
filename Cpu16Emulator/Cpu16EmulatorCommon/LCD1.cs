@@ -10,20 +10,29 @@ public class LCD1: Control
     private readonly int _scaledHeight;
     private readonly int _scale;
     protected readonly ushort[] _ram;
-    
-    public bool On { get; set; }
 
-    public LCD1(ushort[] ram, int width, int scale)
+    private bool _on;
+
+    public bool On
+    {
+        get => _on;
+        set
+        {
+            if (value == _on) return;
+            _on = value;
+            if (value)
+                InvalidateVisual();
+        }
+    }
+
+    public LCD1(ushort[] ram, int width, int scale, bool on = false)
     {
         _ram = ram;
         var height = (ram.Length << 4) / width;
         _scale = scale;
         _scaledHeight = height * scale;
         _scaledWidth = width * scale;
-        var r = new Random();
-        for (var i = 0; i < ram.Length; i++)
-            ram[i] = (ushort)r.Next(ushort.MaxValue);
-        On = false;
+        On = on;
     }
     
     public override void Render(DrawingContext context)
@@ -53,13 +62,15 @@ public class LCD1: Control
     public static LCD1 Create(ushort[] ram, string parameters)
     {
         var parts = parameters.Split(',');
-        if (parts.Length != 2)
+        if (parts.Length != 3)
             throw new IODeviceException("LCD1: invalid parameters specified");
         if (!int.TryParse(parts[0], out var width))
             throw new IODeviceException("LCD1: invalid width parameter");
         if (!int.TryParse(parts[1], out var scale))
             throw new IODeviceException("LCD1: invalid scale parameter");
-        return new LCD1(ram, width, scale);
+        if (!bool.TryParse(parts[2], out var on))
+            throw new IODeviceException("LCD1: invalid scale parameter");
+        return new LCD1(ram, width, scale, on);
     }
 
     protected override Size MeasureOverride(Size availableSize)

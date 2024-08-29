@@ -40,7 +40,7 @@ public partial class MainWindow : Window, ILogger
     {
         foreach (var d in _devices)
             d.Device.IoRead(e);
-        Info($"IO read, address = {e.Address:X4}");
+        Info($"IO read, address = {e.Address:X4}, data = {e.Data:X4}");
         if (e.Interrupt != null)
             _cpu.Interrupt = (bool)e.Interrupt;
     }

@@ -40,6 +40,11 @@ public static class IODeviceParametersParser
     {
         if (!kv.TryGetValue(parameterName, out var sValue))
             return null;
+        return ParseUShort(sValue);
+    }
+
+    public static ushort? ParseUShort(string sValue)
+    {
         if (sValue.StartsWith("0x"))
         {
             if (!ushort.TryParse(sValue[2..], NumberStyles.AllowHexSpecifier, null, out var hValue))

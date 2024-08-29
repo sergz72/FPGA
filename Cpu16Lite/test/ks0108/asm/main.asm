@@ -1,17 +1,22 @@
 .include "lcd1.asmh"
+.include "main.asmh"
 
 jmp start
     reti
 start:
     call DisplayControllerInit
-    mov char, '1'
-    mov x, 1 ; x
-    mov y, 1 ; y
+    call ClearScreen
+    mov lcd_char, 1
+    mov lcd_x, 1 ; x
+    mov lcd_y, 1 ; y
+    clr inverted_colors
 next:
     call CharacterOut
-    inc char
-    add x, 20
-    add y, 20
-    cmp y, 64
+    inc lcd_char
+    add lcd_x, 20
+    add lcd_y, 20
+    cmp lcd_y, 64
     jmplt next
+    call LcdUpdate
+    call DisplayOn
     hlt
