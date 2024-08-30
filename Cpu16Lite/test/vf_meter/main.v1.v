@@ -76,7 +76,7 @@ ROM_BITS = 9)
 
     // cpu clock = 27M/64 = 421875Hz, cpu cpeed = 421875/4=105468 op/sec
     cpu cpu16(.clk(timer[CPU_CLOCK_BIT]), .rd(rd), .reset(reset), .address(address), .data(data), .hlt(hlt), .io_rd(io_rd), .stage(stage),
-                 .io_wr(io_wr), .io_data_out(io_data_in), .io_data_in(io_data_out), .io_address(io_address), .error(error), .interrupt(interrupt), .ready(1));
+                 .io_wr(io_wr), .io_data_out(io_data_in), .io_data_in(io_data_out), .io_address(io_address), .error(error), .interrupt(interrupt));
 
     frequency_counter fc(.clk(clk), .iclk(comp_data_hi), .clk_frequency_div4(CLK_FREQUENCY_DIV4), .code(frequency_code), .interrupt(fc_interrupt),
                             .interrupt_clear(fc_interrupt_clear));

@@ -14,7 +14,7 @@ next:
     call CharacterOut
     inc lcd_char
     add lcd_x, 20
-    add lcd_y, 20
+    add lcd_y, 12
     cmp lcd_y, 64
     jmplt next
     call LcdUpdate

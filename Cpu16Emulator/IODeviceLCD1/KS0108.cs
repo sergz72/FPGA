@@ -11,11 +11,12 @@ internal sealed class KS0108: ILcdDriver
         private readonly ushort[] _memory;
         private readonly ILogger _logger;
         private readonly LCD1 _control;
-
+        private readonly int _id;
+        
         private int _yAddress;
         private int _xAddress;
         
-        internal Controller(ILogger logger)
+        internal Controller(int id, ILogger logger)
         {
             _memory = new ushort[256];
             var r = new Random();
@@ -25,6 +26,7 @@ internal sealed class KS0108: ILcdDriver
             _logger = logger;
             _yAddress = _xAddress = 0;
             _control = new LCD1(_memory, 64, 4);
+            _id = id;
         }
 
         internal Control CreateControl()
@@ -36,7 +38,8 @@ internal sealed class KS0108: ILcdDriver
         {
             if (dc) // data
                 WriteData(data);
-            Command(data);
+            else
+                Command(data);
         }
 
         private void Command(byte data)
@@ -44,22 +47,28 @@ internal sealed class KS0108: ILcdDriver
             switch (data)
             {
                 case >= 0x3E and <= 0x3F:
-                    _control.On = (data & 1) != 0;
+                    var on = (data & 1) != 0;
+                    _control.On = on;
+                    var message = on ? "ON" : "OFF";
+                    _logger.Debug($"KS0108_{_id}: Display {message}");
                     break;
                 case >= 0x40 and <= 0x7F:
                     _yAddress = data & 0x3F;
+                    _logger.Debug($"KS0108_{_id}: yAddress = {_yAddress}");
                     break;
                 case >= 0xB8 and <= 0xBF:
                     _xAddress = data & 7;
+                    _logger.Debug($"KS0108_{_id}: xAddress = {_xAddress}");
                     break;
                 default:
-                    _logger.Error($"Invalid command {data:X2}");
+                    _logger.Error($"KS0108_{_id}: Invalid command {data:X2}");
                     break;
             }
         }
 
         private void WriteData(byte data)
         {
+            _logger.Debug($"KS0108_{_id}: WriteData {data:x2} {_yAddress:x2} {_xAddress}");
             var datap8 = (_yAddress << 3) | _xAddress;
             var datap16 = datap8 >> 1;
             var hiByte = (datap8 & 0x01) != 0;
@@ -116,8 +125,8 @@ internal sealed class KS0108: ILcdDriver
             throw new IODeviceException("Wrong KS0108 driver parameters");
         
         _controllers = new Controller[2];
-        _controllers[0] = new Controller(logger);
-        _controllers[1] = new Controller(logger);
+        _controllers[0] = new Controller(0, logger);
+        _controllers[1] = new Controller(1, logger);
 
         _prevE = false;
     }

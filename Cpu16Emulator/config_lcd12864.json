@@ -1,5 +1,6 @@
 {
   "CpuSpeed": 100,
+  "LogFile": "lcd12864.log",
   "IODevices": [
     { "FileName": "IODeviceMemory/bin/Debug/net8.0/IODeviceMemory.dll", "Parameters": "address=0x6000 size=512 readonly=true contents=characters.mem control=None" },
     { "FileName": "IODeviceMemory/bin/Debug/net8.0/IODeviceMemory.dll", "Parameters": "address=0x8000 size=512 control=LCD1,128,4,true" },

@@ -51,15 +51,14 @@ module cpu
     // IO interface
     output wire io_rd,
     output wire io_wr,
-    output reg [BITS - 1:0] io_address = 0,
+    output wire [BITS - 1:0] io_address,
     input wire [BITS - 1:0] io_data_in,
-    output reg [BITS - 1:0] io_data_out = 0,
-    output reg [1:0] stage = 0,
-    input wire ready
+    output wire [BITS - 1:0] io_data_out,
+    output reg [1:0] stage = 0
 );
     localparam MICROCODE_WIDTH = 27;
 
-    wire clk1, clk2, clk3, clk4;
+    wire clk1, clk2, clk4;
 
     reg start = 0;
     
@@ -79,8 +78,6 @@ module cpu
 
     // IO
     wire io_wr_set, io_rd_set;
-    wire io_address_data_set;
-    wire [BITS - 1:0] io_data_out_data, io_address_data;
 
     // address
     wire address_source, address_load;
@@ -168,7 +165,7 @@ module cpu
     // instruction read
     assign clk2 = start && stage[0] == 1 && stage[1] == 0;
     // microcode read
-    assign clk3 = start && stage[0] == 0 && stage[1] == 1;
+//    assign clk3 = start && stage[0] == 0 && stage[1] == 1;
     // registers read/write
     assign clk4 = start && stage[0] == 1 && stage[1] == 1;
 
@@ -210,11 +207,10 @@ module cpu
     assign alu_op1 = registers_data1;
     assign alu_op2 = alu_op2_source ? current_instruction[31:16] : registers_data2;
     
-    assign io_data_out_data = registers_data1;
-    assign io_address_data = registers_data2 + {{8{1'b0}}, current_instruction[BITS * 2 - 1: 24]};
+    assign io_data_out = registers_data1;
+    assign io_address = registers_data2 + {{8{1'b0}}, current_instruction[BITS * 2 - 1: 24]};
     assign io_rd = io_rd_set | !(clk1 | clk4);
     assign io_wr = io_wr_set | !clk4;
-    assign io_address_data_set = (io_rd_set & io_wr_set) | !clk3 | clk;
 
     assign condition_temp = condition_flags & {c, z, alu_out[15]};
     assign condition_pass = (condition_temp[0] | condition_temp[1] | condition_temp[2]) ^ condition_neg;
@@ -227,15 +223,8 @@ module cpu
                 start <= 0;
             else if (stage == 3)
                 start <= 1;
-            if (ready == 1)
-                stage <= stage + 1;
+            stage <= stage + 1;
         end
-    end
-
-    always @(posedge io_address_data_set) begin
-        io_address <= io_address_data;
-        if (io_wr_set == 0)
-            io_data_out <= io_data_out_data;
     end
 
     always @(posedge clk2) begin
@@ -253,7 +242,7 @@ module cpu
             error <= 0;
             current_instruction <= 0;
         end
-        else if (ready == 1) begin
+        else begin
             if (start == 1 && error == 0) begin
                 case (stage)
                     0: begin

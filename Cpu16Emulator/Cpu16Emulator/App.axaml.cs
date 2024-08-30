@@ -36,7 +36,7 @@ public partial class App : Application
                     var ioDevices = LoadIODevices(config.IODevices);
                     var code = File.ReadAllLines(desktop.Args[1]);
                     var cpu = new Cpu16Lite(code, 16, config.CpuSpeed * 1000);
-                    desktop.MainWindow = new MainWindow(cpu, ioDevices);
+                    desktop.MainWindow = new MainWindow(cpu, ioDevices, config.LogFile);
                 }
                 catch (Exception e)
                 {
@@ -69,6 +69,7 @@ public partial class App : Application
 public class Configuration
 {
     public int CpuSpeed { get; set; }
+    public string LogFile { get; set; }
     public IODeviceFile[] IODevices { get; set; }
 }
 

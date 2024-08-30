@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -11,12 +12,16 @@ public partial class MainWindow : Window, ILogger
 {
     private readonly Cpu16Lite _cpu;
     private readonly IODevice[] _devices;
+    private readonly StreamWriter? _logFile;
+
     private Point _mousePosition;
     
-    public MainWindow(Cpu16Lite cpu, IODevice[] devices)
+    public MainWindow(Cpu16Lite cpu, IODevice[] devices, string logFile)
     {
         InitializeComponent();
 
+        _logFile = logFile != "" ? new StreamWriter(logFile) : null;
+            
         _cpu = cpu;
         _devices = devices;
 
@@ -47,9 +52,9 @@ public partial class MainWindow : Window, ILogger
 
     private void IoWrite(object? sender, IoEvent e)
     {
+        Info($"IO write, address = {e.Address:X4}, data = {e.Data:X4}");
         foreach (var d in _devices)
             d.Device.IoWrite(e);
-        Info($"IO write, address = {e.Address:X4}, data = {e.Data:X4}");
         if (e.Interrupt != null)
             _cpu.Interrupt = (bool)e.Interrupt;
     }
@@ -132,7 +137,10 @@ public partial class MainWindow : Window, ILogger
 
     private void Log(string level, string message)
     {
-        LbLog.Items.Add($"{_cpu.Ticks:d10} {level} {message}");
+        var formatted = $"{_cpu.Ticks:d10} {level} {message}";
+        _logFile?.WriteLine(formatted);
+        _logFile?.Flush();
+        LbLog.Items.Add(formatted);
     }
     
     public void Debug(string message)
