@@ -9,7 +9,7 @@
 00240020 // 0008     call CharacterOut
 00011c82 // 0009     inc lcd_char
 00141d82 // 000a     add lcd_x, 20
-00141e82 // 000b     add lcd_y, 20
+000c1e82 // 000b     add lcd_y, 12
 00401e8b // 000c     cmp lcd_y, 64
 00080001 // 000d     jmplt next
 00660020 // 000e     call LcdUpdate

@@ -54,7 +54,8 @@ module cpu
     output wire [BITS - 1:0] io_address,
     input wire [BITS - 1:0] io_data_in,
     output wire [BITS - 1:0] io_data_out,
-    output reg [1:0] stage = 0
+    output reg [1:0] stage = 0,
+    input wire ready
 );
     localparam MICROCODE_WIDTH = 27;
 
@@ -223,7 +224,8 @@ module cpu
                 start <= 0;
             else if (stage == 3)
                 start <= 1;
-            stage <= stage + 1;
+            if (ready == 1)
+                stage <= stage + 1;
         end
     end
 
@@ -242,7 +244,7 @@ module cpu
             error <= 0;
             current_instruction <= 0;
         end
-        else begin
+        else if (ready == 1) begin
             if (start == 1 && error == 0) begin
                 case (stage)
                     0: begin
