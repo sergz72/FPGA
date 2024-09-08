@@ -75,6 +75,8 @@ const int aluOp1SourceRamData3 = 0x800;
 const int aluOp2SourceRamData2 = 0;
 const int aluOp2SourceImmediate = 0x1000;
 const int aluOp2Source3 = 0x2000;
+const int lpm = 0x4000;
+const int incSp = 0x8000;
 
 for (var i = 0; i < microcodeLength / 2; i += 2)
 {
@@ -103,12 +105,8 @@ for (var i = 0; i < microcodeLength / 2; i += 2)
         7 => opSubtype switch
         {
             // reti
-            >= 0 and <= 6 => addressLoad | pop | BuildCondition(opSubtype) | inInterruptClear | ioRd | ioWr |
+            >= 0 and <= 8 => addressLoad | pop | BuildCondition(opSubtype) | inInterruptClear | ioRd | ioWr |
                              ramRdSource1Sp,
-            // pop reg
-            0x0B => ramWr1 | ramWr1SourceRamData3 | ramRdSource1Sp | ioRd | ioWr,
-            // push reg
-            0x0C => ioRd | ioWr,
             // mov flags to register
             0x0D => ramWr1 | ramWr1SourceFlags | ramWr1DestInstruction158 | ioRd | ioWr,
             // nop
@@ -185,6 +183,12 @@ for (var i = 0; i < microcodeLength / 2; i += 2)
             6 => ioRd | rpOpIncrement | ramRdSource2Instruction2316 | ramRdSource1Rp,
             // out @--register->io
             7 => ioRd | rpOpDecrement | ramRdSource2Instruction2316 | ramRdSource1Rp,
+            // add sp, immmediate
+            0x0D => ioRd | ioWr,
+            // pop reg
+            0x0E => ramWr1 | ramWr1SourceRamData3 | ramRdSource1Sp | ioRd | ioWr,
+            // push reg
+            0x0F => ioRd | ioWr,
             _ => hlt | error | ioRd | ioWr
         },
         _ => hlt | error | ioRd | ioWr
@@ -193,6 +197,8 @@ for (var i = 0; i < microcodeLength / 2; i += 2)
     {
         // call addr, call reg, call @reg
         >= 3 and <= 5 => ramWr1 | ramWr1SourcePrevAddress | ramWr1DestSp,
+        // ret
+        6 => incSp,
         _ => 0
     };
     Console.WriteLine("{0:X7}", v1);

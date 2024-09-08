@@ -54,7 +54,7 @@ module cpu
     reg [CODE_BITS - 1:0] current_instruction = 0;
 
     reg [MICROCODE_WIDTH - 1:0] microcode [0:511];
-    reg [MICROCODE_WIDTH - 1:0] current_microinstruction = 7;
+    reg [MICROCODE_WIDTH - 1:0] current_microinstruction = 3;
     reg [MICROCODE_WIDTH - 1:0] current_microinstruction2 = 0;
 
     // interrupt
@@ -79,6 +79,8 @@ module cpu
     reg ram_wr2 = 1;
     wire [RAM_BITS - 1:0] ram_rd_address1, ram_rd_address2;
     wire [1:0] ram_rd_source1, ram_rd_source2, ram_rd_source3, ram_rd_source4;
+
+    wire lpm;
 
     function [BITS - 1: 0] address_source_f(input [1:0] source);
         case (source)
@@ -205,7 +207,7 @@ module cpu
     
     assign int_start = interrupt == 1 && in_interrupt == 0;
 
-    assign rd = error || hlt || !clk1;
+    assign rd = error || hlt || !clk1 || !(lpm & clk5);
 
     // in reset state:
     // io_rd = io_wr = 1
@@ -239,6 +241,7 @@ module cpu
     assign io_address_source = current_microinstruction2[10:9];
     assign alu_op1_source = current_microinstruction2[11];
     assign alu_op2_source = current_microinstruction2[13:12];
+    assign lpm = current_microinstruction2[14];
 
     assign alu_clk = alu_clk_set & clk5;
     assign alu_op_id = current_instruction[`ALU_OPID_WIDTH - 1:0];
@@ -323,7 +326,11 @@ module cpu
                         ram_data1 <= ram_data3;
                         ram_data2 <= ram_data4;
                     end
-                    //4: ram read
+                    // ram read
+                    4: begin
+                        if (lpm)
+                            current_instruction <= data;
+                    end
                     // alu clk
                     5: begin
                         if (hlt == 0) begin
