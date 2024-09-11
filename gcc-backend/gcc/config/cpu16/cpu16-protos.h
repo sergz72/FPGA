@@ -20,3 +20,4 @@ along with GCC; see the file COPYING3.  If not see
 extern void cpu16_expand_prologue (void);
 extern void cpu16_expand_epilogue (void);
 extern enum reg_class cpu16_regno_reg_class (int);
+extern int cpu16_initial_elimination_offset (int, int);

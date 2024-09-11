@@ -33,3 +33,6 @@ along with GCC; see the file COPYING3.  If not see
    signed branch will get the sign backwards. */
 
 CC_MODE (CCNZ);
+
+RESET_FLOAT_FORMAT (SF, cpu16_f_format);
+RESET_FLOAT_FORMAT (DF, cpu16_d_format);
