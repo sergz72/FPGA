@@ -16,3 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GCC; see the file COPYING3.  If not see
 <http://www.gnu.org/licenses/>.  */
+
+extern void cpu16_expand_prologue (void);
+extern void cpu16_expand_epilogue (void);
+extern enum reg_class cpu16_regno_reg_class (int);

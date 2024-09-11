@@ -1104,6 +1104,7 @@ case "${target}" in
     ;;
   moxie-*-*)
     noconfigdirs="$noconfigdirs"
+    ;;
   cpu16-*-*)
     noconfigdirs="$noconfigdirs"
     ;;

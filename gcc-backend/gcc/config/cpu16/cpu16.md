@@ -19,3 +19,46 @@
 
 (include "predicates.md")
 (include "constraints.md")
+
+(define_constants
+  [
+   (RETVAL_REGNUM     	  0)
+   (ARG_POINTER_REGNUM  254)
+   (FRAME_POINTER_REGNUM  255)
+   (STACK_POINTER_REGNUM  256)
+   ;; End of hard registers
+   (FIRST_PSEUDO_REGISTER 257)
+  ])
+
+;; Prologue and epilogue support.
+
+(define_expand "prologue"
+  [(const_int 0)]
+  ""
+{
+  cpu16_expand_prologue ();
+  DONE;
+})
+
+(define_expand "epilogue"
+  [(const_int 0)]
+  ""
+{
+  cpu16_expand_epilogue ();
+  DONE;
+})
+
+;; length default is 2 bytes each
+(define_attr "length" "" (const_int 2))
+
+;; instruction base cost (not counting operands)
+(define_attr "base_cost" "" (const_int 2))
+
+;; -------------------------------------------------------------------------
+;; nop instruction
+;; -------------------------------------------------------------------------
+
+(define_insn "nop"
+  [(const_int 0)]
+  ""
+  "nop")

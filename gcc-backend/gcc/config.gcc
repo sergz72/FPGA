@@ -1800,6 +1800,12 @@ amdgcn-*-amdhsa)
 	gcc_cv_initfini_array=yes
 	thread_file=gcn
 	;;
+cpu16-*-elf)
+	gas=yes
+	gnu_ld=yes
+	tm_file="elfos.h newlib-stdint.h ${tm_file}"
+	tmake_file="${tmake_file} cpu16/t-cpu16"
+	;;
 moxie-*-elf)
 	gas=yes
 	gnu_ld=yes
