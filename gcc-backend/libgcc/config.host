@@ -122,8 +122,6 @@ frv*)	cpu_type=frv
 	;;
 ft32*)	cpu_type=ft32
 	;;
-cpu16*)	cpu_type=cpu16
-	;;
 moxie*)	cpu_type=moxie
 	;;
 i[34567]86-*-*)
