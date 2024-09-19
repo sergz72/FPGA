@@ -2,23 +2,25 @@
 
 /*
 
-stage/instruction|halt,nop,br,jmp_reg,jmp_addr12|jmp_preg            |jmp_addr12 |mvil,mvih,movrr  |movrm               |movmr               |adi8       |jmp
-0                |fetch                         |fetch               |fetch      |fetch            |fetch               |fetch               |fetch      |fetch      |
-1                |                              |pre_dec             |           |                 |pre_dec             |pre_dec             |           |set_address|
-2                |                              |load                |           |                 |load                |                    |set_alu_ops|fetch2     |
-3                |                              |                    |           |                 |                    |                    |alu_clk    |           |
-4                |                              |                    |           |modify           |modify              |store               |store      |           |
-5                |set new PC                    |set new PC          |set new PC |set new PC       |set new PC          |set new PC          |set new PC |set new PC |
-6                |set_address                   |post inc,set_address|set_address|set_address      |post_inc,set_address|post_inc,set_address|set_address|set_address|
+stage/instruction|halt,nop,br,jmp_reg,jmp_addr12|jmp_preg            |jmp_addr12 |mvil,mvih,movrr|movrm               |movmr               |adi8       |jmp
+0                |fetch                         |fetch               |fetch      |fetch          |fetch               |fetch               |fetch      |fetch      |
+1                |                              |pre_dec             |           |               |pre_dec             |pre_dec             |           |set_address|
+2                |                              |set_load_addr       |           |               |set_load_addr       |set_load_addr       |           |fetch2     |
+3                |                              |load                |           |               |load                |                    |set_alu_ops|           |
+4                |                              |                    |           |               |                    |                    |alu_clk    |           |
+5                |                              |                    |           |modify         |modify              |store               |store      |           |
+6                |set new PC                    |set new PC          |set new PC |set new PC     |set new PC          |set new PC          |set new PC |set new PC |
+7                |set_address                   |post_inc,set_address|set_address|set_address    |post_inc,set_address|post_inc,set_address|set_address|set_address|
 
 stage/instruction|alu_r_immediate   |alu_r_r    |alu_r_m         |
 0                |fetch             |fetch      |fetch           |
 1                |set_address       |           |pre_dec         |
-2                |fetch2,set_alu_ops|set_alu_ops|load,set_alu_ops|
-3                |alu_clk           |alu_clk    |alu_clk         |
-4                |store             |store      |store           |
-5                |set new PC        |set new PC |set new PC      |
-6                |set_address       |set_address|set_address     |
+2                |fetch2            |           |set_load_addr   |
+3                |set_alu_ops       |set_alu_ops|load,set_alu_ops|
+4                |alu_clk           |alu_clk    |alu_clk         |
+5                |store             |store      |store           |
+6                |set new PC        |set new PC |set new PC      |
+7                |set_address       |set_address|set_address     |
 
 */
 
@@ -27,15 +29,15 @@ module tiny16
 (
     input wire clk,
     input wire reset,
-    output reg hlt,
-    output reg error,
+    output reg hlt = 0,
+    output reg error = 0,
     output reg [15:0] address,
     input wire [15:0] data_in,
     output reg [15:0] data_out,
     output wire rd,
     output wire wr,
     input wire ready,
-    output reg [STAGE_WIDTH - 1:0] stage
+    output reg [STAGE_WIDTH - 1:0] stage = 1
 );
     // register names
     localparam SP = 14;
@@ -131,12 +133,12 @@ module tiny16
     assign clk4 = stage[3];
     assign clk5 = stage[4];
     
-    assign rd = !start | !clk1 | !(load & clk4);
-    assign wr = !start | !(store & clk4);
+    assign rd = !start | error | hlt | !(clk1 | (load & clk4));
+    assign wr = !start | error | hlt | !(store & clk4);
 
     assign alu_clk = adi8 & clk5;
 
-    assign go = start & ready & !error;
+    assign go = start & ready & !error & !hlt;
 
     assign condition_temp = condition & {c, z, n};
     assign condition_pass = (condition_temp[0] | condition_temp[1] | condition_temp[2]) ^ condition_neg;
@@ -187,16 +189,17 @@ module tiny16
                         registers_address_wr <= movmr ? dest_reg : source_reg;
                         registers_wr <= 0;
                     end
+                    else
+                        registers_data_wr <= movmr ? dest_reg_data : source_reg_data;
                 end
                 // load,set_alu_ops,fetch2
                 4: begin
                     if (jmp_preg & condition_pass)
-                        address <= source_reg_data + value6_to_16;
-                    else if (movrm)
-                        address <= source_reg_data + {14'h0, value2};
-                    else if (movmr) begin
-                        address <= dest_reg_data + {14'h0, value2};
-                        data_out <= source_reg_data;
+                        address <= registers_data_wr + value6_to_16;
+                    else if (movrm | movmr) begin
+                        address <= registers_data_wr + {14'h0, value2};
+                        if (movmr)
+                            data_out <= source_reg_data;
                     end
                     else if (adi8) begin
                         alu_op1 <= source_reg_data;
@@ -237,22 +240,24 @@ module tiny16
                     if (br)
                         registers_data_wr <= pc_data + (condition_pass ? value8_to_16 : 1);
                     else if (jmp_addr12)
-                        registers_data_wr <= pc_data + (condition_pass ? value12_to_16 : 1);
+                        registers_data_wr <= pc_data + value12_to_16;
                     else if (jmp_reg)
-                        registers_data_wr <= condition_pass ? source_reg_data + value8_to_16 : 1;
+                        registers_data_wr <= source_reg_data + value8_to_16;
                     else if (jmp_preg)
-                        registers_data_wr <= condition_pass ? data_in : 1;
+                        registers_data_wr <= data_in;
                     else
                         registers_data_wr <= pc_data + 1;
                 end
                 //post_inc, set_address
                 128: begin
+                    address <= registers_data_wr;
                     if (post_inc & (movrm | jmp_preg | movmr)) begin
                         registers_wr <= 0;
                         registers_address_wr <= movmr ? dest_reg : source_reg;
                         registers_data_wr <= movmr ? dest_reg_data + 1 : source_reg_data + 1;
                     end
-                    address <= pc_data;
+                    else
+                        registers_wr <= 1;
                 end
             endcase
         end

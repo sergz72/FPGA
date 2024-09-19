@@ -1,7 +1,7 @@
 module tiny16_tb;
     wire [15:0] address;
     wire hlt, error, rd, wr;
-    wire [6:0] stage;
+    wire [7:0] stage;
     reg [15:0] data_out;
     wire [15:0] data_in;
     reg clk, reset, ready;
@@ -19,12 +19,12 @@ module tiny16_tb;
 
     always #5 clk <= ~clk;
     
-    assign mem_clk = rd | wr;
+    assign mem_clk = rd & wr;
 
     initial begin
         $dumpfile("tiny16_tb.vcd");
         $dumpvars(0, tiny16_tb);
-        $monitor("time=%t clk=%d stage=%d reset=%d rd=%d wr=%d hlt=%d error=%d address=%x, data_in=0x%x data_out=0x%x",
+        $monitor("time=%t clk=%d stage=0x%x reset=%d rd=%d wr=%d hlt=%d error=%d address=%x, data_in=0x%x data_out=0x%x",
                  $time, clk, stage, reset, rd, wr, hlt, error, address, data_in, data_out);
         clk = 0;
         reset = 0;
