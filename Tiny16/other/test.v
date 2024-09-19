@@ -1,25 +1,44 @@
-module test
-(
-  input wire clk,
-  input wire wr,
-  input wire [1:0] address_rd,
-  input wire [1:0] address_rd2,
-  input wire [1:0] address_rd3,
-  input wire [1:0] address_wr,
-  input wire [15:0] data_in,
-  output reg [15:0] data_out,
-  output reg [15:0] data_out2,
-  output reg [15:0] data_out3
-);
+module tiny16_tb;
+    wire [15:0] address;
+    wire hlt, error, rd, wr;
+    wire [3:0] stage;
+    reg [15:0] data_out;
+    wire [15:0] data_in;
+    reg clk, reset, ready;
+    wire mem_clk;
 
-    reg [15:0] registers [0:3];
+    reg [15:0] ram [0:65535];
 
-    always @(posedge clk) begin
-        if (wr == 0)
-            registers[address_wr] <= data_in;
-			data_out <= registers[address_rd];
-			data_out2 <= registers[address_rd2];
-			data_out3 <= registers[address_rd3];
+    initial begin
+        $display("Loading program...");
+        $readmemh("asm/a.out", ram);
     end
 
+    tiny16 cpu(.clk(clk), .rd(rd), .wr(wr), .reset(reset), .address(address), .data_in(data_out), .data_out(data_in), .stage(stage),
+                 .error(error), .hlt(hlt), .ready(ready));
+
+    always #5 clk <= ~clk;
+    
+    assign mem_clk = rd | wr;
+
+    initial begin
+        $dumpfile("tiny16_tb.vcd");
+        $dumpvars(0, tiny16_tb);
+        $monitor("time=%t clk=%d stage=%d reset=%d rd=%d wr=%d hlt=%d error=%d address=%x, data_in=0x%x data_out=0x%x",
+                 $time, clk, stage, reset, rd, wr, hlt, error, address, data_in, data_out);
+        clk = 0;
+        reset = 0;
+        ready = 1;
+        #20
+        reset = 1;
+        #10000
+        $finish;
+    end
+
+    always @(negedge mem_clk) begin
+        if (wr == 0)
+            ram[address] <= data_in;
+        else
+            data_out <= ram[address];
+    end
 endmodule
