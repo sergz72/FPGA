@@ -36,14 +36,20 @@ module alu
             `ALU_OP_RRC: {out, c} <= {c, op1[15:0]}; // rotate right through carry
             `ALU_OP_SHLC: {c, out} <= {op1, 1'b0}; // shift left through carry
             `ALU_OP_SHRC: {out, c} <= {1'b0, op1}; // rotate right through carry
+`ifndef NO_DIV1616
+            `ALU_OP_DIV3216: out <= op1 / op2;
+`endif
+`ifndef NO_REM1616
+            `ALU_OP_REM1616: out <= op1 % op2;
+`endif
 `ifndef NO_MUL
             `ALU_OP_MUL: {out2, out} <= op1 * op2;
 `endif
-`ifndef NO_DIV
-            `ALU_OP_DIV: {out2, out} <= {op2, op1} / {16'h0, op3};
+`ifndef NO_DIV3216
+            `ALU_OP_DIV3216: {out2, out} <= {op2, op1} / {16'h0, op3};
 `endif
-`ifndef NO_REM
-            `ALU_OP_REM: {out2, out} <= {op2, op1} % {16'h0, op3};
+`ifndef NO_REM3216
+            `ALU_OP_REM3216: {out2, out} <= {op2, op1} % {16'h0, op3};
 `endif
             // NOP
             default: begin end

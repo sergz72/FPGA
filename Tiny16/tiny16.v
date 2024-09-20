@@ -37,7 +37,7 @@ stage/instruction|alu_r_immediate   |alu_r_r    |alu_r_m         |
 */
 
 module tiny16
-#(parameter STAGE_WIDTH = 8)
+#(parameter STAGE_WIDTH = 7)
 (
     input wire clk,
     input wire reset,
@@ -59,12 +59,13 @@ module tiny16
 
     reg [15:0] current_instruction, instruction_parameter;
     reg start = 0;
+    reg stage_reset = 0;
 
     reg [15:0] registers [0:15];
-    reg [15:0] registers_data_wr, source_reg_data, dest_reg_data;
+    reg [15:0] registers_data_wr1, registers_data_wr2, source_reg_data, dest_reg_data;
     reg [15:0] pc_data, sp_data;
-    reg [3:0] registers_address_wr;
-    reg registers_wr;
+    reg [3:0] registers_address_wr1, registers_address_wr2;
+    reg registers_wr1, registers_wr2;
 
     wire [15:0] opcode0;
     wire [3:0] opcode;
@@ -90,7 +91,7 @@ module tiny16
     wire call_reg, call_addr11, call;
     wire mvil, mvih, movrm, movmr, movrr, movrimm, movmimm;
     wire adi8, alurm, alurr, alurimm, _not;
-    wire load, store, modify1;
+    wire load, store;
     wire fetch2;
     wire n, c, z;
     wire go;
@@ -197,7 +198,6 @@ module tiny16
     
     assign load = movrm | jmp_preg | alurm;
     assign store = movmr | (call & condition_pass) | call_addr11 | call_reg | movmimm | pushf;
-    assign modify1 = movrr | mvih | mvil | movrm | alurm | movrimm;
     assign fetch2 = jmp | call | alurimm | alurm | movrimm | movmimm;
 
     assign clk1 = stage[0];
@@ -227,15 +227,17 @@ module tiny16
     end
 
     always @(negedge clk) begin
-        if (error != 0)
+        if (error | stage_reset)
             stage <= 1;
         else if (ready == 1)
             stage <= {stage[STAGE_WIDTH - 2:0], stage[STAGE_WIDTH - 1]};
     end
 
     always @(negedge clk) begin
-        if (registers_wr == 0)
-            registers[registers_address_wr] <= registers_data_wr;
+        if (registers_wr1 == 0)
+            registers[registers_address_wr1] <= registers_data_wr1;
+        if (registers_wr2 == 0)
+            registers[registers_address_wr2] <= registers_data_wr2;
         pc_data <= registers[PC];
         sp_data <= registers[SP];
         source_reg_data <= registers[source_reg];
@@ -245,64 +247,114 @@ module tiny16
     always @(posedge clk) begin
         if (reset == 0) begin
             address <= 0;
-            registers_wr <= 0;
-            registers_address_wr <= PC;
-            registers_data_wr <= 0;
+            registers_wr1 <= 0;
+            registers_address_wr1 <= PC;
+            registers_data_wr1 <= 0;
             current_instruction <= NOP;
+            registers_wr2 <= 1;
         end
         else if (go) begin
             case (stage)
                 // fetch
-                1: current_instruction <= data_in;
+                1: begin
+                    current_instruction <= data_in;
+                    stage_reset <= 0;
+                    registers_address_wr1 <= 1;
+                    registers_address_wr2 <= 1;
+                end
                 // pre_dec,set_address
                 2:  begin
                     hlt <= halt | err;
                     error <= err;
-                    if (fetch2)
-                        address <= address + 1;
-                    if (pre_dec & (movrm | jmp_preg | movmr)) begin
-                        registers_data_wr <= movmr ? dest_reg_data - 1 : source_reg_data - 1;
-                        registers_address_wr <= movmr ? dest_reg : source_reg;
-                        registers_wr <= 0;
+                    address <= address + 1;
+                    // 2 stage instructions
+                    if (movrr | mvil | mvih | nop | halt | br | jmp_addr11 | jmp_reg) begin
+                        if (movrr | mvil | mvih) begin
+                            registers_wr1 <= 0;
+                            registers_address_wr1 <= mvih | mvil ? source_reg : dest_reg;
+                            if (movrr)
+                                registers_data_wr1 <= source_reg_data + value4_to_16;
+                            else if (mvih)
+                                registers_data_wr1 <= (source_reg_data & 16'h00FF) | {value8, 8'h0};
+                            else if (mvil)
+                                registers_data_wr1 <= (source_reg_data & 16'hFF00) | {8'h0, value8};
+                        end
+
+                        if (br)
+                            registers_data_wr2 <= pc_data + (condition_pass ? value8_to_16 : 1);
+                        else if (jmp_addr11)
+                            registers_data_wr2 <= pc_data + value11_to_16;
+                        else if (jmp_reg)
+                            registers_data_wr2 <= source_reg_data + value7_to_16;
+                        else
+                            registers_data_wr2 <= pc_data + 1;
+                        registers_address_wr2 <= PC;
+                        registers_wr2 <= 0;
+                        stage_reset <= 1;
                     end
-                    // dec SP
-                    else if ((call & condition_pass) | call_addr11 | call_reg | pushf) begin
-                        registers_data_wr <= sp_data - 1;
-                        registers_address_wr <= SP;
-                        registers_wr <= 0;
+                    else begin
+                        // pre dec
+                        if (pre_dec & (movrm | jmp_preg | movmr)) begin
+                            registers_data_wr1 <= movmr ? dest_reg_data - 1 : source_reg_data - 1;
+                            registers_address_wr1 <= movmr ? dest_reg : source_reg;
+                            registers_wr1 <= 0;
+                        end
+                        else
+                            registers_data_wr1 <= movmr ? dest_reg_data : source_reg_data;
+                        // dec SP
+                        if ((call & condition_pass) | call_addr11 | call_reg | pushf) begin
+                            registers_data_wr2 <= sp_data - 1;
+                            registers_address_wr2 <= SP;
+                            registers_wr2 <= 0;
+                        end
                     end
-                    else
-                        registers_data_wr <= movmr ? dest_reg_data : source_reg_data;
                 end
                 // load,set_alu_ops,fetch2
                 4: begin
-                    if (fetch2)
-                        instruction_parameter <= data_in;
-                    if (jmp_preg & condition_pass)
-                        address <= registers_data_wr + value6_to_16;
-                    else if (movrm | movmr) begin
-                        address <= registers_data_wr + {14'h0, value2};
-                        if (movmr)
-                            data_out <= source_reg_data;
+                    instruction_parameter <= data_in;
+                    // 3 stage instructions
+                    if (movrimm) begin
+                        registers_address_wr1 <= dest_reg;
+                        registers_data_wr1 <= data_in;
+                        registers_wr1 <= 0;
+
+                        stage_reset <= 1;
+
+                        registers_data_wr2 <= pc_data + 2;
+                        registers_address_wr2 <= PC;
+                        registers_wr2 <= 0;
+                        address <= address + 1;
                     end
-                    else if (movmimm) begin
-                        address <= registers_data_wr + value4_to_16;
-                        data_out <= instruction_parameter;
-                    end
-                    else if (adi8) begin
-                        alu_op1 <= source_reg_data;
-                        alu_op2 <= value8_to_16;
-                        alu_op_id <= `ALU_OP_ADD;
-                    end
-                    else if (_not) begin
-                        alu_op1 <= source_reg_data;
-                        alu_op2 <= 16'hFFFF;
-                        alu_op_id <= `ALU_OP_XOR;
-                    end
-                    else if (alurr) begin
-                        alu_op1 <= dest_reg_data;
-                        alu_op2 <= source_reg_data;
-                        alu_op_id <= alu_op_id1;
+                    else begin
+                        registers_wr1 <= 1;
+                        registers_wr2 <= 1;
+
+                        if (jmp_preg & condition_pass)
+                            address <= registers_data_wr1 + value6_to_16;
+                        else if (movrm | movmr) begin
+                            address <= registers_data_wr1 + {14'h0, value2};
+                            if (movmr)
+                                data_out <= source_reg_data;
+                        end
+                        else if (movmimm) begin
+                            address <= registers_data_wr1 + value4_to_16;
+                            data_out <= instruction_parameter;
+                        end
+                        else if (adi8) begin
+                            alu_op1 <= source_reg_data;
+                            alu_op2 <= value8_to_16;
+                            alu_op_id <= `ALU_OP_ADD;
+                        end
+                        else if (_not) begin
+                            alu_op1 <= source_reg_data;
+                            alu_op2 <= 16'hFFFF;
+                            alu_op_id <= `ALU_OP_XOR;
+                        end
+                        else if (alurr) begin
+                            alu_op1 <= dest_reg_data;
+                            alu_op2 <= source_reg_data;
+                            alu_op_id <= alu_op_id1;
+                        end
                     end
                 end
                 8: begin
@@ -310,20 +362,12 @@ module tiny16
                         address <= sp_data;
                         data_out <= pushf ? {13'h0, c, z, n} : (call ? pc_data + 2 : pc_data + 1);
                     end
-                    if (modify1) begin
-                        registers_wr <= 0;
-                        registers_address_wr <= mvih | mvil ? source_reg : dest_reg;
-                        if (movrr)
-                            registers_data_wr <= source_reg_data + value4_to_16;
-                        if (movrimm)
-                            registers_data_wr <= instruction_parameter;
-                        else if (mvih)
-                            registers_data_wr <= (source_reg_data & 16'h00FF) | {value8, 8'h0};
-                        else if (mvil)
-                            registers_data_wr <= (source_reg_data & 16'hFF00) | {8'h0, value8};
-                        else if (movrm)
-                            registers_data_wr <= data_in;
-                        else if (alurm) begin
+                    if (movrm | alurm) begin
+                        registers_wr1 <= 0;
+                        registers_address_wr1 <= dest_reg;
+                        if (movrm)
+                            registers_data_wr1 <= data_in;
+                        else begin
                             alu_op1 <= dest_reg_data;
                             alu_op2 <= data_in + alu_op_adder_to_16;
                             alu_op_id <= alu_op_id1;
@@ -332,60 +376,59 @@ module tiny16
                 end
                 //alu_clk
                 16: begin
-                    registers_wr <= 1;
+                    registers_wr1 <= 1;
                 end
                 //store,modify
                 32: begin
                     if (adi8 | _not) begin
-                        registers_wr <= 0;
-                        registers_address_wr <= source_reg;
-                        registers_data_wr <= alu_out;
+                        registers_wr1 <= 0;
+                        registers_address_wr1 <= source_reg;
+                        registers_data_wr1 <= alu_out;
                     end
                     else if ((alurr | alurimm) && alu_op_id1 != `ALU_OP_TEST && alu_op_id1 != `ALU_OP_CMP && alu_op_id1 != `ALU_OP_SETF) begin
-                        registers_wr <= 0;
-                        registers_address_wr <= dest_reg;
-                        registers_data_wr <= alu_out;
+                        registers_wr1 <= 0;
+                        registers_address_wr1 <= dest_reg;
+                        registers_data_wr1 <= alu_out;
                     end
                     else if (alurm && alu_op_id2 != `ALU_OP_TEST && alu_op_id2 != `ALU_OP_CMP && alu_op_id1 != `ALU_OP_SETF) begin
-                        registers_wr <= 0;
-                        registers_address_wr <= dest_reg;
-                        registers_data_wr <= alu_out + alu_op_adder_to_16;
+                        registers_wr1 <= 0;
+                        registers_address_wr1 <= dest_reg;
+                        registers_data_wr1 <= alu_out + alu_op_adder_to_16;
                     end
-                end
-                // set new pc
-                64: begin
-                    registers_address_wr <= PC;
-                    registers_wr <= 0;
-                    if (br)
-                        registers_data_wr <= pc_data + (condition_pass ? value8_to_16 : 1);
-                    else if (jmp_addr11 | call_addr11)
-                        registers_data_wr <= pc_data + value11_to_16;
-                    else if (jmp_reg | call_reg)
-                        registers_data_wr <= source_reg_data + value7_to_16;
+
+                    // set new pc
+                    registers_address_wr2 <= PC;
+                    registers_wr2 <= 0;
+                    if (call_addr11)
+                        registers_data_wr2 <= pc_data + value11_to_16;
+                    else if (call_reg)
+                        registers_data_wr2 <= source_reg_data + value7_to_16;
                     else if (jmp_preg)
-                        registers_data_wr <= data_in;
+                        registers_data_wr2 <= data_in;
                     else if (jmp | call)
-                        registers_data_wr <= condition_pass ? instruction_parameter : pc_data + 2;
+                        registers_data_wr2 <= condition_pass ? instruction_parameter : pc_data + 2;
                     else if (alurimm)
-                        registers_data_wr <= pc_data + 2;
+                        registers_data_wr2 <= pc_data + 2;
                     else
-                        registers_data_wr <= pc_data + 1;
+                        registers_data_wr2 <= pc_data + 1;
                 end
                 //post_inc, set_address
-                128: begin
-                    address <= registers_data_wr;
+                64: begin
+                    address <= registers_data_wr2;
                     if (post_inc & (movrm | jmp_preg | movmr | alurm)) begin
-                        registers_wr <= 0;
-                        registers_address_wr <= movmr ? dest_reg : source_reg;
-                        registers_data_wr <= movmr ? dest_reg_data + 1 : source_reg_data + 1;
-                    end
-                    else if (((alurimm |alurr) && alu_op_id1 == `ALU_OP_MUL) || (alurm && alu_op_id2 == `ALU_OP_MUL)) begin
-                        registers_wr <= 0;
-                        registers_address_wr <= dest_reg + 1;
-                        registers_data_wr <= alu_out2;
+                        registers_wr1 <= 0;
+                        registers_address_wr1 <= movmr ? dest_reg : source_reg;
+                        registers_data_wr1 <= movmr ? dest_reg_data + 1 : source_reg_data + 1;
                     end
                     else
-                        registers_wr <= 1;
+                        registers_wr1 <= 1;
+                    if (((alurimm |alurr) && alu_op_id1 == `ALU_OP_MUL) || (alurm && alu_op_id2 == `ALU_OP_MUL)) begin
+                        registers_wr2 <= 0;
+                        registers_address_wr2 <= dest_reg + 1;
+                        registers_data_wr2 <= alu_out2;
+                    end
+                    else
+                        registers_wr2 <= 1;
                 end
             endcase
         end

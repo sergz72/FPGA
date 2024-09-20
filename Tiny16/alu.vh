@@ -16,8 +16,10 @@
 `define ALU_OP_SHLC  15
 `define ALU_OP_SHRC  16
 
-`define ALU_OP_MUL   29
-`define ALU_OP_DIV   30
-`define ALU_OP_REM   31
+`define ALU_OP_DIV1616   27
+`define ALU_OP_REM1616   28
+`define ALU_OP_MUL       29
+`define ALU_OP_DIV3216   30
+`define ALU_OP_REM3216   31
 
 `define ALU_OPID_WIDTH 5
