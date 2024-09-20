@@ -14,13 +14,13 @@ internal sealed class MovInstruction : Instruction
         _adder = adder;
     }
     
-    public override uint BuildCode(ushort labelAddress)
+    public override uint[] BuildCode(uint labelAddress)
     {
         if (_type is InstructionCodes.MovImmediate or InstructionCodes.MovRpImmediate or
             InstructionCodes.MovRpImmediateRpDec or InstructionCodes.MovRpImmediateRpInc)
-            return _type | (_regNo << 8) | (_value2 << 16);
+            return [_type | (_regNo << 8) | (_value2 << 16)];
         else
-            return _type | (_regNo << 8) | (_value2 << 16) | (_adder << 24);
+            return [_type | (_regNo << 8) | (_value2 << 16) | (_adder << 24)];
     }
 }
 

@@ -14,9 +14,9 @@ internal sealed class JmpInstruction : Instruction
         RequiredLabel = label;
     }
     
-    public override uint BuildCode(ushort labelAddress)
+    public override uint[] BuildCode(uint labelAddress)
     {
-        return _type | (_regNo << 8) | (_adder << 16) | ((uint)labelAddress << 16);
+        return [_type | (_regNo << 8) | (_adder << 16) | ((uint)labelAddress << 16)];
     }
 }
 

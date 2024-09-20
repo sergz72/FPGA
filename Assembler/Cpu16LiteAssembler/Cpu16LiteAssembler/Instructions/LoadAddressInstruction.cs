@@ -12,9 +12,9 @@ internal sealed class LoadAddressInstruction : Instruction
         RequiredLabel = labelName;
     }
     
-    public override uint BuildCode(ushort labelAddress)
+    public override uint[] BuildCode(uint labelAddress)
     {
-        return InstructionCodes.MovImmediate | (_regNo << 8) | ((uint)labelAddress << 16);
+        return [InstructionCodes.MovImmediate | (_regNo << 8) | (labelAddress << 16)];
     }
 }
 

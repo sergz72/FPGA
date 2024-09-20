@@ -7,8 +7,10 @@ public abstract class Instruction(string line)
     public readonly string Line = line;
     
     public string? RequiredLabel { get; init; }
+
+    public uint Size { get; init; } = 1;
     
-    public abstract uint BuildCode(ushort labelAddress);
+    public abstract uint[] BuildCode(uint labelAddress);
 }
 
 public abstract class InstructionCreator

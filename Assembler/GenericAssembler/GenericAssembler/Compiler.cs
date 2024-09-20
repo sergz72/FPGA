@@ -16,34 +16,39 @@ public interface ICompiler
 
 public class GenericCompiler: ICompiler
 {
-    protected record BinaryItem(uint Code, string Line);
+    protected record BinaryItem(uint[] Code, string Line);
     
     protected sealed class CompilerException(string fileName, int lineNo, string message) : Exception($"Error in {fileName}:{lineNo}: {message}");
 
     protected readonly Dictionary<string, InstructionCreator> InstructionCreators;
-    protected readonly Dictionary<string, ushort> Labels = [];
+    protected readonly Dictionary<string, uint> Labels = [];
     protected readonly List<Instruction> Instructions = [];
     protected readonly IParser Parser;
-    protected string CurrentFileName = "";
-    protected int CurrentLineNo;
-    protected ushort Pc;
     protected readonly List<string> Sources;
     protected readonly string OutputFileName;
     protected readonly OutputFormat OutputFileFormat;
     protected readonly Dictionary<string, int> Constants = [];
     protected readonly Dictionary<string, string> RegisterNames = [];
+    protected readonly uint CodeSize;
+    protected readonly uint PcSize;
+    protected string CurrentFileName = "";
+    protected int CurrentLineNo;
+    protected uint Pc;
     protected bool Skip = false;
     protected bool AllowElse = false;
     protected ExpressionParser EParser;
 
     public GenericCompiler(List<string> sources, string outputFileName, OutputFormat outputFormat,
-                            Dictionary<string, InstructionCreator> instructionCreators, IParser parser)
+                            Dictionary<string, InstructionCreator> instructionCreators, IParser parser,
+                            uint codeSize = 8, uint pcSize = 4)
     {
         Sources = sources;
         OutputFileName = outputFileName;
         OutputFileFormat = outputFormat;
         InstructionCreators = instructionCreators;
         Parser = parser;
+        CodeSize = codeSize;
+        PcSize = pcSize;
         EParser = new ExpressionParser(256, this);
     }
 
@@ -91,8 +96,13 @@ public class GenericCompiler: ICompiler
                 var pc = 0;
                 foreach (var data in binary)
                 {
-                    writer.Write($"{data.Code:x8} // {pc:x4} {data.Line}\n");
-                    pc++;
+                    foreach (var code in data.Code)
+                    {
+                        var codes = code.ToString("x" + CodeSize);
+                        var pcs = code.ToString("x" + PcSize);
+                        writer.Write($"{codes} // {pcs} {data.Line}\n");
+                        pc++;
+                    }
                 }
                 break;
             }
@@ -100,7 +110,10 @@ public class GenericCompiler: ICompiler
             {
                 using var writer = new BinaryWriter(output);
                 foreach (var data in binary)
-                    writer.Write(data.Code);
+                {
+                    foreach (var code in data.Code)
+                        writer.Write(code);
+                }
                 break;
             }
         }
@@ -111,7 +124,7 @@ public class GenericCompiler: ICompiler
         var bytes = new List<BinaryItem>();
         foreach (var instruction in Instructions)
         {
-            var labelAddress = instruction.RequiredLabel != null ? Labels[instruction.RequiredLabel] : (ushort)0;
+            var labelAddress = instruction.RequiredLabel != null ? Labels[instruction.RequiredLabel] : 0;
             bytes.Add(new BinaryItem(instruction.BuildCode(labelAddress), instruction.Line));
         }
         return bytes;
@@ -169,7 +182,7 @@ public class GenericCompiler: ICompiler
 
                                 var instruction = ParseInstruction(line, tokens);
                                 Instructions.Add(instruction);
-                                Pc++;
+                                Pc += instruction.Size;
                                 break;
                         }
                     }

@@ -116,9 +116,9 @@ internal static class InstructionCodes
 
 internal sealed class OpCodeInstruction(string line, uint opCode) : Instruction(line)
 {
-    public override uint BuildCode(ushort labelAddress)
+    public override uint[] BuildCode(uint labelAddress)
     {
-        return opCode;
+        return [opCode];
     }
 }
 

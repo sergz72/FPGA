@@ -11,9 +11,9 @@ internal sealed class LoadfInstruction : Instruction
         _regNo = regNo;
     }
     
-    public override uint BuildCode(ushort labelAddress)
+    public override uint[] BuildCode(uint labelAddress)
     {
-        return InstructionCodes.Loadf | (_regNo << 8);
+        return [InstructionCodes.Loadf | (_regNo << 8)];
     }
 }
 

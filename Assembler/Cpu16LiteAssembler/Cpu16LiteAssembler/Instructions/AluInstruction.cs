@@ -15,9 +15,9 @@ internal sealed class AluRegisterInstruction : Instruction
         _regNo3 = regNo3;
     }
     
-    public override uint BuildCode(ushort labelAddress)
+    public override uint[] BuildCode(uint labelAddress)
     {
-        return _aluOperation | _type | (_regNo << 8) | (_regNo2 << 16) | (_regNo3 << 24);
+        return [_aluOperation | _type | (_regNo << 8) | (_regNo2 << 16) | (_regNo3 << 24)];
     }
 }
 

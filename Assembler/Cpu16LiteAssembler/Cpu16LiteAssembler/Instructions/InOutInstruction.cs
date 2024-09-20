@@ -14,9 +14,9 @@ internal sealed class InOutInstruction : Instruction
         _adder = adder;
     }
     
-    public override uint BuildCode(ushort labelAddress)
+    public override uint[] BuildCode(uint labelAddress)
     {
-        return _type | (_regNo << 8) | (_regNo2 << 16) | (_adder << 24);
+        return [_type | (_regNo << 8) | (_regNo2 << 16) | (_adder << 24)];
     }
 }
 

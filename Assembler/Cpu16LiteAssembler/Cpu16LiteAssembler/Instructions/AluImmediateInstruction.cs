@@ -13,9 +13,9 @@ internal sealed class AluImmediateInstruction : Instruction
         _value = value;
     }
     
-    public override uint BuildCode(ushort labelAddress)
+    public override uint[] BuildCode(uint labelAddress)
     {
-        return _aluOperation | 0x80 | (_regNo << 8) | (_value << 16);
+        return [_aluOperation | 0x80 | (_regNo << 8) | (_value << 16)];
     }
 }
 
