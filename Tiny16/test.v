@@ -1,7 +1,7 @@
 module tiny16_tb;
     wire [15:0] address;
     wire hlt, error, rd, wr;
-    wire [7:0] stage;
+    wire [2:0] stage;
     reg [15:0] data_out;
     wire [15:0] data_in;
     reg clk, reset, ready;
