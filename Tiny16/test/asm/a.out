@@ -1,11 +1,3 @@
-4002 // jmp 2
-0001 // nop
-0001 // nop
-6551 // mvil r1, 0x55
-7AA1 // mvih r1, 0xAA
-6AA2 // mvil r2, 0xAA
-7552 // mvih r2, 0x55
-9042 // mov (r1), r2
-B042 // adi r2, 8
-9042 // mov (r1), r2
+0400 // nop
+0400 // nop
 0000 // halt

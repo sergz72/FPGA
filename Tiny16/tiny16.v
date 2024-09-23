@@ -12,11 +12,13 @@ module tiny16
     output wire rd,
     output wire wr,
     input wire ready,
-    output reg [2:0] stage
+    output reg [2:0] stage = 0
 );
-    localparam MICROCODE_WIDTH = 28;
+    localparam MICROCODE_WIDTH = 27;
     localparam SP = 15;
-    localparam NOP = {9'h1, 7'h0};
+    localparam NOP = {6'h1, 10'h0};
+
+    reg [2:0] clk3Phase = 1;
 
     reg [15:0] current_instruction, instruction_parameter;
     reg start = 0;
@@ -54,7 +56,7 @@ module tiny16
     wire condition_neg, condition_pass;
 
     wire halt, err;
-    wire fetch, fetch2, alu_op1_source, stage_reset_no_mul, stage_reset_mul, set_pc;
+    wire load, fetch2, alu_op1_source, stage_reset_no_mul, stage_reset_mul, set_pc;
     wire alu_op_id_source, alu_clk;
     wire registers_wr_f;
     wire [1:0] registers_wr_address_source, data_out_source, alu_op2_source, address_source;
@@ -106,33 +108,34 @@ module tiny16
     assign alu_op_adder_to_16 = {alu_op_adder[10], alu_op_adder[10], alu_op_adder[10], alu_op_adder[10], alu_op_adder[10], alu_op_adder};
 
     assign registers_wr_f = current_microinstruction[0];
-    assign rd = current_microinstruction[1];
+    assign load = current_microinstruction[1];
     assign wr = current_microinstruction[2];
 
     assign halt = current_microinstruction[3];
     assign err = current_microinstruction[4];            
 
-    assign fetch = current_microinstruction[5];
-    assign fetch2 = current_microinstruction[6];
-    assign set_pc = current_microinstruction[7];
+    assign fetch2 = current_microinstruction[5];
+    assign set_pc = current_microinstruction[6];
 
-    assign pc_source = current_microinstruction[10:8];
-    assign address_source = current_microinstruction[12:11];
+    assign pc_source = current_microinstruction[9:7];
+    assign address_source = current_microinstruction[11:10];
 
-    assign data_out_source = current_microinstruction[14:13];
+    assign data_out_source = current_microinstruction[13:12];
 
-    assign registers_wr_data_source = current_microinstruction[18:15];
-    assign registers_wr_address_source = current_microinstruction[20:19];
+    assign registers_wr_data_source = current_microinstruction[17:14];
+    assign registers_wr_address_source = current_microinstruction[19:18];
 
-    assign stage_reset_no_mul = current_microinstruction[21];
-    assign stage_reset_mul = current_microinstruction[22];
+    assign stage_reset_no_mul = current_microinstruction[20];
+    assign stage_reset_mul = current_microinstruction[21];
 
-    assign alu_op1_source = current_microinstruction[23];
-    assign alu_op2_source = current_microinstruction[25:24];
-    assign alu_op_id_source = current_microinstruction[26];
-    assign alu_clk = current_microinstruction[27];
+    assign alu_op1_source = current_microinstruction[22];
+    assign alu_op2_source = current_microinstruction[24:23];
+    assign alu_op_id_source = current_microinstruction[25];
+    assign alu_clk = current_microinstruction[26];
     assign mul = alu_op_id == `ALU_OP_MUL;
     
+    assign rd = (!start | error | hlt) | ((stage != 0) && !load && !fetch2);
+
     function [15:0] pc_source_f(input [2:0] source);
         case (source)
             0: pc_source_f = pc + 2;
@@ -204,22 +207,29 @@ module tiny16
         endcase
     endfunction
 
-    always @(negedge clk) begin
+    always @(posedge clk) begin
+        clk3Phase <= {clk3Phase[1:0], clk3Phase[2]};
+    end
+
+    always @(posedge clk3Phase[0]) begin
         if (error | stage_reset)
-            stage = 0;
+            stage <= 0;
         else begin
-            if (reset == 0)
+            if (!reset)
                 start <= 0;
             else if (stage == 7)
                 start <= 1;
-            if (ready == 1)
-                stage = stage + 1;
+            if (ready)
+                stage <= stage + 1;
         end
-        if (!error && !hlt)
+    end
+
+    always @(posedge clk3Phase[2]) begin
+        if (go)
             current_microinstruction <= microcode[{current_instruction[15:10], condition_pass, stage}];
     end
 
-    always @(negedge clk) begin
+    always @(posedge clk3Phase[0]) begin
         if (registers_wr == 0)
             registers[registers_address_wr] <= registers_data_wr;
         sp_data <= registers[SP];
@@ -227,26 +237,30 @@ module tiny16
         dest_reg_data <= registers[dest_reg];
     end
 
-    always @(posedge clk) begin
+    always @(posedge clk3Phase[1]) begin
         if (reset == 0) begin
             pc <= 0;
             hlt <= 0;
             error <= 0;
             current_instruction <= NOP;
+            stage_reset <= 0;
+            registers_wr <= 1;
         end
         else if (go) begin
-            hlt <= halt | err;
-            error <= err;
-            if (fetch)
+            if (stage == 0)
                 current_instruction <= data_in;
-            if (fetch2)
-                instruction_parameter <= data_in;
-            if (set_pc)
-                pc <= pc_source_f(pc_source);
-            registers_wr <= registers_wr_f;
-            registers_address_wr <= registers_address_wr_f(registers_wr_address_source);
-            registers_data_wr = registers_data_wr_f(registers_wr_data_source);
-            stage_reset <= (mul & stage_reset_mul) | (!mul & stage_reset_no_mul);
+            else begin
+                hlt <= halt | err;
+                error <= err;
+                if (fetch2)
+                    instruction_parameter <= data_in;
+                if (set_pc)
+                    pc <= pc_source_f(pc_source);
+                registers_wr <= registers_wr_f;
+                registers_address_wr <= registers_address_wr_f(registers_wr_address_source);
+                registers_data_wr = registers_data_wr_f(registers_wr_data_source);
+                stage_reset <= (mul & stage_reset_mul) | (!mul & stage_reset_no_mul);
+            end
         end
     end
 endmodule

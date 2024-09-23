@@ -3,11 +3,10 @@
 const int microcodeLength = 1024;
 
 var registersWr = new Bits(1);
-var rd = new Bits(1);
+var load = new Bits(1);
 var wr = new Bits(1);
 var halt = new Bits(1);
 var err = new Bits(1);
-var fetch = new Bits(1);
 var fetch2 = new Bits(1);
 var setPc = new Bits(1);
 
@@ -56,7 +55,7 @@ var aluOpIdSource = new Bits(1);
 var aluClk = new Bits(1);
 
 var nextPc = setPc.Value | pcSourcePcPlus1 | stageResetMul.Value | stageResetNoMul.Value;
-var error = registersWr.Value | rd.Value | wr.Value | halt.Value | err.Value;
+var error = registersWr.Value | wr.Value | halt.Value | err.Value;
 
 for (var i = 0; i < microcodeLength; i++)
 {
@@ -65,17 +64,13 @@ for (var i = 0; i < microcodeLength; i++)
     var postInc = (opcode & 4) != 0;
     var preDec = (opcode & 2) != 0;
     var conditionPass = (opcode & 1) != 0;
-    var v = stage switch
+    var v = opcode switch
     {
-        0 => registersWr.Value | wr.Value | addressSourcePc | fetch.Value,
-        _ => opcode switch
-        {
-            // hlt
-            0 => Hlt(stage),
-            //nop
-            1 => Nop(stage),
-            _ => error,
-        }
+        // hlt
+        0 => Hlt(stage),
+        //nop
+        1 => Nop(stage),
+        _ => error,
     };
     Console.WriteLine("{0:X7}", v);
 }
@@ -84,12 +79,17 @@ return;
 
 int Hlt(int stage)
 {
-    return stage == 1 ? registersWr.Value | rd.Value | wr.Value | halt.Value : error;
+    return stage == 0 ? registersWr.Value | wr.Value | halt.Value | stageResetMul.Value | stageResetNoMul.Value : error;
 }
 
 int Nop(int stage)
 {
-    return stage == 1 ? registersWr.Value | rd.Value | wr.Value | nextPc : error;
+    return stage switch
+    {
+        0 => registersWr.Value | wr.Value | nextPc,
+        1 => registersWr.Value | wr.Value | stageResetMul.Value | stageResetNoMul.Value,
+        _ => error
+    };
 }
 
 internal struct Bits
