@@ -53,6 +53,8 @@ module tiny16
 
     wire [2:0] condition, condition_temp;
     wire condition_neg, condition_pass;
+    wire [2:0] condition_in, condition_temp_in;
+    wire condition_neg_in, condition_pass_in;
 
     wire halt, err;
     wire load, fetch2, alu_op1_source, stage_reset_no_mul, stage_reset_mul, set_pc;
@@ -76,6 +78,8 @@ module tiny16
 
     assign condition = current_instruction[2:0];
     assign condition_neg = current_instruction[3];
+    assign condition_in = data_in[2:0];
+    assign condition_neg_in = data_in[3];
 
     assign value8 = current_instruction[11:4];
     assign value7 = current_instruction[10:4];
@@ -99,6 +103,8 @@ module tiny16
 
     assign condition_temp = condition & {c, z, n};
     assign condition_pass = (condition_temp[0] | condition_temp[1] | condition_temp[2]) ^ condition_neg;
+    assign condition_temp_in = condition_in & {c, z, n};
+    assign condition_pass_in = (condition_temp_in[0] | condition_temp_in[1] | condition_temp_in[2]) ^ condition_neg_in;
 
     assign value4_to_16 = {value4[3], value4[3], value4[3], value4[3], value4[3], value4[3], value4[3], value4[3], value4[3], value4[3], value4[3], value4[3], value4};
     assign value6_to_16 = {value6[5], value6[5], value6[5], value6[5], value6[5], value6[5], value6[5], value6[5], value6[5], value6[5], value6};
@@ -143,10 +149,10 @@ module tiny16
     function [15:0] pc_source_f(input [2:0] source);
         case (source)
             0: pc_source_f = pc + 2;
-            1: pc_source_f = pc + (condition_pass ? value8_to_16 : 1);
+            1: pc_source_f = pc + value8_to_16;
             2: pc_source_f = pc + value11_to_16;
             3: pc_source_f = source_reg_data + value7_to_16;
-            4: pc_source_f = condition_pass ? instruction_parameter : pc + 1;
+            4: pc_source_f = data_in;
             default: pc_source_f = pc + 1;
         endcase
     endfunction
@@ -239,7 +245,7 @@ module tiny16
             if (go) begin
                 if (stage == 0) begin
                     current_instruction <= data_in;
-                    current_microinstruction <= microcode[{data_in[15:10], 4'h0}];
+                    current_microinstruction <= microcode[{data_in[15:10], condition_pass_in, 3'h0}];
                 end
                 else
                     current_microinstruction <= microcode[{current_instruction[15:10], condition_pass, stage}];

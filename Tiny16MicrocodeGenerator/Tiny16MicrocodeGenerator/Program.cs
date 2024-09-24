@@ -13,7 +13,7 @@ var pcSourcePcPlus2 = 0;
 var pcSourcePcValue816 = pcSource.Value;
 var pcSourcePcValue1116 = 2 * pcSource.Value;
 var pcSourceSourceValue716 = 3 * pcSource.Value;
-var pcSourceInstructionParameter = 4 * pcSource.Value;
+var pcSourceDataIn = 4 * pcSource.Value;
 var pcSourcePcPlus1 = 7 * pcSource.Value;
 
 var addressSource = new Bits(2);
@@ -77,6 +77,7 @@ for (var i = 0; i < microcodeLength; i++)
         3 => conditionPass ? Jmp(stage) : Nop2(stage),
         >= 4 and <= 7 => Mvil(stage),
         >= 8 and <= 11 => Mvih(stage),
+        >= 12 and <= 16 => conditionPass ? Br(stage) : Nop(stage),
         _ => error,
     };
     Console.WriteLine("{0:X7}", v);
@@ -120,8 +121,18 @@ int Jmp(int stage)
     return stage switch
     {
         0 => registersWr.Value | wr.Value | nextPc,
-        1 => registersWr.Value | wr.Value | fetch2.Value | setPc.Value | pcSourceInstructionParameter,
+        1 => registersWr.Value | wr.Value | fetch2.Value | setPc.Value | pcSourceDataIn,
         2 => registersWr.Value | wr.Value | stageResetMul.Value | stageResetNoMul.Value,
+        _ => error
+    };
+}
+
+int Br(int stage)
+{
+    return stage switch
+    {
+        0 => registersWr.Value | wr.Value | setPc.Value | pcSourcePcValue816,
+        1 => registersWr.Value | wr.Value | stageResetMul.Value | stageResetNoMul.Value,
         _ => error
     };
 }
