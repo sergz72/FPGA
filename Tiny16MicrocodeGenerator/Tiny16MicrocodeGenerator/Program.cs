@@ -57,12 +57,13 @@ var aluOpIdSource = new Bits(1);
 var aluClk = new Bits(1);
 
 var nextPc = setPc.Value | pcSourcePcPlus1;
+var nextPc2 = setPc.Value | pcSourcePcPlus2;
 var error = registersWr.Value | wr.Value | halt.Value | err.Value;
 
 for (var i = 0; i < microcodeLength; i++)
 {
     var opcode = i >> 4;
-    var conditionPass = (opcode & 8) != 0; 
+    var conditionPass = (i & 8) != 0; 
     var stage = i & 7;
     var postInc = (opcode & 2) != 0;
     var preDec = (opcode & 1) != 0;
@@ -73,6 +74,7 @@ for (var i = 0; i < microcodeLength; i++)
         //nop
         1 => Nop(stage),
         2 => MovRImm(stage),
+        3 => conditionPass ? Jmp(stage) : Nop2(stage),
         >= 4 and <= 7 => Mvil(stage),
         >= 8 and <= 11 => Mvih(stage),
         _ => error,
@@ -113,6 +115,17 @@ int MovRImm(int stage)
     };
 }
 
+int Jmp(int stage)
+{
+    return stage switch
+    {
+        0 => registersWr.Value | wr.Value | nextPc,
+        1 => registersWr.Value | wr.Value | fetch2.Value | setPc.Value | pcSourceInstructionParameter,
+        2 => registersWr.Value | wr.Value | stageResetMul.Value | stageResetNoMul.Value,
+        _ => error
+    };
+}
+
 int Hlt(int stage)
 {
     return stage == 0 ? registersWr.Value | wr.Value | halt.Value | stageResetMul.Value | stageResetNoMul.Value : error;
@@ -123,6 +136,16 @@ int Nop(int stage)
     return stage switch
     {
         0 => registersWr.Value | wr.Value | nextPc,
+        1 => registersWr.Value | wr.Value | stageResetMul.Value | stageResetNoMul.Value,
+        _ => error
+    };
+}
+
+int Nop2(int stage)
+{
+    return stage switch
+    {
+        0 => registersWr.Value | wr.Value | nextPc2,
         1 => registersWr.Value | wr.Value | stageResetMul.Value | stageResetNoMul.Value,
         _ => error
     };
