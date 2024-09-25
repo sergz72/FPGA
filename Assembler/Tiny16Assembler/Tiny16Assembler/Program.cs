@@ -5,8 +5,10 @@ List<string> sources = [];
 var outputFileName = "a.out";
 var outputFileNameExpected = false;
 var outputFormat = OutputFormat.Hex;
-var noDiv = true;
-var noRem = true;
+var noDiv32 = true;
+var noRem32 = true;
+var noDiv16 = true;
+var noRem16 = true;
 var noMul = true;
 
 foreach (var arg in args)
@@ -34,11 +36,17 @@ foreach (var arg in args)
                 case "--hmul": // hardware mul
                     noMul = false;
                     break;
-                case "--hdiv": // hardware div
-                    noDiv = false;
+                case "--hdiv32": // hardware div 32 / 16
+                    noDiv32 = false;
                     break;
-                case "--hrem": // hardware rem
-                    noRem = false;
+                case "--hrem32": // hardware rem 32 % 16
+                    noRem32 = false;
+                    break;
+                case "--hdiv16": // hardware div 16 / 16
+                    noDiv16 = false;
+                    break;
+                case "--hrem16": // hardware rem 16 / 16
+                    noRem16 = false;
                     break;
                 default:
                     Usage();
@@ -54,7 +62,7 @@ if (sources.Count == 0 || outputFileNameExpected)
     Usage();
 else
 {
-    var compiler = new Tiny16Compiler(sources, outputFileName, outputFormat, noDiv, noRem, noMul);
+    var compiler = new Tiny16Compiler(sources, outputFileName, outputFormat, noDiv32, noRem32, noMul, noDiv16, noRem16);
     try
     {
         compiler.Compile();

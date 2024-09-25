@@ -12,15 +12,20 @@ module tiny16
     output wire rd,
     output wire wr,
     input wire ready,
+    input wire interrupt,
     output reg [2:0] stage = 0
 );
-    localparam MICROCODE_WIDTH = 27;
+    localparam MICROCODE_WIDTH = 28;
     localparam SP = 15;
     localparam NOP = {6'h1, 10'h0};
+    localparam INT = 6'h13;
 
     reg [15:0] current_instruction, instruction_parameter;
     reg start = 0;
     wire stage_reset;
+
+    reg in_interrupt = 0;
+    wire in_interrupt_clear;
 
     reg [15:0] pc;
 
@@ -31,9 +36,10 @@ module tiny16
     wire [15:0] registers_data_wr;
     reg [15:0] source_reg_data, dest_reg_data, sp_data;
     wire [3:0] registers_address_wr;
-    wire registers_wr;
+    wire registers_wr, registers_wr_others, registers_wr_alu;
 
     wire [15:0] value8_to_16, value7_to_16, value6_to_16, value11_to_16, value4_to_16, alu_op_adder_to_16;
+    wire [9:0] value10;
     wire [7:0] value8;
     wire [6:0] value7;
     wire [5:0] value6;
@@ -57,9 +63,9 @@ module tiny16
     wire condition_neg_in, condition_pass_in;
 
     wire halt, err;
-    wire load, fetch2, alu_op1_source, stage_reset_no_mul, stage_reset_mul, set_pc;
+    wire load, fetch2, alu_op1_source, alu_op2_source, stage_reset_no_mul, stage_reset_mul, set_pc;
     wire alu_op_id_source, alu_clk;
-    wire [1:0] registers_wr_address_source, data_out_source, alu_op2_source, address_source;
+    wire [1:0] registers_wr_address_source, data_out_source, address_source;
     wire [2:0] pc_source;
     wire [3:0] registers_wr_data_source;
     wire mul;
@@ -81,6 +87,7 @@ module tiny16
     assign condition_in = data_in[2:0];
     assign condition_neg_in = data_in[3];
 
+    assign value10 = current_instruction[9:0];
     assign value8 = current_instruction[11:4];
     assign value7 = current_instruction[10:4];
     assign value2 = current_instruction[11:10];
@@ -113,7 +120,7 @@ module tiny16
     assign value11_to_16 = {value11[10], value11[10], value11[10], value11[10], value11[10], value11};
     assign alu_op_adder_to_16 = {alu_op_adder[10], alu_op_adder[10], alu_op_adder[10], alu_op_adder[10], alu_op_adder[10], alu_op_adder};
 
-    assign registers_wr = current_microinstruction[0];
+    assign registers_wr_others = current_microinstruction[0];
     assign load = current_microinstruction[1];
     assign wr = current_microinstruction[2];
 
@@ -135,15 +142,19 @@ module tiny16
     assign stage_reset_mul = current_microinstruction[21];
 
     assign alu_op1_source = current_microinstruction[22];
-    assign alu_op2_source = current_microinstruction[24:23];
-    assign alu_op_id_source = current_microinstruction[25];
-    assign alu_clk = current_microinstruction[26];
+    assign alu_op2_source = current_microinstruction[23];
+    assign alu_op_id_source = current_microinstruction[24];
+    assign alu_clk = current_microinstruction[25];
+    assign registers_wr_alu = current_microinstruction[26];
     assign mul = alu_op_id == `ALU_OP_MUL;
+
+    assign in_interrupt_clear = current_microinstruction[27];
     
     assign rd = (!start | error | hlt) | ((stage != 0) && !load && !fetch2);
 
     assign registers_address_wr = registers_address_wr_f(registers_wr_address_source);
     assign registers_data_wr = registers_data_wr_f(registers_wr_data_source);
+    assign registers_wr = registers_wr_others && (registers_wr_alu || (alu_op_id == `ALU_OP_TEST || alu_op_id == `ALU_OP_CMP || alu_op_id == `ALU_OP_SETF));
     assign stage_reset = (mul & stage_reset_mul) | (!mul & stage_reset_no_mul);
 
     function [15:0] pc_source_f(input [2:0] source);
@@ -153,6 +164,8 @@ module tiny16
             2: pc_source_f = pc + value11_to_16;
             3: pc_source_f = source_reg_data + value7_to_16;
             4: pc_source_f = data_in;
+            5: pc_source_f = instruction_parameter;
+            6: pc_source_f = {6'h0, value10};
             default: pc_source_f = pc + 1;
         endcase
     endfunction
@@ -179,6 +192,7 @@ module tiny16
             8: registers_data_wr_f = alu_out2;
             9: registers_data_wr_f = alu_out + alu_op_adder_to_16;
             10: registers_data_wr_f = dest_reg_data + 1;
+            11: registers_data_wr_f = sp_data + 1;
             default: registers_data_wr_f = source_reg_data + 1;
         endcase
     endfunction
@@ -208,12 +222,10 @@ module tiny16
         endcase
     endfunction
 
-    function [15:0] alu_op2_f(input [1:0] source);
+    function [15:0] alu_op2_f(input source);
         case (source)
-            0: alu_op2_f = value8_to_16;
-            1: alu_op2_f = 16'hFFFF;
-            2: alu_op2_f = source_reg_data;
-            3: alu_op2_f = data_in + alu_op_adder_to_16;
+            0: alu_op2_f = source_reg_data;
+            1: alu_op2_f = data_in + alu_op_adder_to_16;
         endcase
     endfunction
 
@@ -239,16 +251,28 @@ module tiny16
     end
 
     always @(posedge clk) begin
-        if (reset == 0)
+        if (reset == 0) begin
             current_instruction <= NOP;
+            in_interrupt <= 0;
+        end
         else begin
             if (go) begin
                 if (stage == 0) begin
-                    current_instruction <= data_in;
-                    current_microinstruction <= microcode[{data_in[15:10], condition_pass_in, 3'h0}];
+                    if (interrupt & !in_interrupt) begin
+                        in_interrupt <= 1;
+                        current_instruction <= {INT, 10'h1};
+                        current_microinstruction <= microcode[{INT, 4'h0}];
+                    end
+                    else begin
+                        current_instruction <= data_in;
+                        current_microinstruction <= microcode[{data_in[15:10], condition_pass_in, 3'h0}];
+                    end
                 end
-                else
+                else begin
+                    if (in_interrupt_clear)
+                        in_interrupt <= 0;
                     current_microinstruction <= microcode[{current_instruction[15:10], condition_pass, stage}];
+                end
             end
         end
     end
@@ -259,13 +283,15 @@ module tiny16
             hlt <= 0;
             error <= 0;
         end
-        else if (go) begin
-            hlt <= halt | err;
-            error <= err;
-            if (fetch2)
-                instruction_parameter <= data_in;
-            if (set_pc)
-                pc <= pc_source_f(pc_source);
+        else begin
+            if (go) begin
+                hlt <= halt | err;
+                error <= err;
+                if (fetch2)
+                    instruction_parameter <= data_in;
+                if (set_pc)
+                    pc <= pc_source_f(pc_source);
+            end
         end
     end
 endmodule

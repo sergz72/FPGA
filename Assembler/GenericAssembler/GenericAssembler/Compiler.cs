@@ -121,15 +121,51 @@ public class GenericCompiler: ICompiler
 
     protected List<BinaryItem> CreateBinary()
     {
+        var again = true;
+        while (again)
+        {
+            again = false;
+            uint pc = 0;
+            foreach (var instruction in Instructions)
+            {
+                if (instruction.RequiredLabel != null)
+                {
+                    var labelAddress = Labels[instruction.RequiredLabel];
+                    var size = instruction.Size;
+                    instruction.UpdateSize(labelAddress, pc);
+                    var diff = instruction.Size - size;
+                    if (diff != 0)
+                    {
+                        UpdateLabelAddresses(pc, diff);
+                        again = true;
+                        break;
+                    }
+                }
+                pc += instruction.Size;
+            }
+        }
+
         var bytes = new List<BinaryItem>();
         foreach (var instruction in Instructions)
         {
-            var labelAddress = instruction.RequiredLabel != null ? Labels[instruction.RequiredLabel] : 0;
-            bytes.Add(new BinaryItem(instruction.BuildCode(labelAddress), instruction.Line));
+                var labelAddress = instruction.RequiredLabel != null ? Labels[instruction.RequiredLabel] : 0;
+                var code = instruction.BuildCode(labelAddress);
+                bytes.Add(new BinaryItem(code, instruction.Line));
         }
+
         return bytes;
     }
-    
+
+    private void UpdateLabelAddresses(uint pc, uint diff)
+    {
+        var original = new Dictionary<string, uint>(Labels);
+        foreach (var label in original)
+        {
+            if (label.Value > pc)
+                Labels[label.Key] = label.Value + diff;
+        }
+    }
+
     public void Compile(string fileName, string[]? inLines = null)
     {
         CurrentFileName = fileName;

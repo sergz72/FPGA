@@ -28,7 +28,8 @@ internal sealed class InInstructionCreator : InstructionCreator
             !GetRegisterNumber(compiler, parameters[0].StringValue, out var regNo))
             throw new InstructionException("register name and io address expected");
         var start = 2;
-        if (!GetRegisterNumberWithIoFlag(compiler, parameters, ref start, true, out var regNo2, out var offset, out var io))
+        if (!OutInstructionCreator.GetRegisterNumberWithIoFlag(compiler, parameters, ref start, true,
+                                                                out var regNo2, out var offset, out var io))
             throw new InstructionException("io address expected");
         if (!io)
             throw new InstructionException("incorrect io address format");
@@ -69,5 +70,67 @@ internal sealed class OutInstructionCreator : InstructionCreator
         if (decrement)
             return new InOutInstruction(line, InstructionCodes.OutRpDec, 0, regNo, (uint)offset);
         return new InOutInstruction(line, InstructionCodes.OutRp, 0, regNo, (uint)offset);
+    }
+    
+    internal static bool GetRegisterNumberWithIoFlag(ICompiler compiler, List<Token> parameters, ref int start, bool withOffset,
+        out uint regNo, out int offset, out bool io)
+    {
+        if (start == parameters.Count)
+            throw new InstructionException("unexpected end of line");
+
+        io = false;
+        if (parameters[start].IsChar('['))
+        {
+            io = true;
+            start++;
+        }
+
+        if (start == parameters.Count)
+            throw new InstructionException("unexpected end of line");
+
+        if (parameters[start].Type != TokenType.Name ||
+            !GetRegisterNumber(compiler, parameters[start].StringValue, out regNo))
+        {
+            if (io) throw new InstructionException("register name expected");
+            regNo = 0;
+            offset = 0;
+            return false;
+        }
+
+        start++;
+
+        if (!io)
+        {
+            offset = 0;
+            return true;
+        }
+
+        if (withOffset)
+        {
+            if (start == parameters.Count)
+                throw new InstructionException("unexpected end of line");
+
+            if (parameters[start].IsChar('+'))
+            {
+                start++;
+                ReadOffset(compiler, parameters, ref start, out offset);
+            }
+            else if (parameters[start].IsChar('-'))
+            {
+                start++;
+                ReadOffset(compiler, parameters, ref start, out var off);
+                offset = -off;
+            }
+            else
+                offset = 0;
+        }
+        else
+            offset = 0;
+
+        if (start == parameters.Count || !parameters[start].IsChar(']'))
+            throw new InstructionException("] expected");
+        start++;
+        
+        return true;
     }
 }
