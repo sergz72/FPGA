@@ -90,7 +90,7 @@ tiny16_libcall_value (machine_mode mode,
 static bool
 tiny16_function_value_regno_p (const unsigned int regno)
 {
-  return (regno >= TINY16_R0 && regno <= TINY16_R1);
+  return regno <= TINY16_R1;
 }
 
 /* Emit an error message when we're in an asm, and a fatal error for
@@ -239,26 +239,17 @@ static void
 tiny16_compute_frame (void)
 {
   /* For aligning the local variables.  */
-  int stack_alignment = STACK_BOUNDARY / BITS_PER_UNIT;
-  int padding_locals;
   int regno;
 
   /* Padding needed for each element of the frame.  */
-  cfun->machine->local_vars_size = get_frame_size ();
-
-  /* Align to the stack alignment.  */
-  padding_locals = cfun->machine->local_vars_size % stack_alignment;
-  if (padding_locals)
-    padding_locals = stack_alignment - padding_locals;
-
-  cfun->machine->local_vars_size += padding_locals;
+  cfun->machine->local_vars_size = get_frame_size () / 2 + 1;
 
   cfun->machine->callee_saved_reg_size = 0;
 
   /* Save callee-saved registers.  */
   for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
     if (df_regs_ever_live_p (regno) && (! call_used_or_fixed_reg_p (regno)))
-      cfun->machine->callee_saved_reg_size += 4;
+      cfun->machine->callee_saved_reg_size += 2;
 
   cfun->machine->size_for_adjusting_sp = 
     crtl->args.pretend_args_size
@@ -550,21 +541,6 @@ tiny16_offset_address_p (rtx x)
   return 0;
 }
 
-/* Helper function for `tiny16_legitimate_address_p'.  */
-
-static bool
-tiny16_reg_ok_for_base_p (const_rtx reg, bool strict_p)
-{
-  int regno = REGNO (reg);
-
-  if (strict_p)
-    return HARD_REGNO_OK_FOR_BASE_P (regno)
-	   || HARD_REGNO_OK_FOR_BASE_P (reg_renumber[regno]);
-  else    
-    return !HARD_REGISTER_NUM_P (regno)
-	   || HARD_REGNO_OK_FOR_BASE_P (regno);
-}
-
 /* Worker function for TARGET_LEGITIMATE_ADDRESS_P.  */
 
 static bool
@@ -573,21 +549,7 @@ tiny16_legitimate_address_p (machine_mode mode ATTRIBUTE_UNUSED,
 			    addr_space_t as,
 			    code_helper = ERROR_MARK)
 {
-  gcc_assert (ADDR_SPACE_GENERIC_P (as));
-
-  if (GET_CODE(x) == PLUS
-      && REG_P (XEXP (x, 0))
-      && tiny16_reg_ok_for_base_p (XEXP (x, 0), strict_p)
-      && CONST_INT_P (XEXP (x, 1))
-      && IN_RANGE (INTVAL (XEXP (x, 1)), -32768, 32767))
-    return true;
-  if (REG_P (x) && tiny16_reg_ok_for_base_p (x, strict_p))
-    return true;
-  if (GET_CODE (x) == SYMBOL_REF
-      || GET_CODE (x) == LABEL_REF
-      || GET_CODE (x) == CONST)
-    return true;
-  return false;
+  return true;
 }
 
 /* The Global `targetm' Variable.  */

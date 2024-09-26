@@ -34,16 +34,16 @@
 #define DEFAULT_SIGNED_CHAR 0
 
 #undef  SIZE_TYPE
-#define SIZE_TYPE "unsigned short int"
+#define SIZE_TYPE "short unsigned int"
 
 #undef  PTRDIFF_TYPE
 #define PTRDIFF_TYPE "short int"
 
 #undef  WCHAR_TYPE
-#define WCHAR_TYPE "unsigned short int"
+#define WCHAR_TYPE "short int"
 
 #undef  WCHAR_TYPE_SIZE
-#define WCHAR_TYPE_SIZE BITS_PER_WORD
+#define WCHAR_TYPE_SIZE 16
 
 /* Registers...
 
@@ -194,7 +194,7 @@ enum reg_class
 /* Offset from the argument pointer register to the first argument's
    address.  On some machines it may depend on the data type of the
    function.  */
-#define FIRST_PARM_OFFSET(F) 12
+#define FIRST_PARM_OFFSET(F) 0
 
 /* Define this macro to nonzero value if the addresses of local variable slots
    are at negative offsets from the frame pointer.  */
@@ -228,6 +228,9 @@ enum reg_class
 
 /* Alignment required for a function entry point, in bits.  */
 #define FUNCTION_BOUNDARY 16
+
+/* Allocation boundary (in *bits*) for storing pointers in memory.  */
+#define POINTER_BOUNDARY 16
 
 /* Define this macro as a C expression which is nonzero if accessing
    less than a word of memory (i.e. a `char' or a `short') is no
@@ -336,25 +339,16 @@ enum reg_class
    && (REGNO_REG_CLASS(NUM) == GENERAL_REGS \
        || (NUM) == HARD_FRAME_POINTER_REGNUM))
 
-/* A C expression which is nonzero if register number NUM is suitable
-   for use as a base register in operand addresses.  */
-#ifdef REG_OK_STRICT
-#define REGNO_OK_FOR_BASE_P(NUM)		 \
-  (HARD_REGNO_OK_FOR_BASE_P(NUM) 		 \
-   || HARD_REGNO_OK_FOR_BASE_P(reg_renumber[(NUM)]))
-#else
-#define REGNO_OK_FOR_BASE_P(NUM)		 \
-  ((NUM) >= FIRST_PSEUDO_REGISTER || HARD_REGNO_OK_FOR_BASE_P(NUM))
-#endif
+#define REGNO_OK_FOR_BASE_P(NUM) (1)
 
 /* A C expression which is nonzero if register number NUM is suitable
    for use as an index register in operand addresses.  */
-#define REGNO_OK_FOR_INDEX_P(NUM) TINY16_FP
+#define REGNO_OK_FOR_INDEX_P(NUM) (1)
 
 /* The maximum number of bytes that a single instruction can move
    quickly between memory and registers or between two memory
    locations.  */
-#define MOVE_MAX 4
+#define MOVE_MAX 2
 
 /* All load operations zero extend.  */
 #define LOAD_EXTEND_OP(MEM) ZERO_EXTEND
@@ -375,5 +369,24 @@ enum reg_class
   }
 
 #define HAS_LONG_UNCOND_BRANCH true
+
+/* "HW_DIVIDE" actually means 64 by 32 bit divide.  While some PDP11
+   models have hardware divide, it is for 32 by 16 bits only, so we
+   call this platform "no hardware divide".  */
+#define TARGET_HAS_NO_HW_DIVIDE 1
+
+#define HAVE_POST_INCREMENT 1
+
+#define HAVE_PRE_DECREMENT 1
+
+/* Define this if a raw index is all that is needed for a
+   `tablejump' insn.  */
+#define CASE_TAKES_INDEX_RAW
+
+#define ASM_OUTPUT_REG_PUSH(FILE,REGNO)	\
+  fprintf (FILE, "\tmov\t%s,-(sp)\n", reg_names[REGNO])
+
+#define ASM_OUTPUT_REG_POP(FILE,REGNO)	\
+  fprintf (FILE, "\tmov\t(sp)+,%s\n", reg_names[REGNO])
 
 #endif /* GCC_TINY16_H */
