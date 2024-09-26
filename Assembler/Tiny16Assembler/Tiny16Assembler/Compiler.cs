@@ -20,6 +20,7 @@ internal sealed class Tiny16Compiler: GenericCompiler
         if (!noRem16)
             Creators.Add("rem16", new AluInstructionCreator(AluOperations.Rem1616));
 
+        InstructionCreator.MaxRegNo = 15;
         RegisterNames["sp"] = "r15";
     }
         

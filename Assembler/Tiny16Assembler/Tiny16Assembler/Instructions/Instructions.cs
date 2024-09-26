@@ -91,3 +91,73 @@ internal sealed class OpCodeInstructionCreator(uint opCode, uint parameter = 0) 
         return new OpCodeInstruction(line, opCode, parameter);
     }
 }
+
+record MemoryOp(bool PostInc, bool PreDec, int Offset);
+
+internal static class InstructionsHelper
+{
+    internal static bool GetRegisterNumberWithMemoryFlag(ICompiler compiler, List<Token> parameters, ref int start,
+                                                            out uint regNo, out MemoryOp? memoryOp)
+    {
+        if (start == parameters.Count)
+            throw new InstructionException("unexpected end of line");
+
+        memoryOp = null;
+        if (parameters[start].IsChar('-'))
+        {
+            memoryOp = new MemoryOp(false, true, 0);
+            start++;
+            if (start == parameters.Count)
+                throw new InstructionException("unexpected end of line");
+        }
+
+        if (parameters[start].Type == TokenType.Number)
+        {
+            if (memoryOp == null)
+                memoryOp = new MemoryOp(false, false, parameters[start].IntValue);
+            else
+                memoryOp = memoryOp with { Offset = parameters[start].IntValue};
+            start++;
+            if (start == parameters.Count)
+                throw new InstructionException("unexpected end of line");
+        }
+        if (parameters[start].IsChar('('))
+        {
+            if (memoryOp == null)
+                memoryOp = new MemoryOp(false, false, 0);
+            start++;
+        }
+        else if (memoryOp != null)
+            throw new InstructionException("( expected");
+
+        if (start == parameters.Count)
+            throw new InstructionException("unexpected end of line");
+
+        if (parameters[start].Type != TokenType.Name ||
+            !InstructionCreator.GetRegisterNumber(compiler, parameters[start].StringValue, out regNo))
+        {
+            if (memoryOp != null) throw new InstructionException("register name expected");
+            regNo = 0;
+            return false;
+        }
+
+        start++;
+
+        if (memoryOp == null)
+            return true;
+        
+        if (start == parameters.Count || !parameters[start].IsChar(')'))
+            throw new InstructionException(") expected");
+        start++;
+
+        if (start <= parameters.Count && parameters[start].IsChar('+'))
+        {
+            if (memoryOp.PreDec)
+                throw new InstructionException("both post increment and pre decrement are present");
+            memoryOp = memoryOp with {PostInc = true};
+            start++;
+        }
+        
+        return true;
+    }
+}
