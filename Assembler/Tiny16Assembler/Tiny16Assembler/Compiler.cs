@@ -9,16 +9,16 @@ internal sealed class Tiny16Compiler: GenericCompiler
         			bool noRem32, bool noMul, bool noDiv16, bool noRem16):
         base(sources, outputFileName, outputFormat, Creators, new GenericParser())
     {
-        /*if (!noDiv32)
-            Creators.Add("div", new AluInstructionCreator(AluOperations.Div3216));
+        if (!noDiv32)
+            Creators.Add("div32", new AluInstructionCreator(AluOperations.Div3216));
         if (!noRem32)
-            Creators.Add("rem", new AluInstructionCreator(AluOperations.Rem3216));
+            Creators.Add("rem32", new AluInstructionCreator(AluOperations.Rem3216));
         if (!noMul)
             Creators.Add("mul", new AluInstructionCreator(AluOperations.Mul));
         if (!noDiv16)
-            Creators.Add("div", new AluInstructionCreator(AluOperations.Div1616));
+            Creators.Add("div16", new AluInstructionCreator(AluOperations.Div1616));
         if (!noRem16)
-            Creators.Add("rem", new AluInstructionCreator(AluOperations.Rem1616));*/
+            Creators.Add("rem16", new AluInstructionCreator(AluOperations.Rem1616));
 
         RegisterNames["sp"] = "r15";
     }
@@ -42,56 +42,48 @@ internal sealed class Tiny16Compiler: GenericCompiler
         {"retmi", new OpCodeInstructionCreator(InstructionCodes.Ret, Conditions.MI)},
         {"retpl", new OpCodeInstructionCreator(InstructionCodes.Ret, Conditions.PL)},
 
-        {"reti", new OpCodeInstructionCreator(InstructionCodes.Reti, Conditions.None)},
-        {"retic", new OpCodeInstructionCreator(InstructionCodes.Reti, Conditions.C)},
-        {"retilt", new OpCodeInstructionCreator(InstructionCodes.Reti, Conditions.C)},
-        {"retiz", new OpCodeInstructionCreator(InstructionCodes.Reti, Conditions.Z)},
-        {"retieq", new OpCodeInstructionCreator(InstructionCodes.Reti, Conditions.Z)},
-        {"retinc", new OpCodeInstructionCreator(InstructionCodes.Reti, Conditions.NC)},
-        {"retige", new OpCodeInstructionCreator(InstructionCodes.Reti, Conditions.NC)},
-        {"retinz", new OpCodeInstructionCreator(InstructionCodes.Reti, Conditions.NZ)},
-        {"retine", new OpCodeInstructionCreator(InstructionCodes.Reti, Conditions.NZ)},
-        {"retigt", new OpCodeInstructionCreator(InstructionCodes.Reti, Conditions.GT)},
-        {"retile", new OpCodeInstructionCreator(InstructionCodes.Reti, Conditions.LE)},
-        {"retimi", new OpCodeInstructionCreator(InstructionCodes.Reti, Conditions.MI)},
-        {"retipl", new OpCodeInstructionCreator(InstructionCodes.Reti, Conditions.PL)},
+        {"reti", new OpCodeInstructionCreator(InstructionCodes.Reti)},
         
         {"mov", new MovInstructionCreator()},
         {"mvil", new MviInstructionCreator(InstructionCodes.Mvil)},
         {"mvih", new MviInstructionCreator(InstructionCodes.Mvih)},
-        //{"loada", new LoadAddressInstructionCreator()},
-        //{"loadf", new LoadfInstructionCreator()},
+        {"loada", new LoadAddressInstructionCreator()},
+        {"pushf", new PushfInstructionCreator()},
+        {"popf", new PopfInstructionCreator()},
         
-        //{"clr", new RegisterLoadInstructionCreator(0)},
-        //{"ser", new RegisterLoadInstructionCreator(0xFFFF)},
-        //{"inc", new IncInstructionCreator()},
-        //{"dec", new DecInstructionCreator()},
-        //{"not", new AluImmediateInstructionCreator(AluOperations.Xor, 0xFFFF)},
+        {"clr", new AluRegisterInstructionCreator(AluOperations.Xor)},
+        {"ser", new RegisterLoadInstructionCreator(0xFFFF)},
+        {"inc", new AluImmediateInstructionCreator(AluOperations.Add, 0xFFFF)},
+        {"dec", new AluImmediateInstructionCreator(AluOperations.Add, 1)},
+        {"not", new AluImmediateInstructionCreator(AluOperations.Xor, 0xFFFF)},
 
-        //{"test", new AluInstructionCreator(AluOperations.Test)},
-        //{"neg", new AluInstructionCreator(AluOperations.Neg)},
-        //{"cmp", new AluInstructionCreator(AluOperations.Cmp)},
-        //{"add", new AluInstructionCreator(AluOperations.Add)},
-        //{"adc", new AluInstructionCreator(AluOperations.Adc)},
-        //{"sub", new AluInstructionCreator(AluOperations.Sub)},
-        //{"sbc", new AluInstructionCreator(AluOperations.Sbc)},
-        //{"shl", new AluInstructionCreator(AluOperations.Shl)},
-        //{"shr", new AluInstructionCreator(AluOperations.Shr)},
-        //{"and", new AluInstructionCreator(AluOperations.And)},
-        //{"or", new AluInstructionCreator(AluOperations.Or)},
-        //{"xor", new AluInstructionCreator(AluOperations.Xor)},
-        //{"setf", new SetfRegisterInstructionCreator()},
-        //{"rlc", new AluInstructionCreator(AluOperations.Rlc)},
-        //{"rrc", new AluInstructionCreator(AluOperations.Rrc)},
-        //{"shlc", new AluInstructionCreator(AluOperations.Shlc)},
-        //{"shrc", new AluInstructionCreator(AluOperations.Shrc)},
+        {"test", new AluInstructionCreator(AluOperations.Test)},
+        {"neg", new AluInstructionCreator(AluOperations.Neg)},
+        {"cmp", new AluInstructionCreator(AluOperations.Cmp)},
+        {"add", new AluInstructionCreator(AluOperations.Add)},
+        {"adc", new AluInstructionCreator(AluOperations.Adc)},
+        {"sub", new AluInstructionCreator(AluOperations.Sub)},
+        {"sbc", new AluInstructionCreator(AluOperations.Sbc)},
+        {"shl", new AluInstructionCreator(AluOperations.Shl)},
+        {"shr", new AluInstructionCreator(AluOperations.Shr)},
+        {"and", new AluInstructionCreator(AluOperations.And)},
+        {"or", new AluInstructionCreator(AluOperations.Or)},
+        {"xor", new AluInstructionCreator(AluOperations.Xor)},
+        {"setf", new SetfRegisterInstructionCreator()},
+        {"rlc", new AluInstructionCreator(AluOperations.Rlc)},
+        {"rrc", new AluInstructionCreator(AluOperations.Rrc)},
+        {"shlc", new AluInstructionCreator(AluOperations.Shlc)},
+        {"shrc", new AluInstructionCreator(AluOperations.Shrc)},
         
-        //{"setc", new SetfImmediateInstructionCreator(4)},
-        //{"setz", new SetfImmediateInstructionCreator(2)},
-        //{"setn", new SetfImmediateInstructionCreator(1)},
-        //{"clrf", new SetfImmediateInstructionCreator(0)},
+        {"setc", new SetfImmediateInstructionCreator(4)},
+        {"setz", new SetfImmediateInstructionCreator(2)},
+        {"setn", new SetfImmediateInstructionCreator(1)},
+        {"clrf", new SetfImmediateInstructionCreator(0)},
 
         {"int", new IntInstructionCreator()},
+
+        {"jmp11", new Jmp11InstructionCreator(InstructionCodes.Jmp11)},
+        {"call11", new Jmp11InstructionCreator(InstructionCodes.Call11)},
         
         {"br", new BrInstructionCreator(Conditions.None)},
         {"brc", new BrInstructionCreator(Conditions.C)},
@@ -120,6 +112,20 @@ internal sealed class Tiny16Compiler: GenericCompiler
         {"jmple", new JmpInstructionCreator(false, Conditions.LE)},
         {"jmpmi", new JmpInstructionCreator(false, Conditions.MI)},
         {"jmppl", new JmpInstructionCreator(false, Conditions.PL)},
+
+        {"jmp16", new Jmp16InstructionCreator(InstructionCodes.Jmp, Conditions.None)},
+        {"jmp16c", new Jmp16InstructionCreator(InstructionCodes.Jmp, Conditions.C)},
+        {"jmp16lt", new Jmp16InstructionCreator(InstructionCodes.Jmp, Conditions.C)},
+        {"jmp16z", new Jmp16InstructionCreator(InstructionCodes.Jmp, Conditions.Z)},
+        {"jmp16eq", new Jmp16InstructionCreator(InstructionCodes.Jmp, Conditions.Z)},
+        {"jmp16nc", new Jmp16InstructionCreator(InstructionCodes.Jmp, Conditions.NC)},
+        {"jmp16ge", new Jmp16InstructionCreator(InstructionCodes.Jmp, Conditions.NC)},
+        {"jmp16nz", new Jmp16InstructionCreator(InstructionCodes.Jmp, Conditions.NZ)},
+        {"jmp16ne", new Jmp16InstructionCreator(InstructionCodes.Jmp, Conditions.NZ)},
+        {"jmp16gt", new Jmp16InstructionCreator(InstructionCodes.Jmp, Conditions.GT)},
+        {"jmp16le", new Jmp16InstructionCreator(InstructionCodes.Jmp, Conditions.LE)},
+        {"jmp16mi", new Jmp16InstructionCreator(InstructionCodes.Jmp, Conditions.MI)},
+        {"jmp16pl", new Jmp16InstructionCreator(InstructionCodes.Jmp, Conditions.PL)},
         
         {"call", new JmpInstructionCreator(true, Conditions.None)},
         {"callc", new JmpInstructionCreator(true, Conditions.C)},
@@ -134,5 +140,19 @@ internal sealed class Tiny16Compiler: GenericCompiler
         {"callle", new JmpInstructionCreator(true, Conditions.LE)},
         {"callmi", new JmpInstructionCreator(true, Conditions.MI)},
         {"callpl", new JmpInstructionCreator(true, Conditions.PL)},
+        
+        {"call16", new Jmp16InstructionCreator(InstructionCodes.Call, Conditions.None)},
+        {"call16c", new Jmp16InstructionCreator(InstructionCodes.Call, Conditions.C)},
+        {"call16lt", new Jmp16InstructionCreator(InstructionCodes.Call, Conditions.C)},
+        {"call16z", new Jmp16InstructionCreator(InstructionCodes.Call, Conditions.Z)},
+        {"call16eq", new Jmp16InstructionCreator(InstructionCodes.Call, Conditions.Z)},
+        {"call16nc", new Jmp16InstructionCreator(InstructionCodes.Call, Conditions.NC)},
+        {"call16ge", new Jmp16InstructionCreator(InstructionCodes.Call, Conditions.NC)},
+        {"call16nz", new Jmp16InstructionCreator(InstructionCodes.Call, Conditions.NZ)},
+        {"call16ne", new Jmp16InstructionCreator(InstructionCodes.Call, Conditions.NZ)},
+        {"call16gt", new Jmp16InstructionCreator(InstructionCodes.Call, Conditions.GT)},
+        {"call16le", new Jmp16InstructionCreator(InstructionCodes.Call, Conditions.LE)},
+        {"call16mi", new Jmp16InstructionCreator(InstructionCodes.Call, Conditions.MI)},
+        {"call16pl", new Jmp16InstructionCreator(InstructionCodes.Call, Conditions.PL)},
     };
 }

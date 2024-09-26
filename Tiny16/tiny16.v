@@ -15,7 +15,7 @@ module tiny16
     input wire interrupt,
     output reg [2:0] stage = 0
 );
-    localparam MICROCODE_WIDTH = 28;
+    localparam MICROCODE_WIDTH = 30;
     localparam SP = 15;
     localparam NOP = {6'h1, 10'h0};
     localparam INT = 6'h13;
@@ -64,8 +64,8 @@ module tiny16
 
     wire halt, err;
     wire load, fetch2, alu_op1_source, alu_op2_source, stage_reset_no_mul, stage_reset_mul, set_pc;
-    wire alu_op_id_source, alu_clk;
-    wire [1:0] registers_wr_address_source, data_out_source, address_source;
+    wire alu_clk, wr_others, wr_alu;
+    wire [1:0] registers_wr_address_source, data_out_source, address_source, alu_op_id_source;
     wire [2:0] pc_source;
     wire [3:0] registers_wr_data_source;
     wire mul;
@@ -96,7 +96,7 @@ module tiny16
     assign value11 = current_instruction[10:0];
     assign alu_op_adder = instruction_parameter[15:5];
 
-    assign alu_op_id = alu_op_id_source ? instruction_parameter[4:0] : {current_instruction[12:10], current_instruction[5:4]};
+    assign alu_op_id = alu_op_id_f(alu_op_id_source);
     
     assign address = address_source_f(address_source);
     
@@ -121,41 +121,44 @@ module tiny16
     assign alu_op_adder_to_16 = {alu_op_adder[10], alu_op_adder[10], alu_op_adder[10], alu_op_adder[10], alu_op_adder[10], alu_op_adder};
 
     assign registers_wr_others = current_microinstruction[0];
-    assign load = current_microinstruction[1];
-    assign wr = current_microinstruction[2];
+    assign registers_wr_alu = current_microinstruction[1];
+    assign load = current_microinstruction[2];
+    assign wr_others = current_microinstruction[3];
+    assign wr_alu = current_microinstruction[4];
 
-    assign halt = current_microinstruction[3];
-    assign err = current_microinstruction[4];            
+    assign halt = current_microinstruction[5];
+    assign err = current_microinstruction[6];            
 
-    assign fetch2 = current_microinstruction[5];
-    assign set_pc = current_microinstruction[6];
+    assign fetch2 = current_microinstruction[7];
+    assign set_pc = current_microinstruction[8];
 
-    assign pc_source = current_microinstruction[9:7];
-    assign address_source = current_microinstruction[11:10];
+    assign pc_source = current_microinstruction[11:9];
+    assign address_source = current_microinstruction[13:12];
 
-    assign data_out_source = current_microinstruction[13:12];
+    assign data_out_source = current_microinstruction[15:14];
 
-    assign registers_wr_data_source = current_microinstruction[17:14];
-    assign registers_wr_address_source = current_microinstruction[19:18];
+    assign registers_wr_data_source = current_microinstruction[19:16];
+    assign registers_wr_address_source = current_microinstruction[21:20];
 
-    assign stage_reset_no_mul = current_microinstruction[20];
-    assign stage_reset_mul = current_microinstruction[21];
+    assign stage_reset_no_mul = current_microinstruction[22];
+    assign stage_reset_mul = current_microinstruction[23];
 
-    assign alu_op1_source = current_microinstruction[22];
-    assign alu_op2_source = current_microinstruction[23];
-    assign alu_op_id_source = current_microinstruction[24];
-    assign alu_clk = current_microinstruction[25];
-    assign registers_wr_alu = current_microinstruction[26];
+    assign alu_op1_source = current_microinstruction[24];
+    assign alu_op2_source = current_microinstruction[25];
+    assign alu_op_id_source = current_microinstruction[27:26];
+    assign alu_clk = current_microinstruction[28];
+
+    assign in_interrupt_clear = current_microinstruction[29];
+
     assign mul = alu_op_id == `ALU_OP_MUL;
 
-    assign in_interrupt_clear = current_microinstruction[27];
-    
     assign rd = (!start | error | hlt) | ((stage != 0) && !load && !fetch2);
 
     assign registers_address_wr = registers_address_wr_f(registers_wr_address_source);
     assign registers_data_wr = registers_data_wr_f(registers_wr_data_source);
-    assign registers_wr = registers_wr_others && (registers_wr_alu || (alu_op_id == `ALU_OP_TEST || alu_op_id == `ALU_OP_CMP || alu_op_id == `ALU_OP_SETF));
+    assign registers_wr = registers_wr_others && (registers_wr_alu || alu_op_id[4:2] == 0);
     assign stage_reset = (mul & stage_reset_mul) | (!mul & stage_reset_no_mul);
+    assign wr = wr_others && (wr_alu || alu_op_id[4:2] == 0);
 
     function [15:0] pc_source_f(input [2:0] source);
         case (source)
@@ -212,6 +215,14 @@ module tiny16
             1: data_out_f = instruction_parameter;
             2: data_out_f = {13'h0, c, z, n};
             3: data_out_f = pc + 1;
+        endcase
+    endfunction
+
+    function [4:0] alu_op_id_f(input [1:0] source);
+        case (source)
+            0: alu_op_id_f = current_instruction[12:8];
+            1: alu_op_id_f = current_instruction[8:4];
+            default: alu_op_id_f = instruction_parameter[4:0];
         endcase
     endfunction
 

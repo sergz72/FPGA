@@ -5,28 +5,29 @@ namespace Tiny16Assembler.Instructions;
 internal static class AluOperations
 {
     internal const uint Test = 0;
-    internal const uint Neg = 1;
-    internal const uint Add = 2;
-    internal const uint Adc = 3;
-    internal const uint Sub = 4;
-    internal const uint Sbc = 5;
-    internal const uint Shl = 6;
-    internal const uint Shr = 7;
-    internal const uint And = 8;
-    internal const uint Or  = 9;
-    internal const uint Xor = 10;
-    internal const uint Cmp = 11;
-    internal const uint Setf = 12;
-    internal const uint Rlc   = 13;
-    internal const uint Rrc   = 14;
-    internal const uint Shlc  = 15;
-    internal const uint Shrc  = 16;
+    internal const uint Cmp = 1;
+    internal const uint Setf = 2;
+
+    internal const uint Neg = 4;
+    internal const uint Add = 5;
+    internal const uint Adc = 6;
+    internal const uint Sub = 7;
+    internal const uint Sbc = 8;
+    internal const uint Shl = 9;
+    internal const uint Shr = 10;
+    internal const uint And = 11;
+    internal const uint Or  = 12;
+    internal const uint Xor = 13;
+    internal const uint Rlc   = 14;
+    internal const uint Rrc   = 15;
+    internal const uint Shlc  = 16;
+    internal const uint Shrc  = 17;
 
     internal const uint Div1616 = 27;
     internal const uint Rem1616 = 28;
-    internal const uint Mul = 29;
-    internal const uint Div3216 = 30;
-    internal const uint Rem3216 = 31;
+    internal const uint Div3216 = 29;
+    internal const uint Rem3216 = 30;
+    internal const uint Mul = 31;
 }
 
 internal static class Conditions
@@ -55,9 +56,22 @@ internal static class InstructionCodes
     internal const uint Ret = 17;
     internal const uint Reti = 18;
     internal const uint Int = 19;
-    internal const uint JmpReg = 20;
-    internal const uint CallReg = 22;
-    internal const uint JmpPReg = 24;
+    internal const uint MovMImm = 20;
+    internal const uint Jmp11 = 24;
+    internal const uint Call11 = 26;
+    internal const uint AluRM = 28;
+    internal const uint JmpReg = 31;
+    internal const uint JmpPReg = 32;
+    internal const uint CallReg = 35;
+    internal const uint CallPReg = 36;
+    internal const uint Pushf = 39;
+    internal const uint MovRM = 40;
+    internal const uint MovRR = 43;
+    internal const uint MovMR = 44;
+    internal const uint AluRR = 48;
+    internal const uint AluMR = 56;
+    internal const uint AluRImm = 59;
+    internal const uint AluMImm = 60;
 }
 
 internal sealed class OpCodeInstruction(string line, uint opCode, uint parameter) : Instruction(line)

@@ -2,9 +2,9 @@
 
 namespace Tiny16Assembler.Instructions;
 
-internal sealed class JmpInstruction: Instruction
+internal sealed class AluInstruction: Instruction
 {
-    internal JmpInstruction(string line, uint opcode, uint condition) : base(line)
+    internal AluInstruction(string line, uint opcode) : base(line)
     {
     }
 
@@ -14,9 +14,9 @@ internal sealed class JmpInstruction: Instruction
     }
 }
 
-internal sealed class JmpInstructionCreator : InstructionCreator
+internal sealed class AluInstructionCreator : InstructionCreator
 {
-    internal JmpInstructionCreator(bool call, uint condition)
+    internal AluInstructionCreator(uint opId)
     {
         
     }
