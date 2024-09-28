@@ -185,17 +185,16 @@ module tiny16
     function [15:0] registers_data_wr_f(input [3:0] source);
         case (source)
             0: registers_data_wr_f = source_reg_data + value4_to_16;
-            1: registers_data_wr_f = (source_reg_data & 16'h00FF) | {value8, 8'h0};
-            2: registers_data_wr_f = (source_reg_data & 16'hFF00) | {8'h0, value8};
-            3: registers_data_wr_f = dest_reg_data - 1;
-            4: registers_data_wr_f = source_reg_data - 1;
-            5: registers_data_wr_f = sp_data - 1;
-            6: registers_data_wr_f = data_in;
-            7: registers_data_wr_f = alu_out;
-            8: registers_data_wr_f = alu_out2;
-            9: registers_data_wr_f = alu_out + alu_op_adder_to_16;
-            10: registers_data_wr_f = dest_reg_data + 1;
-            11: registers_data_wr_f = sp_data + 1;
+            1: registers_data_wr_f = {8'h0, value8};
+            2: registers_data_wr_f = dest_reg_data - 1;
+            3: registers_data_wr_f = source_reg_data - 1;
+            4: registers_data_wr_f = sp_data - 1;
+            5: registers_data_wr_f = data_in;
+            6: registers_data_wr_f = alu_out;
+            7: registers_data_wr_f = alu_out2;
+            8: registers_data_wr_f = alu_out + alu_op_adder_to_16;
+            9: registers_data_wr_f = dest_reg_data + 1;
+            10: registers_data_wr_f = sp_data + 1;
             default: registers_data_wr_f = source_reg_data + 1;
         endcase
     endfunction

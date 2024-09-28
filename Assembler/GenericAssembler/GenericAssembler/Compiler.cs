@@ -121,11 +121,11 @@ public class GenericCompiler: ICompiler
 
     protected List<BinaryItem> CreateBinary()
     {
-        var again = true;
-        while (again)
+        var retries = 10000;
+        while (retries > 0)
         {
-            again = false;
             uint pc = 0;
+            var again = false;
             foreach (var instruction in Instructions)
             {
                 if (instruction.RequiredLabel != null)
@@ -143,7 +143,10 @@ public class GenericCompiler: ICompiler
                 }
                 pc += instruction.Size;
             }
+            retries = again ? retries - 1 : -1;
         }
+        if (retries == 0)
+            throw new CompilerException("CreateBinary", 0, "Instructions size update was unsuccessful.");
 
         var bytes = new List<BinaryItem>();
         foreach (var instruction in Instructions)

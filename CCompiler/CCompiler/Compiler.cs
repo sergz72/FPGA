@@ -5,7 +5,7 @@ namespace CCompiler;
 
 public sealed class CCompiler: IProgramBlock
 {
-    private sealed class CompilerException(string fileName, int lineNo, int startChar, string message) :
+    internal sealed class CompilerException(string fileName, int lineNo, int startChar, string message) :
         Exception($"Error in {fileName}:{lineNo}:{startChar} {message}")
     {
         internal CompilerException(string fileName, List<Token> tokens, int idx, string message):
@@ -69,7 +69,8 @@ public sealed class CCompiler: IProgramBlock
         var tokens = Preprocessor.Preprocess(_sources, onlyPreprocess);
         if (onlyPreprocess)
             return;
-        var start = 0;
+        var syntaxTree = new SyntaxTreeBuilder(tokens).Build();
+        /*var start = 0;
         while (start < tokens.Count)
         {
             var token = tokens[start];
@@ -87,7 +88,7 @@ public sealed class CCompiler: IProgramBlock
             }
             else
                 AddVariable(name, token, new Variable(name, this, token.FileName, dataType, tokens, ref start));
-        }
+        }*/
     }
 
     internal (DataType, string?) ParseDataType(string fileName, List<Token> tokens, ref int start)
@@ -264,7 +265,13 @@ internal interface ICpu
 internal class CPUException(string message): Exception(message)
 {}
 
-public record DataType(uint Size, bool Signed, bool IsConstant, bool IsStatic, DataType? Parent, uint Length);
+public record DataType(
+    uint Size,
+    bool Signed,
+    bool IsConstant,
+    bool IsStatic,
+    DataType? Parent,
+    uint Length);
 
 public class Variable
 {

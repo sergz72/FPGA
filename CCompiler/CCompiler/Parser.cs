@@ -8,6 +8,7 @@ public enum TokenType
     Number,
     Symbol,
     String,
+    Keyword,
     Eol
 }
 
@@ -35,6 +36,16 @@ public record Token(TokenType Type, string StringValue, int IntValue, string Fil
         return Type == TokenType.Symbol && StringValue.Length == 1 && StringValue[0] == value;
     }
 
+    public bool IsAnyOfKeywords(params CParser.Keyword[] keywords)
+    {
+        return Type == TokenType.Keyword && keywords.Contains((CParser.Keyword)IntValue);
+    }
+
+    public bool IsDataTypeKeyword()
+    {
+        return Type == TokenType.Keyword && CParser.DataTypeKeywords.Contains((CParser.Keyword)IntValue);
+    }
+    
     public override string ToString()
     {
         return $"{Type} StringValue: {StringValue} IntValue: {IntValue}";
@@ -61,6 +72,74 @@ internal sealed class ParserException(string message) : Exception(message);
 
 public sealed class CParser
 {
+    public enum Keyword
+    {
+        Auto = 0,
+        Else,
+        Long,
+        Switch,
+        Break,
+        Enum,
+        Register,
+        Typedef,
+        Case,
+        Extern,
+        Return,
+        Union,
+        Char,
+        Float,
+        Short,
+        Unsigned,
+        Const,
+        For,
+        Signed,
+        Void,
+        Continue,
+        Goto,
+        Sizeof,
+        Volatile,
+        Default,
+        If,
+        Static,
+        While,
+        Do,
+        Int,
+        Struct,
+        Double
+    }
+
+    public static readonly Keyword[] DataTypeKeywords =
+    [
+        Keyword.Long,
+        Keyword.Enum,
+        Keyword.Register,
+        Keyword.Extern,
+        Keyword.Union,
+        Keyword.Char,
+        Keyword.Float,
+        Keyword.Short,
+        Keyword.Unsigned,
+        Keyword.Const,
+        Keyword.Signed,
+        Keyword.Void,
+        Keyword.Volatile,
+        Keyword.Static,
+        Keyword.Int,
+        Keyword.Struct,
+        Keyword.Double
+    ];
+    
+    private static readonly string[] Keywords = [
+        "auto","else","long","switch",
+        "break","enum","register","typedef",
+        "case","extern","return","union",
+        "char","float","short","unsigned",
+        "const","for","signed","void",
+        "continue","goto","sizeof","volatile",
+        "default","if","static","while",
+        "do","int","struct", "double"
+    ];
+    
     private enum ParserMode
     {
         None,
@@ -88,7 +167,7 @@ public sealed class CParser
     private int _line;
     private int _startChar;
     private int _currentChar;
-    private string _fileName;
+    private readonly string _fileName;
     
     public CParser(string filename, string code)
     {
@@ -101,6 +180,16 @@ public sealed class CParser
         _fileName = filename;
     }
 
+    private void FinishName()
+    {
+        var name = _builder.ToString();
+        var index = Array.FindIndex(Keywords, kv => kv == name);
+        if (index >= 0)
+            _result.Add(new Token(TokenType.Keyword, "", index, _fileName, _line, _startChar));
+        else                    
+            _result.Add(new Token(TokenType.Name, name, 0, _fileName, _line, _startChar));
+    }
+    
     private void ModeNameHandler(char c)
     {
         switch (c)
@@ -113,7 +202,7 @@ public sealed class CParser
                 break;
             default:
                 _mode = ParserMode.None;
-                _result.Add(new Token(TokenType.Name, _builder.ToString(), 0, _fileName, _line, _startChar));
+                FinishName();
                 _builder.Clear();
                 ModeNoneHandler(c);
                 break;
@@ -383,7 +472,7 @@ public sealed class CParser
         switch (_mode)
         {
             case ParserMode.Name:
-                _result.Add(new Token(TokenType.Name, _builder.ToString(), 0, _fileName, _line, _startChar));
+                FinishName();
                 _builder.Clear();
                 break;
             case ParserMode.Number:
@@ -392,7 +481,6 @@ public sealed class CParser
                 break;
             case ParserMode.Symbol:
                 _result.Add(new Token(TokenType.Symbol, _builder.ToString(), 0, _fileName, _line, _startChar));
-                _builder.Clear();
                 break;
             case ParserMode.None:
             case ParserMode.LineComment:

@@ -34,18 +34,17 @@ var dataOutSourcePcPlus1 = 3 * dataOutSource.Value;
 
 var registersWrDataSource = new Bits(4);
 var registersWrDataSourceRegValue416 = 0;
-var registersWrDataSourceRegHi = registersWrDataSource.Value;
-var registersWrDataSourceRegLo = 2 * registersWrDataSource.Value;
-var registersWrDataDestRegMinus1 = 3 * registersWrDataSource.Value;
-var registersWrDataSourceRegMinus1 = 4 * registersWrDataSource.Value;
-var registersWrDataSourceSpMinus1 = 5 * registersWrDataSource.Value;
-var registersWrDataSourceDataIn = 6 * registersWrDataSource.Value;
-var registersWrDataSourceAluOut = 7 * registersWrDataSource.Value;
-var registersWrDataSourceAluOut2 = 8 * registersWrDataSource.Value;
-var registersWrDataSourceAluOutPlusAdder = 9 * registersWrDataSource.Value;
-var registersWrDataSourceDestRegPlus1 = 10 * registersWrDataSource.Value;
-var registersWrDataSourceSourceRegPlus1 = 11 * registersWrDataSource.Value;
-var registersWrDataSourceSpPlus1 = 12 * registersWrDataSource.Value;
+var registersWrDataSourceImm8 = registersWrDataSource.Value;
+var registersWrDataDestRegMinus1 = 2 * registersWrDataSource.Value;
+var registersWrDataSourceRegMinus1 = 3 * registersWrDataSource.Value;
+var registersWrDataSourceSpMinus1 = 4 * registersWrDataSource.Value;
+var registersWrDataSourceDataIn = 5 * registersWrDataSource.Value;
+var registersWrDataSourceAluOut = 6 * registersWrDataSource.Value;
+var registersWrDataSourceAluOut2 = 7 * registersWrDataSource.Value;
+var registersWrDataSourceAluOutPlusAdder = 8 * registersWrDataSource.Value;
+var registersWrDataSourceDestRegPlus1 = 9 * registersWrDataSource.Value;
+var registersWrDataSourceSourceRegPlus1 = 10 * registersWrDataSource.Value;
+var registersWrDataSourceSpPlus1 = 11 * registersWrDataSource.Value;
 
 var registersWrAddressSource = new Bits(2);
 var registersWrAddressSourceSourceReg = 0;
@@ -80,13 +79,17 @@ for (var i = 0; i < microcodeLength; i++)
     {
         // hlt
         0 => Hlt(stage),
-        //nop
-        1 => Nop(stage),
+        1 => AluRImm(stage),
         2 => MovRImm(stage),
         // jmp addr16
         3 => conditionPass ? Jmp(stage) : Nop2(stage),
-        >= 4 and <= 7 => Mvil(stage),
-        >= 8 and <= 11 => Mvih(stage),
+        >= 4 and <= 7 => Mvi8(stage),
+        // jmp reg
+        8 => JmpReg(stage),
+        // call reg
+        9 => CallReg(stage),
+        10 => Pushf(stage),
+        11 => Movrr(stage),
         >= 12 and <= 15 => conditionPass ? Br(stage) : Nop(stage),
         // call addr16
         16 => conditionPass ? Call(stage) : Nop2(stage),
@@ -97,30 +100,28 @@ for (var i = 0; i < microcodeLength; i++)
         // int
         19 => Call1(stage, pcSourceValue10),
         >= 20 and <= 22 => MovMImm(postInc, preDec, stage),
-        // 23?
+        23 => MovMImmWithIndex(stage),
         // jmp11
         >= 24 and <= 25 => Jmp1(stage, pcSourcePcValue1116),
         // call11
         >= 26 and <= 27 => Call1(stage, pcSourcePcValue1116),
         >= 28 and <= 30 => AluRM(postInc, preDec, stage),
-        // jmp reg
-        31 => JmpReg(stage),
+        31 => AluRMWithIndex(stage),
         // jmp (reg)
         >= 32 and <= 34 => JmpPReg(postInc, preDec, stage),
-        // call reg
-        35 => CallReg(stage),
+        35 => JmpPRegWithIndex(stage),
         // call (reg)
         >= 36 and <= 38 => CallPReg(postInc, preDec, stage),
-        39 => Pushf(stage),
+        39 => CallPRegWithIndex(stage),
         >= 40 and <= 42 => MovRM(postInc, preDec, stage),
-        43 => Movrr(stage),
+        43 => MovRMWithIndex(stage),
         >= 44 and <= 46 => MovMR(postInc, preDec, stage),
-        //47?
+        47 => MovMRWithIndex(stage),
         >= 48 and <= 55 => AluRR(stage),
         >= 56 and <= 58 => AluMR(postInc, preDec, stage),
-        59 => AluRImm(stage),
+        59 => AluMRWithIndex(stage),
         >= 60 and <= 62 => AluMImm(postInc, preDec, stage),
-        //63?
+        63 => AluMImmWithIndex(stage),
         _ => error,
     };
     Console.WriteLine("{0:X8}", v);
@@ -128,21 +129,11 @@ for (var i = 0; i < microcodeLength; i++)
 
 return;
 
-int Mvil(int stage)
+int Mvi8(int stage)
 {
     return stage switch
     {
-        0 => registersWrAlu.Value | noWr | nextPc | registersWrDataSourceRegLo | registersWrAddressSourceSourceReg,
-        1 => noRegistersWr | noWr | stageResetMul.Value | stageResetNoMul.Value,
-        _ => error
-    };
-}
-
-int Mvih(int stage)
-{
-    return stage switch
-    {
-        0 => registersWrAlu.Value | noWr | nextPc | registersWrDataSourceRegHi | registersWrAddressSourceSourceReg,
+        0 => registersWrAlu.Value | noWr | nextPc | registersWrDataSourceImm8 | registersWrAddressSourceSourceReg,
         1 => noRegistersWr | noWr | stageResetMul.Value | stageResetNoMul.Value,
         _ => error
     };
@@ -165,6 +156,11 @@ int MovMImm(bool postInc, bool preDec, int stage)
     return Hlt(stage);
 }
 
+int MovMImmWithIndex(int stage)
+{
+    //todo
+    return Hlt(stage);
+}
 
 int Jmp(int stage)
 {
@@ -204,7 +200,7 @@ int Call(int stage)
     };
 }
 
-int Call1(int stage, int pcSource)
+int Call1(int stage, int pcSourceValue)
 {
     return stage switch
     {
@@ -213,7 +209,7 @@ int Call1(int stage, int pcSource)
         // set new address source, data_out = pc + 1
         1 => noRegistersWr | noWr | addressSourceSpdata | dataOutSourcePcPlus1,
         // save pc, set new pc
-        2 => noRegistersWr | wrAlu.Value | addressSourceSpdata | dataOutSourcePcPlus1 | setPc.Value | pcSource,
+        2 => noRegistersWr | wrAlu.Value | addressSourceSpdata | dataOutSourcePcPlus1 | setPc.Value | pcSourceValue,
         // stage reset
         3 => noRegistersWr | noWr | stageResetMul.Value | stageResetNoMul.Value,
         _ => error
@@ -248,7 +244,19 @@ int JmpPReg(bool postInc, bool preDec, int stage)
     return Hlt(stage);
 }
 
+int JmpPRegWithIndex(int stage)
+{
+    //todo
+    return Hlt(stage);
+}
+
 int CallPReg(bool postInc, bool preDec, int stage)
+{
+    //todo
+    return Hlt(stage);
+}
+
+int CallPRegWithIndex(int stage)
 {
     //todo
     return Hlt(stage);
@@ -260,7 +268,19 @@ int MovRM(bool postInc, bool preDec, int stage)
     return Hlt(stage);
 }
 
+int MovRMWithIndex(int stage)
+{
+    //todo
+    return Hlt(stage);
+}
+
 int MovMR(bool postInc, bool preDec, int stage)
+{
+    //todo
+    return Hlt(stage);
+}
+
+int MovMRWithIndex(int stage)
 {
     //todo
     return Hlt(stage);
@@ -272,13 +292,31 @@ int AluMR(bool postInc, bool preDec, int stage)
     return Hlt(stage);
 }
 
+int AluMRWithIndex(int stage)
+{
+    //todo
+    return Hlt(stage);
+}
+
 int AluRM(bool postInc, bool preDec, int stage)
 {
     //todo
     return Hlt(stage);
 }
 
+int AluRMWithIndex(int stage)
+{
+    //todo
+    return Hlt(stage);
+}
+
 int AluMImm(bool postInc, bool preDec, int stage)
+{
+    //todo
+    return Hlt(stage);
+}
+
+int AluMImmWithIndex(int stage)
 {
     //todo
     return Hlt(stage);
