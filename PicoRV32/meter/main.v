@@ -17,8 +17,9 @@ ROM_BITS = 10)
 (
     input wire clk,
     output wire trap,
+    output wire mem_invalid,
 `ifdef MEMORY_DEBUG
-    wire [31:0] mem_la_addr,
+    output wire [31:0] mem_addr,
 `endif
     inout wire scl_io,
     inout wire sda_io,
@@ -31,6 +32,7 @@ ROM_BITS = 10)
 );
     localparam RAM_START = 32'h40000000;
     localparam RAM_END = RAM_START + (1<<RAM_BITS) - 1;
+    localparam MEMORY_SELECTOR_START_BIT = 29;
 
     reg reset = 0;
     reg [TIMER_BITS - 1:0] timer = 0;
@@ -39,17 +41,17 @@ ROM_BITS = 10)
     reg sda = 1;
 
 `ifndef MEMORY_DEBUG
-    wire [31:0] mem_la_addr;
+    wire [31:0] mem_addr;
 `endif
 
     wire [31:0] irq, eoi, mem_wdata;
     reg [31:0] mem_rdata;
     wire [3:0] mem_wstrb;
     wire mem_valid, mem_instr;
-    reg mem_ready = 1;
+    reg mem_ready = 0;
 	wire mem_la_read;
 	wire mem_la_write;
-	wire [31:0] mem_addr;
+	wire [31:0] mem_la_addr;
 	wire [31:0] mem_la_wdata;
 	wire [ 3:0] mem_la_wstrb;
 	wire pcpi_valid;
@@ -58,6 +60,8 @@ ROM_BITS = 10)
 	wire [31:0] pcpi_rs2;
 	wire trace_valid;
 	wire [35:0] trace_data;
+    wire cpu_clk;
+//    wire rom_selected, ram_selected, port1_selected;
 
     reg [31:0] rom [0:(1<<ROM_BITS)-1];
     reg [7:0] ram1 [0:(1<<RAM_BITS)-1];
@@ -66,6 +70,12 @@ ROM_BITS = 10)
     reg [7:0] ram4 [0:(1<<RAM_BITS)-1];
 
     assign irq = {31'h0, interrupt};
+
+    assign cpu_clk = timer[CPU_CLOCK_BIT];
+    assign mem_invalid = mem_valid & !mem_ready;
+//    assign rom_selected = mem_valid & mem_addr[31:MEMORY_SELECTOR_START_BIT] === 0;
+//    assign ram_selected = mem_valid & mem_addr[31:MEMORY_SELECTOR_START_BIT] === 1;
+//    assign port1_selected = mem_valid & mem_addr[31:MEMORY_SELECTOR_START_BIT] === 2;
 
     initial begin
         $readmemh("asm/code.hex", rom);
@@ -80,7 +90,7 @@ ROM_BITS = 10)
                .STACKADDR(RAM_END),
                .PROGADDR_IRQ(32'h8)
         )
-        cpu(.clk(timer[CPU_CLOCK_BIT]),
+        cpu(.clk(cpu_clk),
                 .resetn(reset),
                 .trap(trap),
                 .irq(irq),
@@ -126,24 +136,26 @@ ROM_BITS = 10)
         reset <= 1;
     end
 
-    always @(posedge mem_valid) begin
-
-        case (mem_addr[31:30])
-            0: begin // rom
-                mem_rdata <= rom[mem_la_addr[ROM_BITS + 1:2]];
-            end
-            1: begin // ram
-                mem_rdata <= {ram4[mem_la_addr[RAM_BITS + 1:2]], ram3[mem_la_addr[RAM_BITS + 1:2]], ram2[mem_la_addr[RAM_BITS + 1:2]], ram1[mem_la_addr[RAM_BITS + 1:2]]};
-                if (mem_wstrb[0]) ram1[mem_la_addr[RAM_BITS + 1:2]] <= mem_wdata[ 7: 0];
-		        if (mem_wstrb[1]) ram2[mem_la_addr[RAM_BITS + 1:2]] <= mem_wdata[15: 8];
-		        if (mem_wstrb[2]) ram3[mem_la_addr[RAM_BITS + 1:2]] <= mem_wdata[23:16];
-		        if (mem_wstrb[3]) ram4[mem_la_addr[RAM_BITS + 1:2]] <= mem_wdata[31:24];
-            end
-            2: begin
-                mem_rdata <= {25'b0, con_button, psh_button, tra, trb, bak_button, scl_io, sda_io};
-                if (mem_wstrb[0]) {led, scl, sda} <= mem_wdata[2:0];
-            end
-        endcase
+    always @(negedge cpu_clk) begin
+        mem_ready <= mem_valid;
+        if (mem_valid) begin
+            case (mem_addr[31:MEMORY_SELECTOR_START_BIT])
+                0: begin // rom
+                    mem_rdata <= rom[mem_addr[ROM_BITS + 1:2]];
+                end
+                1: begin // ram
+                    mem_rdata <= {ram4[mem_addr[RAM_BITS + 1:2]], ram3[mem_addr[RAM_BITS + 1:2]], ram2[mem_addr[RAM_BITS + 1:2]], ram1[mem_addr[RAM_BITS + 1:2]]};
+                    if (mem_wstrb[0]) ram1[mem_addr[RAM_BITS + 1:2]] <= mem_wdata[ 7: 0];
+                    if (mem_wstrb[1]) ram2[mem_addr[RAM_BITS + 1:2]] <= mem_wdata[15: 8];
+                    if (mem_wstrb[2]) ram3[mem_addr[RAM_BITS + 1:2]] <= mem_wdata[23:16];
+                    if (mem_wstrb[3]) ram4[mem_addr[RAM_BITS + 1:2]] <= mem_wdata[31:24];
+                end
+                2: begin
+                    mem_rdata <= {25'b0, con_button, psh_button, tra, trb, bak_button, scl_io, sda_io};
+                    if (mem_wstrb[0]) {led, scl, sda} <= mem_wdata[2:0];
+                end
+            endcase
+        end
     end
 
 endmodule
