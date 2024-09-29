@@ -1,4 +1,4 @@
-#define LED_ADDRESS ((volatile int*)0x40000000)
+#define LED_ADDRESS ((volatile int*)0xC0000000)
 
 static int state = 7;
 static const int delay = 10000;

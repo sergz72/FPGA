@@ -4,7 +4,7 @@ ENTRY( _start )
 MEMORY
 { 
   ROM   (rx)  : ORIGIN = 0x00000000, LENGTH = 1K
-  RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 1K 
+  RAM   (rwx) : ORIGIN = 0x40000000, LENGTH = 1K 
 }
 
 SECTIONS
