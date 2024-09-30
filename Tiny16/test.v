@@ -4,7 +4,7 @@ module tiny16_tb;
     wire [2:0] stage;
     reg [15:0] data_out;
     wire [15:0] data_in;
-    reg clk, reset, ready;
+    reg clk, reset, ready, interrupt;
     wire mem_clk;
 
     reg [15:0] ram [0:65535];
@@ -15,7 +15,7 @@ module tiny16_tb;
     end
 
     tiny16 cpu(.clk(clk), .rd(rd), .wr(wr), .reset(reset), .address(address), .data_in(data_out), .data_out(data_in), .stage(stage),
-                 .error(error), .hlt(hlt), .ready(ready));
+                 .error(error), .hlt(hlt), .ready(ready), .interrupt(interrupt));
 
     always #5 clk <= ~clk;
     
@@ -29,6 +29,7 @@ module tiny16_tb;
         clk = 0;
         reset = 0;
         ready = 1;
+        interrupt = 0;
         #20
         reset = 1;
         #10000
