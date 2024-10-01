@@ -12,7 +12,7 @@ module test;
     reg bak_button;
     wire led;
 
-    main #(.TIMER_BITS(16), .RESET_DELAY_BIT(4), .CPU_CLOCK_BIT(1))
+    main #(.TIMER_BITS(8), .RESET_DELAY_BIT(4), .CPU_CLOCK_BIT(1))
          m(.clk(clk), .trap(trap), .mem_invalid(mem_invalid), .mem_addr(mem_addr), .scl_io(scl_io), .sda_io(sda_io),
            .con_button(con_button), .psh_button(psh_button), .tra(tra), .trb(trb), .bak_button(bak_button),
            .led(led));
@@ -32,7 +32,7 @@ module test;
         tra = 1;
         trb = 1;
         bak_button = 1;
-        #30000
+        #300000
         $finish;
     end
 endmodule

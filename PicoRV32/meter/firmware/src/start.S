@@ -3,9 +3,9 @@
 .section .reset_vec
 .globl _start, wfi, getq
 _start:
-        la t0, isr
-        picorv32_setq_insn(q2, t0)
+	picorv32_maskirq_insn(zero, zero)
 	call main
+	j .
 	j .
 /*ISR address*/
 isr:    picorv32_retirq_insn()
@@ -16,9 +16,3 @@ wfi:
 getq:
 	picorv32_getq_insn(a1, q1)
 	ret
-
-.section .data
-.globl interrupt
-interrupt:
-.dword 0
-

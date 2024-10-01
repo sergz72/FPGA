@@ -3,7 +3,7 @@
 `timescale 1 ns / 1 ps
 
 module main
-#(parameter TIMER_INTERRUPT = 0,
+#(parameter
 // 3.375 interrupts/sec
 TIMER_BITS = 23,
 // about 20 ms delay
@@ -38,7 +38,7 @@ ROM_BITS = 10)
     output reg led = 1
 );
     localparam RAM_START = 32'h40000000;
-    localparam RAM_END = RAM_START + (1<<RAM_BITS) - 1;
+    localparam RAM_END = RAM_START + (1<<RAM_BITS);
     localparam MEMORY_SELECTOR_START_BIT = 30;
 
     reg reset = 0;
@@ -73,6 +73,8 @@ ROM_BITS = 10)
 	wire [35:0] trace_data;
     wire cpu_clk;
     wire rom_selected, ram_selected, ports_selected;
+    reg rom_ready = 0;
+    reg ram_ready = 0;
 
     reg [31:0] rom [0:(1<<ROM_BITS)-1];
     reg [7:0] ram1 [0:(1<<RAM_BITS)-1];
@@ -80,14 +82,14 @@ ROM_BITS = 10)
     reg [7:0] ram3 [0:(1<<RAM_BITS)-1];
     reg [7:0] ram4 [0:(1<<RAM_BITS)-1];
 
-    assign irq = {31'h0, interrupt};
+    assign irq = {28'h0, interrupt, 3'h0};
 
     assign cpu_clk = timer[CPU_CLOCK_BIT];
     assign mem_invalid = mem_valid & !mem_ready;
     assign rom_selected = mem_valid & mem_addr[31:MEMORY_SELECTOR_START_BIT] === 0;
     assign ram_selected = mem_valid & mem_addr[31:MEMORY_SELECTOR_START_BIT] === 1;
     assign ports_selected = mem_valid & mem_addr[31:MEMORY_SELECTOR_START_BIT] === 3;
-    assign mem_rdata = rom_selected ? rom_rdata : (ram_selected ? ram_rdata : ports_rdata);
+    assign mem_rdata = rom_ready ? rom_rdata : (ram_ready ? ram_rdata : ports_rdata);
 
 `ifndef NO_INOUT_PINS
     assign scl_io = scl ? 1'bz : 0;
@@ -104,8 +106,11 @@ ROM_BITS = 10)
 
     picorv32 #(.ENABLE_IRQ(1),
                .ENABLE_FAST_MUL(1),
+               .ENABLE_DIV(1),
                .STACKADDR(RAM_END),
-               .PROGADDR_IRQ(32'h8)
+               .PROGADDR_IRQ(32'h10),
+               .BARREL_SHIFTER(1),
+               .ENABLE_IRQ_TIMER(0)
         )
         cpu(.clk(cpu_clk),
                 .resetn(reset),
@@ -137,12 +142,10 @@ ROM_BITS = 10)
         );
 
     always @(posedge clk) begin
-        if (TIMER_INTERRUPT != 0) begin
-            if (timer == {TIMER_BITS{1'b1}})
-                interrupt <= 1;
-            else if (eoi[0])
-                interrupt <= 0;
-        end
+        if (timer == {TIMER_BITS{1'b1}})
+            interrupt <= 1;
+        else if (eoi[3])
+            interrupt <= 0;
         timer <= timer + 1;
     end
 
@@ -151,7 +154,9 @@ ROM_BITS = 10)
     end
 
     always @(negedge cpu_clk) begin
-        mem_ready <= mem_valid;
+        mem_ready <= rom_selected | ram_selected | ports_selected;
+        rom_ready <= rom_selected;
+        ram_ready <= ram_selected;
     end
 
     always @(negedge cpu_clk) begin
