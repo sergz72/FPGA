@@ -9,20 +9,19 @@ module tiny32
     input wire [31:0] data_in,
     output wire [31:0] data_out,
     output wire rd,
-    output wire [3:0] wr,
+    output reg [3:0] wr = 4'b1111,
     input wire ready,
     input wire [7:0] interrupt,
-    output reg [1:0] stage = 0,
-    output reg [4:0] substage = 1
+    output reg [2:0] stage = 0
 );
-    localparam MICROCODE_WIDTH = 21;
+    localparam MICROCODE_WIDTH = 22;
     localparam INT = 25'h0;
     localparam INT_OP = 8'h0;
 
     reg [31:0] current_instruction = 3;
     reg start = 0;
-    wire stage_reset;
-    wire clk1, clk2, clk3, clk4, clk5;
+    reg [2:0] stage_reset = 7;
+    wire [2:0] last_stage;
 
     reg in_interrupt = 0;
     wire in_interrupt_clear;
@@ -40,35 +39,30 @@ module tiny32
     wire [19:0] imm20u, imm20j;
     wire [31:0] source_address, source_address2;
 
-    reg [MICROCODE_WIDTH - 1:0] microcode [0:1023];
+    reg [MICROCODE_WIDTH - 1:0] microcode [0:255];
     reg [MICROCODE_WIDTH - 1:0] current_microinstruction = 7;
 
     reg [31:0] registers [0:31];
     wire [31:0] registers_data_wr;
     reg [31:0] source1_reg_data, source2_reg_data;
-    wire [32:0] source_sub;
-    wire registers_wr;
+    reg registers_wr = 1;
+    wire registers_wr_flag;
 
     wire [4:0] source1_reg, source2_reg;
     wire [4:0] dest_reg;
     wire go;
-    wire load, set_pc, save_pc;
+    wire load, save_pc, set_pc;
+    wire [3:0] store;
     wire [1:0] address_source;
     wire [2:0] pc_source;
     wire [4:0] registers_wr_data_source;
 
-    wire halt, err;
+    wire err;
     
     initial begin
         $readmemh("decoder.mem", op_decoder);
         $readmemh("microcode.mem", microcode);
     end
-
-    assign clk1 = substage[0];
-    assign clk2 = substage[1];
-    assign clk3 = substage[2];
-    assign clk4 = substage[3];
-    assign clk5 = substage[4];
 
     assign source1_reg = current_instruction[19:15];
     assign source2_reg = current_instruction[24:20];
@@ -82,17 +76,17 @@ module tiny32
     assign imm20u = current_instruction[31:12];
     assign imm20j = {current_instruction[31], current_instruction[19:12], current_instruction[20], current_instruction[30:21]};
 
-    assign registers_wr = current_microinstruction[0];
+    assign registers_wr_flag = current_microinstruction[0];
     assign load = current_microinstruction[1];
-    assign wr = current_microinstruction[5:2];
+    assign store = current_microinstruction[5:2];
     assign err = current_microinstruction[6];
     assign set_pc = current_microinstruction[7];
-    assign pc_source = current_microinstruction[10:8];
-    assign address_source = current_microinstruction[12:11];
-    assign registers_wr_data_source = current_microinstruction[17:13];
-    assign stage_reset = current_microinstruction[18];
-    assign in_interrupt_clear = current_microinstruction[19];
-    assign save_pc = current_microinstruction[20];
+    assign pc_source = current_microinstruction[9:8];
+    assign address_source = current_microinstruction[11:10];
+    assign registers_wr_data_source = current_microinstruction[16:12];
+    assign last_stage = current_microinstruction[19:17];
+    assign in_interrupt_clear = current_microinstruction[20];
+    assign save_pc = current_microinstruction[21];
 
     assign op_id = {func7, func3, op, condition_f(func3)};
 
@@ -100,16 +94,14 @@ module tiny32
     
     assign data_out = source2_reg_data;
 
-    assign go = start & ready & !error & !hlt;
+    assign go = start & ready & !error & !hlt & !wfi;
 
-    assign rd = (!start | error | hlt) | ((stage != 0) && !load);
+    assign rd = !go | (stage[2:1] != 0 && !(load & stage[2:1] == 2));
 
     assign registers_data_wr = registers_data_wr_f(registers_wr_data_source);
 
     assign source_address = source1_reg_data + { {20{imm12i[11]}}, imm12i };
     assign source_address2 = source1_reg_data + { {20{imm12s[11]}}, imm12s };
-
-    assign source_sub = source1_reg_data - source2_reg_data;
 
     assign interrupt_no = interrupt_no_f(interrupt);
 
@@ -138,23 +130,31 @@ module tiny32
 
     function condition_f(input [2:0] source);
         case (source)
-            0: condition_f = source_sub == 0;
-            1: condition_f = source_sub != 0;
-            4: condition_f = source_sub[32];
-            5: condition_f = !source_sub[32];
+            0: condition_f = source1_reg_data == source2_reg_data;
+            1: condition_f = source1_reg_data != source2_reg_data;
+            4: condition_f = source1_reg_data < source2_reg_data;
+            5: condition_f = source1_reg_data >= source2_reg_data;
             6: condition_f = $signed(source1_reg_data) < $signed(source2_reg_data);
             7: condition_f = $signed(source1_reg_data) >= $signed(source2_reg_data);
             default: condition_f = 0;
         endcase
     endfunction
 
-    function [31:0] pc_source_f(input [2:0] source);
+    function [31:0] pc_source_f1(input [1:0] source);
         case (source)
-            0: pc_source_f = pc + 4;
-            1: pc_source_f = pc + 4 + { {19{imm12b[11]}}, imm12b, 1'b0 };
-            2: pc_source_f = pc + 4 + { {11{imm20j[19]}}, imm20j, 1'b0 };
-            3: pc_source_f = source1_reg_data + { {19{imm12b[11]}}, imm12b, 1'b0 };
-            default: pc_source_f = saved_pc;
+            0: pc_source_f1 = pc;
+            1: pc_source_f1 = pc;
+            2: pc_source_f1 = source1_reg_data;
+            3: pc_source_f1 = saved_pc;
+        endcase
+    endfunction
+
+    function [31:0] pc_source_f2(input [1:0] source);
+        case (source)
+            0: pc_source_f2 = { {19{imm12b[11]}}, imm12b, 1'b0 };
+            1: pc_source_f2 = { {11{imm20j[19]}}, imm20j, 1'b0 };
+            2: pc_source_f2 = { {19{imm12b[11]}}, imm12b, 1'b0 };
+            3: pc_source_f2 = 0;
         endcase
     endfunction
 
@@ -166,61 +166,92 @@ module tiny32
         endcase
     endfunction
 
-    function [31:0] registers_data_wr_f(input [4:0] source);
+    function [31:0] alu_op1_f(input [1:0] source);
         case (source)
-            0: registers_data_wr_f = data_in;
-            1: registers_data_wr_f = { {24{data_in[7]}}, data_in[7:0] };
-            2: registers_data_wr_f = { {16{data_in[15]}}, data_in[15:0] };
-            3: registers_data_wr_f = {24'h0, data_in[7:0]};
-            4: registers_data_wr_f = {16'h0, data_in[15:0]};
-            5: registers_data_wr_f = source_address;
-            6: registers_data_wr_f = source1_reg_data << imm12i;
-            7: registers_data_wr_f = source1_reg_data >> imm12i;
-            8: registers_data_wr_f = source1_reg_data >>> imm12i;
-            9: registers_data_wr_f = source1_reg_data & { {20{imm12i[11]}}, imm12i };
-            10: registers_data_wr_f = source1_reg_data | { {20{imm12i[11]}}, imm12i };
-            11: registers_data_wr_f = source1_reg_data ^ { {20{imm12i[11]}}, imm12i };
-            12: registers_data_wr_f = {imm20u, 12'h0} + pc + 4;
-            13: registers_data_wr_f = {31'h0, source1_reg_data < { {20{imm12i[11]}}, imm12i }};
-            14: registers_data_wr_f = {31'h0, $signed(source1_reg_data) < $signed({ {20{imm12i[11]}}, imm12i })};
-            15: registers_data_wr_f = source1_reg_data + source2_reg_data;
-            16: registers_data_wr_f = source_sub[31:0];
-            17: registers_data_wr_f = source1_reg_data << source2_reg_data[4:0];
-            18: registers_data_wr_f = source1_reg_data >> source2_reg_data[4:0];
-            19: registers_data_wr_f = source1_reg_data >>> source2_reg_data[4:0];
-            20: registers_data_wr_f = source1_reg_data & source2_reg_data;
-            21: registers_data_wr_f = source1_reg_data | source2_reg_data;
-            22: registers_data_wr_f = source1_reg_data ^ source2_reg_data;
-            23: registers_data_wr_f = {imm20u, 12'h0};
-            default: registers_data_wr_f = pc + 4;
+            0: alu_op1_f = source1_reg_data;
+            1: alu_op1_f = {imm20u, 12'h0};
+            default: alu_op1_f = 0;
         endcase
     endfunction
 
-    always @(posedge clk) begin
-        substage <= {substage[3:0], substage[4]};
+    function [31:0] alu_op2_f(input [1:0] source);
+        case (source)
+            0: alu_op2_f = {20'h0, imm12i};
+            1: alu_op2_f = {20{imm12i[11]}}, imm12i};
+            2: alu_op2_f = source2_reg_data;
+            3: alu_op2_f = {27'h0, source2_reg_data[4:0]};
+            default: alu_op2_f = pc;
+        endcase
+    endfunction
+
+    function [31:0] data_load_f(input source_signed, input[3:0] shift);
+        data_load_f = source_signed ? data_in >>> shift : data_in >> shift;
+    endfunction
+
+    function [31:0] data_store_f(input [31:0] data, input shift);
+        data_store_f = data << shift;
+    endfunction
+
+    function [31:0] registers_data_wr_f(input source);
+        case (source)
+            0: registers_data_wr_f = data_load_f(data_load_signed, data_shift);
+            1: registers_data_wr_f = alu_out;
+        endcase
+    endfunction
+
+    always (negedge clk) begin
+        case (alu_op)
+            0: alu_out <= alu_op1 << alu_op2;
+            1: alu_out <= alu_op1 >> alu_op2;
+            2: alu_out <= alu_op1 >>> alu_op2;
+            3: alu_out <= alu_op1 & alu_op2;
+            4: alu_out <= alu_op1 | alu_op2;
+            5: alu_out <= alu_op1 ^ alu_op2;
+            6: alu_out <= {31'h0, alu_op1 < alu_op2};
+            7: alu_out <= {31'h0, $signed(alu_op1) < $signed(alu_op2)};
+            8: alu_out <= alu_op1 + alu_op2;
+            9: alu_out <= alu_op1 - alu_op2;
+        endcase
     end
 
-    always @(posedge clk1) begin
-        if (error | stage_reset)
+    always @(negedge clk) begin
+        if (error)
             stage <= 0;
         else begin
             if (!reset)
                 start <= 0;
-            else if (stage == 3)
+            else if (stage == 7)
                 start <= 1;
-            if (ready)
-                stage <= stage + 1;
+            if (ready) begin
+                if (stage == stage_reset)
+                    stage <= 0;
+                else
+                    stage <= stage + 1;
+            end
         end
     end
 
-    always @(posedge clk2) begin
+    always @(posedge clk) begin
         if (reset == 0) begin
             current_instruction <= 3;
             in_interrupt <= 0;
+            registers_wr <= 1;
+            pc <= 0;
+            hlt <= 0;
+            error <= 0;
+            wfi <= 0;
+            stage_reset <= 7;
+            wr <= 4'b1111;
         end
         else begin
-            if (go) begin
-                if (stage == 0) begin
+            case (stage)
+                0: begin
+                    wr <= 4'b1111;
+                    registers_wr <= 1;
+                    if (in_interrupt_clear)
+                        in_interrupt <= 0;
+                end
+                1: begin
                     if (interrupt_no != 0 && !in_interrupt) begin
                         in_interrupt <= 1;
                         current_instruction <= {interrupt_no, INT};
@@ -228,48 +259,41 @@ module tiny32
                     else
                         current_instruction <= data_in;
                 end
-                else begin
-                    if (in_interrupt_clear)
-                        in_interrupt <= 0;
+                2: begin
+                    if (go) begin
+                        op_decoder_result <= current_instruction[1:0] != 2'b11 ? 8'b11000001 : op_decoder[op_id];
+                        pc <= pc + 4;
+                    end
                 end
-            end
+                3: begin
+                    if (go) begin
+                        hlt <= op_decoder_result[7];
+                        error <= op_decoder_result[6] || pc[1:0] != 0;
+                        wfi <= op_decoder_result[5:0] == 0;
+
+                        current_microinstruction <= microcode[{op_decoder_result[5:0], source_address[1:0]}];
+                    end
+                end
+                4: begin
+                    if (go) begin
+                        error <= err;
+                        registers_wr <= registers_wr_flag;
+                        wr <= store;
+                        stage_reset <= last_stage;
+                        if (save_pc)
+                            saved_pc <= pc;
+                        if (set_pc)
+                            pc <= pc_source_f1(pc_source) + pc_source_f2(pc_source);
+                    end
+                end
+            endcase
         end
     end
 
-    always @(posedge clk3) begin
-        if (go)
-            op_decoder_result <= current_instruction[1:0] != 2'b11 ? 8'b11000001 : op_decoder[op_id];
-    end
-
-    always @(posedge clk4) begin
-        if (go)
-            current_microinstruction <= microcode[{op_decoder_result[5:0], source_address[1:0], stage}];
-    end
-
-    always @(posedge clk5) begin
+    always @(negedge clk) begin
         if (registers_wr == 0)
             registers[dest_reg] <= registers_data_wr;
         source1_reg_data <= source1_reg == 0 ? 0 : registers[source1_reg];
         source2_reg_data <= source2_reg == 0 ? 0 : registers[source2_reg];
-    end
-
-    always @(posedge clk5) begin
-        if (reset == 0) begin
-            pc <= 0;
-            hlt <= 0;
-            error <= 0;
-            wfi <= 0;
-        end
-        else begin
-            if (go) begin
-                hlt <= op_decoder_result[7];
-                error <= op_decoder_result[6] || pc[1:0] != 0;
-                wfi <= op_decoder_result[5:0] == 0;
-                if (save_pc)
-                    saved_pc <= pc + 4;
-                if (set_pc)
-                    pc <= pc_source_f(pc_source);
-            end
-        end
     end
 endmodule

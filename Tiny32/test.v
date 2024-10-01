@@ -2,8 +2,7 @@ module tiny32_tb;
     wire [31:0] address;
     wire hlt, error, wfi, rd;
     wire [3:0] wr;
-    wire [1:0] stage;
-    wire [3:0] substage;
+    wire [2:0] stage;
     reg [31:0] data_out;
     wire [31:0] data_in;
     reg [7:0] interrupt;
@@ -26,7 +25,7 @@ module tiny32_tb;
     end
 
     tiny32 cpu(.clk(clk), .rd(rd), .wr(wr), .wfi(wfi), .reset(reset), .address(address), .data_in(data_out), .data_out(data_in), .stage(stage),
-                 .error(error), .hlt(hlt), .ready(ready), .interrupt(interrupt), .substage(substage));
+                 .error(error), .hlt(hlt), .ready(ready), .interrupt(interrupt));
 
     always #1 clk <= ~clk;
     
@@ -35,8 +34,8 @@ module tiny32_tb;
     initial begin
         $dumpfile("tiny32_tb.vcd");
         $dumpvars(0, tiny32_tb);
-        $monitor("time=%t clk=%d substage=0x%x, stage=0x%x reset=%d rd=%d wr=0x%x hlt=%d error=%d wfi=%d address=0x%x, data_in=0x%x data_out=0x%x",
-                 $time, clk, substage, stage, reset, rd, wr, hlt, error, wfi, address, data_in, data_out);
+        $monitor("time=%t clk=%d stage=0x%x reset=%d rd=%d wr=0x%x hlt=%d error=%d wfi=%d address=0x%x, data_in=0x%x data_out=0x%x",
+                 $time, clk, stage, reset, rd, wr, hlt, error, wfi, address, data_in, data_out);
         clk = 0;
         reset = 0;
         ready = 1;
