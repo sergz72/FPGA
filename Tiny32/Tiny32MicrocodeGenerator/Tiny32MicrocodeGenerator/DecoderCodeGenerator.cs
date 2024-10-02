@@ -6,7 +6,6 @@ internal static class DecoderCodeGenerator
     {
         Wfi = 0,
         Reti,
-        Nop,
         Hlt,
         Lb,
         Lh,
@@ -50,7 +49,7 @@ internal static class DecoderCodeGenerator
         Remu
     }
     
-    private const int CodeLength = 2048;
+    private const int CodeLength = 1024;
     private const int Error = 0b1100_0010;
 
     internal static void GenerateCode()
@@ -58,9 +57,8 @@ internal static class DecoderCodeGenerator
         var lines = new List<string>();
         for (var i = 0; i < CodeLength; i++)
         {
-            var func7 = (i >> 1) & 3;
-            var conditionPass = (i & 1) != 0;
-            var v = (i >> 3) switch
+            var func7 = i & 3;
+            var v = (i >> 2) switch
             {
                 0b00000_000 => (int)Commands.Lb,
                 0b00000_001 => (int)Commands.Lh,
@@ -138,12 +136,12 @@ internal static class DecoderCodeGenerator
                     _ => Error
                 },
                 >= 0b01101_000 and <= 0b01101_111 => (int)Commands.Lui,
-                0b11000_000 => conditionPass ? (int)Commands.Br : (int)Commands.Nop,
-                0b11000_001 => conditionPass ? (int)Commands.Br : (int)Commands.Nop,
-                0b11000_100 => conditionPass ? (int)Commands.Br : (int)Commands.Nop,
-                0b11000_101 => conditionPass ? (int)Commands.Br : (int)Commands.Nop,
-                0b11000_110 => conditionPass ? (int)Commands.Br : (int)Commands.Nop,
-                0b11000_111 => conditionPass ? (int)Commands.Br : (int)Commands.Nop,
+                0b11000_000 => (int)Commands.Br,
+                0b11000_001 => (int)Commands.Br,
+                0b11000_100 => (int)Commands.Br,
+                0b11000_101 => (int)Commands.Br,
+                0b11000_110 => (int)Commands.Br,
+                0b11000_111 => (int)Commands.Br,
                 0b11001_000 => (int)Commands.Jalr,
                 >= 0b11011_000 and <= 0b11011_111 => (int)Commands.Jal,
                 _ => Error

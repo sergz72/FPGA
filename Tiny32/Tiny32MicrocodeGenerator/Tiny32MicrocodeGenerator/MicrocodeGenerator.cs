@@ -63,7 +63,7 @@ internal class MicrocodeGenerator
         _aluOp2SourceSource2RegData = 2 * _aluOp2Source;
         _aluOp2SourceSource2RegData40 = 3 * _aluOp2Source;
         _aluOp2SourceSourcePc = 4 * _aluOp2Source;
-        _aluOp = new Bits(4).Value;
+        _aluOp = new Bits(5).Value;
         _dataLoadSigned = new Bits(1).Value;
         _dataShift = new Bits(5).Value;
     }
@@ -79,13 +79,13 @@ internal class MicrocodeGenerator
             var address = i & 3;
             var v = op switch
             {
-                DecoderCodeGenerator.Commands.Nop => nop,
                 DecoderCodeGenerator.Commands.Reti => nop | _setPc | _pcSourceSavedPc,
                 DecoderCodeGenerator.Commands.Jal => _setPc | _pcSourcePcPlusImm20j |
                                                      BuildAluOp(AluOp.Add, _aluOp1Source4, _aluOp2SourceSourcePc),
                 DecoderCodeGenerator.Commands.Jalr => _setPc | _pcSourceSource1RegDataPlusImm12i |
                                                       BuildAluOp(AluOp.Add, _aluOp1Source4, _aluOp2SourceSourcePc),
-                DecoderCodeGenerator.Commands.Br => nop | _setPc | _pcSourcePcPlusImm12b,
+                DecoderCodeGenerator.Commands.Br => nop | _setPc | _pcSourcePcPlusImm12b |
+                                                    BuildAluOp(AluOp.Sub, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
                 DecoderCodeGenerator.Commands.Add => BuildAluOp(AluOp.Add, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
                 DecoderCodeGenerator.Commands.Addi => BuildAluOp(AluOp.Add, _aluOp1SourceSource1RegData, _aluOp2SourceImm12i),
                 
