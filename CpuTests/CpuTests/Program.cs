@@ -64,10 +64,13 @@ try
             Console.WriteLine(message);
     }
     Console.WriteLine($"Total tests: {testCount}, Failed tests: {failedTests.Count}");
-    Console.Write("Failed tests:");
-    foreach (var test in failedTests)
-        Console.Write(" " + test);
-    Console.WriteLine();
+    if (failedTests.Count > 0)
+    {
+        Console.Write("Failed tests:");
+        foreach (var test in failedTests)
+            Console.Write(" " + test);
+        Console.WriteLine();
+    }
 }
 catch (Exception ex)
 {
