@@ -3,15 +3,15 @@
 /*
 
 clk|stage|rd |wr |jmp|br     |alu|load|store
-0  |0    |1  |1  |
+0  |0    |1  |1  |may be registers_wr
 1  |0    |1  |1  |interrupt handling
 0  |1    |0  |1  |
 1  |1    |0  |1  |instruction_load
    |     |   |   |instruction decode
-0  |2    |1  |1/0|microcode load
-1  |2    |1  |1/0|registers load
+0  |2    |1  |1/0|registers load
+1  |2    |1  |1/0|microcode load
 0  |3    |1/0|1  |may be alu_clk,
-1  |3    |1/0|1  |set pc,may be registers_wr
+1  |3    |1/0|1  |set pc
 
 */
 
@@ -45,7 +45,7 @@ module tiny32
     wire [4:0] dest_reg;
 
     reg start = 0;
-    wire clk2, clk3, clk4;
+    wire clk1, clk2, clk3, clk4;
 
     reg in_interrupt = 0;
     wire [3:0] interrupt_no;
@@ -56,7 +56,7 @@ module tiny32
     reg [7:0] op_decoder_result;
 
     reg [MICROCODE_WIDTH - 1:0] microcode [0:255];
-    reg [MICROCODE_WIDTH - 1:0] current_microinstruction = 7;
+    reg [MICROCODE_WIDTH - 1:0] current_microinstruction = 'b111101;
     wire load, set_pc;
     wire [3:0] store;
     wire [1:0] address_source;
@@ -90,6 +90,7 @@ module tiny32
         $readmemh("microcode.mem", microcode);
     end
 
+    assign clk1 = stage == 0;
     assign clk2 = stage == 1;
     assign clk3 = stage == 2;
     assign clk4 = stage == 3;
@@ -222,7 +223,8 @@ module tiny32
             1: alu_op2_f = {{20{imm12i[11]}}, imm12i};
             2: alu_op2_f = source2_reg_data;
             3: alu_op2_f = {27'h0, source2_reg_data[4:0]};
-            default: alu_op2_f = pc;
+            4: alu_op2_f = pc;
+            default: alu_op2_f = 0;
         endcase
     endfunction
 
@@ -292,7 +294,6 @@ module tiny32
                 if (clk2) begin
                     hlt <= op_decoder_result[7] | op_decoder_result[6];
                     error <= op_decoder_result[6] || pc[1:0] != 0;
-                    current_microinstruction <= microcode[{op_decoder_result[5:0], source_address[1:0]}];
                 end
                 else if (clk3) begin
                     hlt <= err;
@@ -330,8 +331,7 @@ module tiny32
                     end
                 end
                 2: begin
-                    if (go)
-                        wfi <= op_decoder_result[5:0] == 0;
+                    current_microinstruction <= microcode[{op_decoder_result[5:0], source_address[1:0]}];
                 end
                 3: begin
                     if (go) begin
@@ -339,16 +339,17 @@ module tiny32
                             pc <= pc_source_f1(pc_source) + pc_source_f2(pc_source);
                         else
                             pc <= pc + 4;
+                        wfi <= op_decoder_result[5:0] == 0;
                     end
                 end
             endcase
         end
     end
 
-    always @(posedge clk) begin
+    always @(negedge clk) begin
         if (clk4 & !registers_wr)
             registers[dest_reg] <= registers_data_wr;
-        else if (clk3) begin
+        else if (clk2) begin
             source1_reg_data <= source1_reg == 0 ? 0 : registers[source1_reg];
             source2_reg_data <= source2_reg == 0 ? 0 : registers[source2_reg];
         end

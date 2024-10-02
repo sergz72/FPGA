@@ -32,7 +32,8 @@ internal class MicrocodeGenerator
     private readonly int _registersWrDataSourceAluOut, _inInterruptClear, _aluClk, _aluOp1Source;
     private readonly int _aluOp1SourceSource1RegData, _aluOp1SourceImm20u, _aluOp1Source4, _aluOp2Source;
     private readonly int _aluOp2SourceImm12i, _aluOp2SourceImm12iSigned, _aluOp2SourceSource2RegData;
-    private readonly int _aluOp2SourceSource2RegData40, _aluOp2SourceSourcePc, _aluOp, _dataLoadSigned, _dataShift;
+    private readonly int _aluOp2SourceSource2RegData40, _aluOp2SourceSourcePc, _aluOp2SourceZero;
+    private readonly int _aluOp, _dataLoadSigned, _dataShift;
 
     internal MicrocodeGenerator()
     {
@@ -63,6 +64,7 @@ internal class MicrocodeGenerator
         _aluOp2SourceSource2RegData = 2 * _aluOp2Source;
         _aluOp2SourceSource2RegData40 = 3 * _aluOp2Source;
         _aluOp2SourceSourcePc = 4 * _aluOp2Source;
+        _aluOp2SourceZero = 5 * _aluOp2Source;
         _aluOp = new Bits(5).Value;
         _dataLoadSigned = new Bits(1).Value;
         _dataShift = new Bits(5).Value;
@@ -79,13 +81,17 @@ internal class MicrocodeGenerator
             var address = i & 3;
             var v = op switch
             {
+                DecoderCodeGenerator.Commands.Wfi => nop,
                 DecoderCodeGenerator.Commands.Reti => nop | _setPc | _pcSourceSavedPc,
+                DecoderCodeGenerator.Commands.Hlt => nop,
+
                 DecoderCodeGenerator.Commands.Jal => _setPc | _pcSourcePcPlusImm20j |
                                                      BuildAluOp(AluOp.Add, _aluOp1Source4, _aluOp2SourceSourcePc),
                 DecoderCodeGenerator.Commands.Jalr => _setPc | _pcSourceSource1RegDataPlusImm12i |
                                                       BuildAluOp(AluOp.Add, _aluOp1Source4, _aluOp2SourceSourcePc),
                 DecoderCodeGenerator.Commands.Br => nop | _setPc | _pcSourcePcPlusImm12b |
                                                     BuildAluOp(AluOp.Sub, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
+                
                 DecoderCodeGenerator.Commands.Add => BuildAluOp(AluOp.Add, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
                 DecoderCodeGenerator.Commands.Addi => BuildAluOp(AluOp.Add, _aluOp1SourceSource1RegData, _aluOp2SourceImm12i),
                 
@@ -117,11 +123,32 @@ internal class MicrocodeGenerator
                 DecoderCodeGenerator.Commands.Mulhsu => BuildAluOp(AluOp.Mulhsu, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
                 DecoderCodeGenerator.Commands.Mulhu => BuildAluOp(AluOp.Mulhu, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
 
-                //DecoderCodeGenerator.Commands.Div => BuildAluOp(AluOp.Div, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
-                //DecoderCodeGenerator.Commands.Divu => BuildAluOp(AluOp.Divu, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
+                DecoderCodeGenerator.Commands.Div => BuildAluOp(AluOp.Div, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
+                DecoderCodeGenerator.Commands.Divu => BuildAluOp(AluOp.Divu, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
 
-                //DecoderCodeGenerator.Commands.Rem => BuildAluOp(AluOp.Rem, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
-                //DecoderCodeGenerator.Commands.Remu => BuildAluOp(AluOp.Remu, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
+                DecoderCodeGenerator.Commands.Rem => BuildAluOp(AluOp.Rem, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
+                DecoderCodeGenerator.Commands.Remu => BuildAluOp(AluOp.Remu, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
+
+                //todo
+                DecoderCodeGenerator.Commands.Lb => error,
+                //todo
+                DecoderCodeGenerator.Commands.Lbu => error,
+                //todo
+                DecoderCodeGenerator.Commands.Lw => address == 0 ? _noStore | _load | _registersWrDataSourceDataLoadF : error,
+                //todo
+                DecoderCodeGenerator.Commands.Lh => error,
+                //todo
+                DecoderCodeGenerator.Commands.Lhu => error,
+
+                DecoderCodeGenerator.Commands.Lui => BuildAluOp(AluOp.Add, _aluOp1SourceImm20u, _aluOp2SourceZero),
+                DecoderCodeGenerator.Commands.Auipc => BuildAluOp(AluOp.Add, _aluOp1SourceImm20u, _aluOp2SourceSourcePc),
+
+                //todo
+                DecoderCodeGenerator.Commands.Sb => error,
+                //todo
+                DecoderCodeGenerator.Commands.Sw => error,
+                //todo
+                DecoderCodeGenerator.Commands.Sh => error,
                 
                 _ => error,
             };
