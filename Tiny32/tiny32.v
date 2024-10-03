@@ -213,7 +213,8 @@ module tiny32
             2: alu_op2_f = source2_reg_data;
             3: alu_op2_f = {27'h0, source2_reg_data[4:0]};
             4: alu_op2_f = pc;
-            default: alu_op2_f = 0;
+            5: alu_op2_f = 0;
+            default: alu_op2_f = {27'h0, source2_reg};
         endcase
     endfunction
 
@@ -247,7 +248,7 @@ module tiny32
             case (alu_op)
                 0: alu_out <= alu_op1 << alu_op2;
                 1: alu_out <= alu_op1 >> alu_op2;
-                2: alu_out <= alu_op1 >>> alu_op2;
+                2: alu_out <= $signed(alu_op1) >>> alu_op2;
                 3: alu_out <= alu_op1 & alu_op2;
                 4: alu_out <= alu_op1 | alu_op2;
                 5: alu_out <= alu_op1 ^ alu_op2;
