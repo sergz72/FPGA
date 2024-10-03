@@ -40,7 +40,7 @@ module tiny32_tb;
     assign ram_address = address[RAM_BITS + 1:2];
     assign rom_address = address[ROM_BITS + 1:2];
     assign rom_selected = address[31:28] == 0;
-    assign ram_selected = address[31:28] == 1;
+    assign ram_selected = address[31:28] == 4;
     assign mem_rdata = rom_selected ? rom_rdata : ram_rdata;
 
     initial begin

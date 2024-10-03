@@ -1,0 +1,8 @@
+{
+  "TestsDir": "tests",
+  "BuildCommand": "build_gcc.sh",
+  "SimulatorCommand": "run_verilator.sh",
+  "Flag": "hlt=1",
+  "Error": "error=1",
+  "Ok": "address=0x00000010"
+}

@@ -1,5 +1,9 @@
 ﻿using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
+
+var failedTests = new List<string>();
+bool prevUartMatch;
 
 if (args.Length != 1)
 {
@@ -22,7 +26,6 @@ try
         Directory.SetCurrentDirectory(baseDir);
     var files = Directory.GetFiles(config.TestsDir);
     var testCount = 0;
-    var failedTests = new List<string>();
     foreach (var file in files)
     {
         testCount++;
@@ -32,36 +35,7 @@ try
         Console.WriteLine("Running simulator...");
         var output = RunCommand(config.SimulatorCommand);
         Console.WriteLine("Analysing simulator output...");
-        string? message = null;
-        foreach (var line in output)
-        {
-            if (config.Error != "" && line.Contains(config.Error))
-            {
-                message = $"Error: {line}";
-                failedTests.Add(file);
-                break;
-            }
-
-            if (line.Contains(config.Flag))
-            {
-                if (line.Contains(config.Ok))
-                    message = $"Test passed: {line}";
-                else
-                {
-                    message = $"Test failed: {line}";
-                    failedTests.Add(file);
-                }
-                break;
-            }
-        }
-
-        if (message == null)
-        {
-            failedTests.Add(file);
-            Console.WriteLine("Test failed: flag wasn't found.");
-        }
-        else
-            Console.WriteLine(message);
+        AnalyseOutput(config, output, file);
     }
     Console.WriteLine($"Total tests: {testCount}, Failed tests: {failedTests.Count}");
     if (failedTests.Count > 0)
@@ -78,6 +52,58 @@ catch (Exception ex)
 }
 
 return;
+
+void AnalyseOutput(Configuration config, List<string> output, string file)
+{
+    string? message = null;
+    prevUartMatch = false;
+    foreach (var line in output)
+    {
+        if (config.Error != "" && line.Contains(config.Error))
+        {
+            message = $"Error: {line}";
+            failedTests.Add(file);
+            break;
+        }
+
+        if (line.Contains(config.Flag))
+        {
+            if (line.Contains(config.Ok))
+                message = $"Test passed: {line}";
+            else
+            {
+                message = $"Test failed: {line}";
+                failedTests.Add(file);
+            }
+            break;
+        }
+
+        if (config is { UartFlags: { Length: > 0 }, UartDataField: not null })
+        {
+            if (config.UartFlags.All(f => line.Contains(f)) && !prevUartMatch)
+            {
+                prevUartMatch = true;
+                var fields = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var value = fields.Select(f => f.Split('='))
+                    .Where(f => f.Length == 2 && f[0] == config.UartDataField)
+                    .Select(f => f[1])
+                    .FirstOrDefault();
+                if (value != null && int.TryParse(value[^2..], NumberStyles.HexNumber, new NumberFormatInfo(), out var c))
+                    Console.Write((char)c);
+            }
+            else
+                prevUartMatch = false;
+        }
+    }
+
+    if (message == null)
+    {
+        failedTests.Add(file);
+        Console.WriteLine("Test failed: flag wasn't found.");
+    }
+    else
+        Console.WriteLine(message);
+}
 
 List<string> RunCommand(string path, string parameter = "")
 {
@@ -113,5 +139,5 @@ List<string> RunCommand(string path, string parameter = "")
 }
 
 internal record Configuration(string TestsDir, string BuildCommand, string SimulatorCommand, string Flag,
-                                string Error, string Ok);
+                                string Error, string Ok, string[] UartFlags, string? UartDataField);
                                 
