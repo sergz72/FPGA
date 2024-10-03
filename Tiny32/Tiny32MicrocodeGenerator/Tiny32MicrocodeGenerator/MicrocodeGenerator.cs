@@ -190,7 +190,7 @@ internal class MicrocodeGenerator
                     0 => _registersWr | 0x0E * _store | _dataWord,
                     1 => _registersWr | 0x0D * _store | _dataByte2,
                     2 => _registersWr | 0x0B * _store | _dataHalf2,
-                    _ => _registersWr | 0x08 * _store | _dataByte4
+                    _ => _registersWr | 0x07 * _store | _dataByte4
                 },
                 DecoderCodeGenerator.Commands.Sw =>
                     addressS == 0 ? _registersWr | _registersWrDataSourceDataLoadF | _dataWord : error,

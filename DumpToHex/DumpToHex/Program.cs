@@ -52,12 +52,13 @@ if (count == 1)
 
 for (var idx = 1; idx <= count; idx++)
 {
+    var fileNo = count - idx + 1;
     var from = (idx - 1) * dataSplitSize;
     var to = from + dataSplitSize;
     var dataLinesSplitted = dataLines
         .Select(l => l[from..to])
         .ToList();
-    File.WriteAllLines($"{dataFileNamePrefix}{idx}{dataFileNameSuffix}", dataLinesSplitted);
+    File.WriteAllLines($"{dataFileNamePrefix}{fileNo}{dataFileNameSuffix}", dataLinesSplitted);
 }
 
 return;
@@ -89,7 +90,7 @@ List<string> BuildDataLines(string line, string section)
             continue;
         }
         if (idx > 0)
-            lines.Add(part);
+            lines.Add(part.PadLeft(8, '0'));
         idx++;
     }
     return lines;
