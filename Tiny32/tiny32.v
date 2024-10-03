@@ -40,7 +40,7 @@ module tiny32
     wire [2:0] func3;
     wire [11:0] imm12i, imm12s, imm12b;
     wire [19:0] imm20u, imm20j;
-    wire [31:0] source_address;
+    wire [31:0] source_address_i, source_address_s;
     wire [4:0] source1_reg, source2_reg;
     wire [4:0] dest_reg;
 
@@ -57,7 +57,7 @@ module tiny32
     reg [7:0] op_decoder [0:1023];
     reg [7:0] op_decoder_result;
 
-    reg [MICROCODE_WIDTH - 1:0] microcode [0:255];
+    reg [MICROCODE_WIDTH - 1:0] microcode [0:1023];
     reg [MICROCODE_WIDTH - 1:0] current_microinstruction = 'b111101;
     wire load, set_pc;
     wire [3:0] store;
@@ -122,7 +122,7 @@ module tiny32
 
     assign op_id = {op, func3, func7};
 
-    assign address = stage[1] & (load || store != 4'b1111) ? source_address : pc;
+    assign address = stage[1] & (load || store != 4'b1111) ? (load ? source_address_i : source_address_s) : pc;
     
     assign data_out = source2_reg_data << {data_selector[1:0], 3'b000};
 
@@ -134,7 +134,8 @@ module tiny32
 
     assign registers_data_wr = registers_data_wr_f(registers_wr_data_source);
 
-    assign source_address = source1_reg_data + { {20{imm12s[11]}}, imm12s };
+    assign source_address_i = source1_reg_data + { {20{imm12i[11]}}, imm12i };
+    assign source_address_s = source1_reg_data + { {20{imm12s[11]}}, imm12s };
 
     assign interrupt_no = interrupt_no_f(interrupt);
 
@@ -332,7 +333,7 @@ module tiny32
                 end
                 2: begin
                     if (go)
-                        current_microinstruction <= microcode[{op_decoder_result[5:0], source_address[1:0]}];
+                        current_microinstruction <= microcode[{op_decoder_result[5:0], source_address_i[1:0], source_address_s[1:0]}];
                 end
                 3: begin
                     if (go) begin

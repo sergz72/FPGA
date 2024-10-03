@@ -24,7 +24,7 @@ internal class MicrocodeGenerator
         Remu
     }
     
-    private const int CodeLength = 256;
+    private const int CodeLength = 1024;
 
     private readonly int _registersWr, _load, _store, _err, _setPc, _pcSource, _pcSourcePcPlusImm12b;
     private readonly int _pcSourcePcPlusImm20j, _pcSourceSource1RegDataPlusImm12i, _pcSourceSavedPc;
@@ -97,8 +97,9 @@ internal class MicrocodeGenerator
         var lines = new List<string>();
         for (var i = 0; i < CodeLength; i++)
         {
-            var op = (DecoderCodeGenerator.Commands)(i >> 2);
-            var address = i & 3;
+            var op = (DecoderCodeGenerator.Commands)(i >> 4);
+            var addressI = (i >> 2) & 3;
+            var addressS = i & 3;
             var v = op switch
             {
                 DecoderCodeGenerator.Commands.Wfi => nop,
@@ -149,14 +150,14 @@ internal class MicrocodeGenerator
                 DecoderCodeGenerator.Commands.Rem => BuildAluOp(AluOp.Rem, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
                 DecoderCodeGenerator.Commands.Remu => BuildAluOp(AluOp.Remu, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
 
-                DecoderCodeGenerator.Commands.Lb => address switch
+                DecoderCodeGenerator.Commands.Lb => addressI switch
                 {
                     0 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorByte1Signed,
                     1 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorByte2Signed,
                     2 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorByte3Signed,
                     _ => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorByte4Signed
                 },
-                DecoderCodeGenerator.Commands.Lbu => address switch
+                DecoderCodeGenerator.Commands.Lbu => addressI switch
                 {
                     0 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorByte1UnSigned,
                     1 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorByte2UnSigned,
@@ -164,14 +165,14 @@ internal class MicrocodeGenerator
                     _ => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorByte4UnSigned
                 },
                 DecoderCodeGenerator.Commands.Lw => 
-                    address == 0 ? _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorWord : error,
-                DecoderCodeGenerator.Commands.Lh => address switch
+                    addressI == 0 ? _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorWord : error,
+                DecoderCodeGenerator.Commands.Lh => addressI switch
                 {
                     0 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorHalf1Signed,
                     2 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorHalf2Signed,
                     _ => error
                 },
-                DecoderCodeGenerator.Commands.Lhu => address switch
+                DecoderCodeGenerator.Commands.Lhu => addressI switch
                 {
                     0 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorHalf1UnSigned,
                     2 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorHalf2UnSigned,
@@ -181,7 +182,7 @@ internal class MicrocodeGenerator
                 DecoderCodeGenerator.Commands.Lui => BuildAluOp(AluOp.Add, _aluOp1SourceImm20u, _aluOp2SourceZero),
                 DecoderCodeGenerator.Commands.Auipc => BuildAluOp(AluOp.Add, _aluOp1SourceImm20u, _aluOp2SourceSourcePc),
 
-                DecoderCodeGenerator.Commands.Sb => address switch
+                DecoderCodeGenerator.Commands.Sb => addressS switch
                 {
                     0 => _registersWr | 0x0E * _store | _dataWord,
                     1 => _registersWr | 0x0D * _store | _dataByte2,
@@ -189,8 +190,8 @@ internal class MicrocodeGenerator
                     _ => _registersWr | 0x08 * _store | _dataByte4
                 },
                 DecoderCodeGenerator.Commands.Sw =>
-                    address == 0 ? _registersWr | _registersWrDataSourceDataLoadF | _dataWord : error,
-                DecoderCodeGenerator.Commands.Sh => address switch
+                    addressS == 0 ? _registersWr | _registersWrDataSourceDataLoadF | _dataWord : error,
+                DecoderCodeGenerator.Commands.Sh => addressS switch
                 {
                     0 => _registersWr | 0x0C * _store | _dataWord,
                     2 => _registersWr | 0x03 * _store | _dataHalf2,
