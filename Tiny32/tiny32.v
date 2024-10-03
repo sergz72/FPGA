@@ -193,7 +193,7 @@ module tiny32
         case (source)
             0: pc_source_f2 = condition_f(func3) ? { {19{imm12b[11]}}, imm12b, 1'b0 } : 4;
             1: pc_source_f2 = { {11{imm20j[19]}}, imm20j, 1'b0 };
-            2: pc_source_f2 = { {19{imm12i[11]}}, imm12i, 1'b0 };
+            2: pc_source_f2 = { {20{imm12i[11]}}, imm12i };
             3: pc_source_f2 = 0;
         endcase
     endfunction
