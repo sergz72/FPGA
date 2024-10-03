@@ -183,17 +183,17 @@ internal class MicrocodeGenerator
 
                 DecoderCodeGenerator.Commands.Sb => address switch
                 {
-                    0 => _registersWr | 0x0E * _store | _registersWrDataSourceDataLoadF | _dataWord,
-                    1 => _registersWr | 0x0D * _store | _registersWrDataSourceDataLoadF | _dataByte2,
-                    2 => _registersWr | 0x0B * _store | _registersWrDataSourceDataLoadF | _dataHalf2,
-                    _ => _registersWr | 0x08 * _store | _registersWrDataSourceDataLoadF | _dataByte4
+                    0 => _registersWr | 0x0E * _store | _dataWord,
+                    1 => _registersWr | 0x0D * _store | _dataByte2,
+                    2 => _registersWr | 0x0B * _store | _dataHalf2,
+                    _ => _registersWr | 0x08 * _store | _dataByte4
                 },
                 DecoderCodeGenerator.Commands.Sw =>
                     address == 0 ? _registersWr | _registersWrDataSourceDataLoadF | _dataWord : error,
                 DecoderCodeGenerator.Commands.Sh => address switch
                 {
-                    0 => _registersWr | 0x0C * _store | _registersWrDataSourceDataLoadF | _dataWord,
-                    2 => _registersWr | 0x03 * _store | _registersWrDataSourceDataLoadF | _dataHalf2,
+                    0 => _registersWr | 0x0C * _store | _dataWord,
+                    2 => _registersWr | 0x03 * _store | _dataHalf2,
                     _ => error
                 },
                 

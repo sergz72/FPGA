@@ -3,6 +3,8 @@ const string codeFileName = "code.hex";
 const string dataFileNamePrefix = "data";
 const string dataFileNameSuffix = ".hex";
 
+string? prevCode = null;
+
 if (args.Length != 3)
 {
     Console.WriteLine("Usage: DumpToHex data_split_size asm_dump_file data_dump_file");
@@ -112,6 +114,18 @@ string? BuildCodeLine(string line)
     if (parts.Length != 3)
         return null;
     var code = parts[1];
-    code = code.PadRight(8, '0');
+    if (code.Length == 4) // 16 bit something
+    {
+        if (prevCode != null)
+        {
+            code += prevCode;
+            prevCode = null;
+        }
+        else
+        {
+            prevCode = code;
+            return null;
+        }
+    }
     return code + " // " + parts[0].PadLeft(8) + " " + parts[2];
 }
