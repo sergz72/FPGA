@@ -1,6 +1,6 @@
 #! /bin/sh
 
-/opt2/riscv32i/bin/riscv32-unknown-elf-gcc -specs=nosys.specs -specs=nano.specs -nodefaultlibs -nostdlib -nostartfiles -o asm/a.out -T rv32i_tests/ldscript.ld rv32i_tests/start.S $*
+/opt2/riscv32i/bin/riscv32-unknown-elf-gcc -specs=nosys.specs -specs=nano.specs -nodefaultlibs -nostdlib -nostartfiles -o asm/a.out -T ldscript.ld start.S $*
 
 cd asm
 

@@ -24,7 +24,7 @@ try
     var baseDir = Path.GetDirectoryName(args[0]) ?? throw new Exception("GetDirectoryName returned null");
     if (baseDir != "")
         Directory.SetCurrentDirectory(baseDir);
-    var files = Directory.GetFiles(config.TestsDir);
+    var files = Directory.GetFiles(config.TestsDir, "*.S");
     var testCount = 0;
     foreach (var file in files)
     {
@@ -80,16 +80,20 @@ void AnalyseOutput(Configuration config, List<string> output, string file)
 
         if (config is { UartFlags: { Length: > 0 }, UartDataField: not null })
         {
-            if (config.UartFlags.All(f => line.Contains(f)) && !prevUartMatch)
+            if (config.UartFlags.All(f => line.Contains(f)))
             {
-                prevUartMatch = true;
-                var fields = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                var value = fields.Select(f => f.Split('='))
-                    .Where(f => f.Length == 2 && f[0] == config.UartDataField)
-                    .Select(f => f[1])
-                    .FirstOrDefault();
-                if (value != null && int.TryParse(value[^2..], NumberStyles.HexNumber, new NumberFormatInfo(), out var c))
-                    Console.Write((char)c);
+                if (!prevUartMatch)
+                {
+                    prevUartMatch = true;
+                    var fields = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    var value = fields.Select(f => f.Split('='))
+                        .Where(f => f.Length == 2 && f[0] == config.UartDataField)
+                        .Select(f => f[1])
+                        .FirstOrDefault();
+                    if (value != null && int.TryParse(value[^2..], NumberStyles.HexNumber, new NumberFormatInfo(),
+                            out var c))
+                        Console.Write((char)c);
+                }
             }
             else
                 prevUartMatch = false;

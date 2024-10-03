@@ -4,5 +4,7 @@
   "SimulatorCommand": "run_verilator.sh",
   "Flag": "hlt=1",
   "Error": "error=1",
-  "Ok": "address=0x00000010"
+  "Ok": "address=0x00000010",
+  "UartFlags": ["address=0x10000000","nwr=0x0"],
+  "UartDataField": "data_in"
 }
