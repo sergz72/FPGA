@@ -52,7 +52,7 @@ internal static class DecoderCodeGenerator
     private const int CodeLength = 1024;
     private const int Error = 0b1100_0010;
 
-    internal static void GenerateCode()
+    internal static void GenerateCode(bool mul, bool div)
     {
         var lines = new List<string>();
         for (var i = 0; i < CodeLength; i++)
@@ -88,51 +88,51 @@ internal static class DecoderCodeGenerator
                 0b01100_000 => func7 switch
                 {
                     0 => (int)Commands.Add,
-                    1 => (int)Commands.Mul,
+                    1 => mul ? (int)Commands.Mul : Error,
                     2 => (int)Commands.Sub,
                     _ => Error
                 },
                 0b01100_001 => func7 switch
                 {
                     0 => (int)Commands.Sll,
-                    1 => (int)Commands.Mulh,
+                    1 => mul ? (int)Commands.Mulh : Error,
                     _ => Error
                 },
                 0b01100_010 => func7 switch
                 {
                     0 => (int)Commands.Slt,
-                    1 => (int)Commands.Mulhsu,
+                    1 => mul ? (int)Commands.Mulhsu : Error,
                     _ => Error
                 },
                 0b01100_011 => func7 switch
                 {
                     0 => (int)Commands.Sltu,
-                    1 => (int)Commands.Mulhu,
+                    1 => mul ? (int)Commands.Mulhu : Error,
                     _ => Error
                 },
                 0b01100_100 => func7 switch
                 {
                     0 => (int)Commands.Xor,
-                    1 => (int)Commands.Div,
+                    1 => div ? (int)Commands.Div : Error,
                     _ => Error
                 },
                 0b01100_101 => func7 switch
                 {
                     0 => (int)Commands.Srl,
-                    1 => (int)Commands.Divu,
+                    1 => div ? (int)Commands.Divu : Error,
                     2 => (int)Commands.Sra,
                     _ => Error
                 },
                 0b01100_110 => func7 switch
                 {
                     0 => (int)Commands.Or,
-                    1 => (int)Commands.Rem,
+                    1 => div ? (int)Commands.Rem : Error,
                     _ => Error
                 },
                 0b01100_111 => func7 switch
                 {
                     0 => (int)Commands.And,
-                    1 => (int)Commands.Remu,
+                    1 => div ? (int)Commands.Remu : Error,
                     _ => Error
                 },
                 >= 0b01101_000 and <= 0b01101_111 => (int)Commands.Lui,

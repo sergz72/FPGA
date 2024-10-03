@@ -27,13 +27,18 @@ internal class MicrocodeGenerator
     private const int CodeLength = 256;
 
     private readonly int _registersWr, _load, _store, _err, _setPc, _pcSource, _pcSourcePcPlusImm12b;
-    private readonly int _pcSourcePcPlusImm20j, _pcSourceSource1RegDataPlusImm12i, _pcSourceSavedPc, _addressSource;
+    private readonly int _pcSourcePcPlusImm20j, _pcSourceSource1RegDataPlusImm12i, _pcSourceSavedPc;
     private readonly int _registersWrDataSource, _registersWrDataSourceDataLoadF, _noStore;
     private readonly int _registersWrDataSourceAluOut, _inInterruptClear, _aluClk, _aluOp1Source;
     private readonly int _aluOp1SourceSource1RegData, _aluOp1SourceImm20u, _aluOp1Source4, _aluOp2Source;
     private readonly int _aluOp2SourceImm12i, _aluOp2SourceImm12iSigned, _aluOp2SourceSource2RegData;
     private readonly int _aluOp2SourceSource2RegData40, _aluOp2SourceSourcePc, _aluOp2SourceZero;
-    private readonly int _aluOp, _dataLoadSigned, _dataShift;
+    private readonly int _aluOp, _dataSelector, _dataSelectorByte1Signed, _dataSelectorByte2Signed;
+    private readonly int _dataSelectorByte3Signed, _dataSelectorByte4Signed, _dataSelectorByte1UnSigned;
+    private readonly int _dataSelectorByte2UnSigned, _dataSelectorByte3UnSigned, _dataSelectorByte4UnSigned;
+    private readonly int _dataSelectorHalf1Signed, _dataSelectorHalf2Signed, _dataSelectorHalf1UnSigned;
+    private readonly int _dataSelectorHalf2UnSigned, _dataSelectorWord;
+    private readonly int _dataByte2, _dataHalf2, _dataByte4, _dataWord;
 
     internal MicrocodeGenerator()
     {
@@ -48,7 +53,6 @@ internal class MicrocodeGenerator
         _pcSourcePcPlusImm20j = _pcSource;
         _pcSourceSource1RegDataPlusImm12i = 2 * _pcSource;
         _pcSourceSavedPc = 3 * _pcSource;
-        _addressSource = new Bits(2).Value;
         _registersWrDataSource = new Bits(1).Value;
         _registersWrDataSourceDataLoadF = 0;
         _registersWrDataSourceAluOut = _registersWrDataSource;
@@ -66,8 +70,24 @@ internal class MicrocodeGenerator
         _aluOp2SourceSourcePc = 4 * _aluOp2Source;
         _aluOp2SourceZero = 5 * _aluOp2Source;
         _aluOp = new Bits(5).Value;
-        _dataLoadSigned = new Bits(1).Value;
-        _dataShift = new Bits(5).Value;
+        _dataSelector = new Bits(4).Value;
+        _dataSelectorByte1Signed = 0;
+        _dataSelectorByte1UnSigned = _dataSelector;
+        _dataSelectorByte2Signed = 2 * _dataSelector;
+        _dataSelectorByte2UnSigned = 3 * _dataSelector;
+        _dataSelectorByte3Signed = 4 * _dataSelector;
+        _dataSelectorByte3UnSigned = 5 * _dataSelector;
+        _dataSelectorByte4Signed = 6 * _dataSelector;
+        _dataSelectorByte4UnSigned = 7 * _dataSelector;
+        _dataSelectorHalf1Signed = 8 * _dataSelector;
+        _dataSelectorHalf1UnSigned = 9 * _dataSelector;
+        _dataSelectorHalf2Signed = 10 * _dataSelector;
+        _dataSelectorHalf2UnSigned = 11 * _dataSelector;
+        _dataSelectorWord = 12 * _dataSelector;
+        _dataWord = 0;
+        _dataByte2 = 1 * _dataSelector;
+        _dataHalf2 = 2 * _dataSelector;
+        _dataByte4 = 3 * _dataSelector;
     }
     internal void GenerateCode()
     {
@@ -129,26 +149,53 @@ internal class MicrocodeGenerator
                 DecoderCodeGenerator.Commands.Rem => BuildAluOp(AluOp.Rem, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
                 DecoderCodeGenerator.Commands.Remu => BuildAluOp(AluOp.Remu, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
 
-                //todo
-                DecoderCodeGenerator.Commands.Lb => error,
-                //todo
-                DecoderCodeGenerator.Commands.Lbu => error,
-                //todo
-                DecoderCodeGenerator.Commands.Lw => address == 0 ? _noStore | _load | _registersWrDataSourceDataLoadF : error,
-                //todo
-                DecoderCodeGenerator.Commands.Lh => error,
-                //todo
-                DecoderCodeGenerator.Commands.Lhu => error,
+                DecoderCodeGenerator.Commands.Lb => address switch
+                {
+                    0 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorByte1Signed,
+                    1 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorByte2Signed,
+                    2 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorByte3Signed,
+                    _ => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorByte4Signed
+                },
+                DecoderCodeGenerator.Commands.Lbu => address switch
+                {
+                    0 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorByte1UnSigned,
+                    1 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorByte2UnSigned,
+                    2 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorByte3UnSigned,
+                    _ => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorByte4UnSigned
+                },
+                DecoderCodeGenerator.Commands.Lw => 
+                    address == 0 ? _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorWord : error,
+                DecoderCodeGenerator.Commands.Lh => address switch
+                {
+                    0 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorHalf1Signed,
+                    2 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorHalf2Signed,
+                    _ => error
+                },
+                DecoderCodeGenerator.Commands.Lhu => address switch
+                {
+                    0 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorHalf1UnSigned,
+                    2 => _noStore | _load | _registersWrDataSourceDataLoadF | _dataSelectorHalf2UnSigned,
+                    _ => error
+                },
 
                 DecoderCodeGenerator.Commands.Lui => BuildAluOp(AluOp.Add, _aluOp1SourceImm20u, _aluOp2SourceZero),
                 DecoderCodeGenerator.Commands.Auipc => BuildAluOp(AluOp.Add, _aluOp1SourceImm20u, _aluOp2SourceSourcePc),
 
-                //todo
-                DecoderCodeGenerator.Commands.Sb => error,
-                //todo
-                DecoderCodeGenerator.Commands.Sw => error,
-                //todo
-                DecoderCodeGenerator.Commands.Sh => error,
+                DecoderCodeGenerator.Commands.Sb => address switch
+                {
+                    0 => _registersWr | 0x0E * _store | _registersWrDataSourceDataLoadF | _dataWord,
+                    1 => _registersWr | 0x0D * _store | _registersWrDataSourceDataLoadF | _dataByte2,
+                    2 => _registersWr | 0x0B * _store | _registersWrDataSourceDataLoadF | _dataHalf2,
+                    _ => _registersWr | 0x08 * _store | _registersWrDataSourceDataLoadF | _dataByte4
+                },
+                DecoderCodeGenerator.Commands.Sw =>
+                    address == 0 ? _registersWr | _registersWrDataSourceDataLoadF | _dataWord : error,
+                DecoderCodeGenerator.Commands.Sh => address switch
+                {
+                    0 => _registersWr | 0x0C * _store | _registersWrDataSourceDataLoadF | _dataWord,
+                    2 => _registersWr | 0x03 * _store | _registersWrDataSourceDataLoadF | _dataHalf2,
+                    _ => error
+                },
                 
                 _ => error,
             };

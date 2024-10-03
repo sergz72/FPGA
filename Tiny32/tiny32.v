@@ -31,7 +31,7 @@ module tiny32
     input wire [7:0] interrupt,
     output reg [1:0] stage = 0
 );
-    localparam MICROCODE_WIDTH = 31;
+    localparam MICROCODE_WIDTH = 27;
 
     reg [31:0] current_instruction = 3;
     wire [9:0] op_id;
@@ -40,17 +40,19 @@ module tiny32
     wire [2:0] func3;
     wire [11:0] imm12i, imm12s, imm12b;
     wire [19:0] imm20u, imm20j;
-    wire [31:0] source_address, source_address2;
+    wire [31:0] source_address;
     wire [4:0] source1_reg, source2_reg;
     wire [4:0] dest_reg;
 
     reg start = 0;
-    wire clk1, clk2, clk3, clk4;
+    wire clk2, clk3, clk4;
 
     reg in_interrupt = 0;
     wire [3:0] interrupt_no;
 
     reg [31:0] pc, saved_pc;
+
+    reg [31:0] data_load;
 
     reg [7:0] op_decoder [0:1023];
     reg [7:0] op_decoder_result;
@@ -59,7 +61,6 @@ module tiny32
     reg [MICROCODE_WIDTH - 1:0] current_microinstruction = 'b111101;
     wire load, set_pc;
     wire [3:0] store;
-    wire [1:0] address_source;
     wire [1:0] pc_source;
     wire registers_wr_data_source;
     wire registers_wr;
@@ -69,8 +70,7 @@ module tiny32
     wire alu_clk;
     wire [1:0] alu_op1_source;
     wire [2:0] alu_op2_source;
-    wire data_load_signed;
-    wire [4:0] data_shift;
+    wire [3:0] data_selector;
 
     reg [31:0] registers [0:31];
     reg [31:0] source1_reg_data, source2_reg_data;
@@ -90,7 +90,6 @@ module tiny32
         $readmemh("microcode.mem", microcode);
     end
 
-    assign clk1 = stage == 0;
     assign clk2 = stage == 1;
     assign clk3 = stage == 2;
     assign clk4 = stage == 3;
@@ -113,21 +112,19 @@ module tiny32
     assign err = current_microinstruction[6];
     assign set_pc = current_microinstruction[7];
     assign pc_source = current_microinstruction[9:8];
-    assign address_source = current_microinstruction[11:10];
-    assign registers_wr_data_source = current_microinstruction[12];
-    assign in_interrupt_clear = current_microinstruction[13];
-    assign alu_clk = current_microinstruction[14];
-    assign alu_op1_source = current_microinstruction[16:15];
-    assign alu_op2_source = current_microinstruction[19:17];
-    assign alu_op = current_microinstruction[24:20];
-    assign data_load_signed = current_microinstruction[25];
-    assign data_shift = current_microinstruction[30:26];
+    assign registers_wr_data_source = current_microinstruction[10];
+    assign in_interrupt_clear = current_microinstruction[11];
+    assign alu_clk = current_microinstruction[12];
+    assign alu_op1_source = current_microinstruction[14:13];
+    assign alu_op2_source = current_microinstruction[17:15];
+    assign alu_op = current_microinstruction[22:18];
+    assign data_selector = current_microinstruction[26:23];
 
     assign op_id = {op, func3, func7};
 
-    assign address = address_source_f(address_source);
+    assign address = stage[1] & (load || store != 4'b1111) ? source_address : pc;
     
-    assign data_out = source2_reg_data;
+    assign data_out = source2_reg_data << {data_selector[1:0], 3'b000};
 
     assign gowfi = start & ready & !error & !hlt;
     assign go = gowfi &  !wfi;
@@ -137,8 +134,7 @@ module tiny32
 
     assign registers_data_wr = registers_data_wr_f(registers_wr_data_source);
 
-    assign source_address = source1_reg_data + { {20{imm12i[11]}}, imm12i };
-    assign source_address2 = source1_reg_data + { {20{imm12s[11]}}, imm12s };
+    assign source_address = source1_reg_data + { {20{imm12s[11]}}, imm12s };
 
     assign interrupt_no = interrupt_no_f(interrupt);
 
@@ -201,14 +197,6 @@ module tiny32
         endcase
     endfunction
 
-    function [31:0] address_source_f(input [1:0] source);
-        case (source)
-            0: address_source_f = pc;
-            1: address_source_f = source_address;
-            default: address_source_f = source_address2;
-        endcase
-    endfunction
-
     function [31:0] alu_op1_f(input [1:0] source);
         case (source)
             0: alu_op1_f = source1_reg_data;
@@ -228,17 +216,27 @@ module tiny32
         endcase
     endfunction
 
-    function [31:0] data_load_f(input source_signed, input [4:0] shift);
-        data_load_f = source_signed ? data_in >>> shift : data_in >> shift;
-    endfunction
-
-    function [31:0] data_store_f(input [31:0] data, input [4:0] shift);
-        data_store_f = data << shift;
+    function [31:0] data_load_f(input [3:0] source);
+        case (source)
+            0: data_load_f = {{24{data_load[7]}}, data_load[7:0]};
+            1: data_load_f = {24'h0, data_load[7:0]};
+            2: data_load_f = {{24{data_load[15]}}, data_load[15:8]};
+            3: data_load_f = {24'h0, data_load[15:8]};
+            4: data_load_f = {{24{data_load[23]}}, data_load[23:16]};
+            5: data_load_f = {24'h0, data_load[23:16]};
+            6: data_load_f = {{24{data_load[31]}}, data_load[31:24]};
+            7: data_load_f = {24'h0, data_load[31:24]};
+            8: data_load_f = {{16{data_load[15]}}, data_load[15:0]};
+            9: data_load_f = {16'h0, data_load[15:0]};
+            10: data_load_f = {{16{data_load[31]}}, data_load[31:16]};
+            11: data_load_f = {16'h0, data_load[31:16]};
+            default: data_load_f = data_load;
+        endcase
     endfunction
 
     function [31:0] registers_data_wr_f(input source);
         case (source)
-            0: registers_data_wr_f = data_load_f(data_load_signed, data_shift);
+            0: registers_data_wr_f = data_load_f(data_selector);
             1: registers_data_wr_f = alu_out;
         endcase
     endfunction
@@ -256,10 +254,12 @@ module tiny32
                 7: alu_out <= {31'h0, signed_lt};
                 8: alu_out <= alu_op1 + alu_op2;
                 9: {c, alu_out} <= alu_op1 - alu_op2;
+`ifndef NO_MUL
                 10: {alu_out2, alu_out} <= alu_op1 * alu_op2;
                 11: {alu_out, alu_out2} <= $signed(alu_op1) * $signed(alu_op2);
                 12: {alu_out, alu_out2} <= $signed(alu_op1) * alu_op2;
                 13: {alu_out, alu_out2} <= alu_op1 * alu_op2;
+`endif
 `ifndef NO_DIV
                 14: alu_out <= $signed(alu_op1) / $signed(alu_op2);
                 15: alu_out <= alu_op1 / alu_op2;
@@ -331,10 +331,12 @@ module tiny32
                     end
                 end
                 2: begin
-                    current_microinstruction <= microcode[{op_decoder_result[5:0], source_address[1:0]}];
+                    if (go)
+                        current_microinstruction <= microcode[{op_decoder_result[5:0], source_address[1:0]}];
                 end
                 3: begin
                     if (go) begin
+                        data_load <= data_in;
                         if (set_pc)
                             pc <= pc_source_f1(pc_source) + pc_source_f2(pc_source);
                         else
