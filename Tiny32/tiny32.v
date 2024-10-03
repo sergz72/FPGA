@@ -143,7 +143,7 @@ module tiny32
     assign alu_op2 = alu_op2_f(alu_op2_source);
 
     assign z = alu_out == 0;
-    assign signed_lt = !z & ((source1_reg_data[31] & !source2_reg_data[31]) | (source1_reg_data[31] == source2_reg_data[31] & c));
+    assign signed_lt = !z & ((source1_reg_data[31] & !source2_reg_data[31]) | ((source1_reg_data[31] == source2_reg_data[31]) & c));
 
     function [3:0] interrupt_no_f(input [7:0] source);
         casez (source)
@@ -172,10 +172,10 @@ module tiny32
         case (source)
             0: condition_f = z;
             1: condition_f = !z;
-            4: condition_f = c;
-            5: condition_f = !c;
-            6: condition_f = signed_lt;
-            7: condition_f = !signed_lt;
+            4: condition_f = signed_lt;
+            5: condition_f = !signed_lt;
+            6: condition_f = c;
+            7: condition_f = !c;
             default: condition_f = 0;
         endcase
     endfunction
