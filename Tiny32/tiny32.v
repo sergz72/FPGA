@@ -62,7 +62,7 @@ module tiny32
     wire load, set_pc;
     wire [3:0] store;
     wire [1:0] pc_source;
-    wire registers_wr_data_source;
+    wire [1:0] registers_wr_data_source;
     wire registers_wr;
     wire [31:0] registers_data_wr;
     wire err;
@@ -76,7 +76,7 @@ module tiny32
     reg [31:0] source1_reg_data, source2_reg_data;
 
     wire [31:0] alu_op1, alu_op2;
-    wire [4:0] alu_op;
+    wire [3:0] alu_op;
     reg [31:0] alu_out, alu_out2;
 
     wire z;
@@ -112,12 +112,12 @@ module tiny32
     assign err = current_microinstruction[6];
     assign set_pc = current_microinstruction[7];
     assign pc_source = current_microinstruction[9:8];
-    assign registers_wr_data_source = current_microinstruction[10];
-    assign in_interrupt_clear = current_microinstruction[11];
-    assign alu_clk = current_microinstruction[12];
-    assign alu_op1_source = current_microinstruction[14:13];
-    assign alu_op2_source = current_microinstruction[17:15];
-    assign alu_op = current_microinstruction[22:18];
+    assign registers_wr_data_source = current_microinstruction[11:10];
+    assign in_interrupt_clear = current_microinstruction[12];
+    assign alu_clk = current_microinstruction[13];
+    assign alu_op1_source = current_microinstruction[15:14];
+    assign alu_op2_source = current_microinstruction[18:16];
+    assign alu_op = current_microinstruction[22:19];
     assign data_selector = current_microinstruction[26:23];
 
     assign op_id = {op, func3, func7};
@@ -143,7 +143,7 @@ module tiny32
     assign alu_op2 = alu_op2_f(alu_op2_source);
 
     assign z = alu_out == 0;
-    assign signed_lt = !z & ((source1_reg_data[31] & !source2_reg_data[31]) | ((source1_reg_data[31] == source2_reg_data[31]) & c));
+    assign signed_lt = !z & ((alu_op1[31] & !alu_op2[31]) | ((alu_op1[31] == alu_op2[31]) & c));
 
     function [3:0] interrupt_no_f(input [7:0] source);
         casez (source)
@@ -236,10 +236,12 @@ module tiny32
         endcase
     endfunction
 
-    function [31:0] registers_data_wr_f(input source);
+    function [31:0] registers_data_wr_f(input [1:0] source);
         case (source)
             0: registers_data_wr_f = data_load_f(data_selector);
             1: registers_data_wr_f = alu_out;
+            2: registers_data_wr_f <= {31'h0, c};
+            3: registers_data_wr_f <= {31'h0, signed_lt};
         endcase
     endfunction
 
@@ -252,21 +254,19 @@ module tiny32
                 3: alu_out <= alu_op1 & alu_op2;
                 4: alu_out <= alu_op1 | alu_op2;
                 5: alu_out <= alu_op1 ^ alu_op2;
-                6: alu_out <= {31'h0, c};
-                7: alu_out <= {31'h0, signed_lt};
-                8: alu_out <= alu_op1 + alu_op2;
-                9: {c, alu_out} <= alu_op1 - alu_op2;
+                6: alu_out <= alu_op1 + alu_op2;
+                7: {c, alu_out} <= alu_op1 - alu_op2;
 `ifndef NO_MUL
-                10: {alu_out2, alu_out} <= alu_op1 * alu_op2;
-                11: {alu_out, alu_out2} <= $signed(alu_op1) * $signed(alu_op2);
-                12: {alu_out, alu_out2} <= $signed(alu_op1) * alu_op2;
-                13: {alu_out, alu_out2} <= alu_op1 * alu_op2;
+                8: {alu_out2, alu_out} <= alu_op1 * alu_op2;
+                9: {alu_out, alu_out2} <= $signed(alu_op1) * $signed(alu_op2);
+                10: {alu_out, alu_out2} <= $signed(alu_op1) * alu_op2;
+                11: {alu_out, alu_out2} <= alu_op1 * alu_op2;
 `endif
 `ifndef NO_DIV
-                14: alu_out <= $signed(alu_op1) / $signed(alu_op2);
-                15: alu_out <= alu_op1 / alu_op2;
-                16: alu_out <= $signed(alu_op1) % $signed(alu_op2);
-                17: alu_out <= alu_op1 % alu_op2;
+                12: alu_out <= $signed(alu_op1) / $signed(alu_op2);
+                13: alu_out <= alu_op1 / alu_op2;
+                14: alu_out <= $signed(alu_op1) % $signed(alu_op2);
+                15: alu_out <= alu_op1 % alu_op2;
 `endif
                 default: alu_out <= 0;
             endcase
