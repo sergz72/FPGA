@@ -114,7 +114,7 @@ internal class MicrocodeGenerator
                                                     BuildAluOp(AluOp.Sub, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
                 
                 DecoderCodeGenerator.Commands.Add => BuildAluOp(AluOp.Add, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
-                DecoderCodeGenerator.Commands.Addi => BuildAluOp(AluOp.Add, _aluOp1SourceSource1RegData, _aluOp2SourceImm12i),
+                DecoderCodeGenerator.Commands.Addi => BuildAluOp(AluOp.Add, _aluOp1SourceSource1RegData, _aluOp2SourceImm12iSigned),
                 
                 DecoderCodeGenerator.Commands.Sub => BuildAluOp(AluOp.Sub, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
 
@@ -122,16 +122,19 @@ internal class MicrocodeGenerator
                 DecoderCodeGenerator.Commands.Slli => BuildAluOp(AluOp.Sl, _aluOp1SourceSource1RegData, _aluOp2SourceImm12i),
                 
                 DecoderCodeGenerator.Commands.Slt => BuildAluOp(AluOp.Slt, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
-                DecoderCodeGenerator.Commands.Slti => BuildAluOp(AluOp.Slt, _aluOp1SourceSource1RegData, _aluOp2SourceImm12i),
+                DecoderCodeGenerator.Commands.Slti => BuildAluOp(AluOp.Slt, _aluOp1SourceSource1RegData, _aluOp2SourceImm12iSigned),
 
                 DecoderCodeGenerator.Commands.Sltu => BuildAluOp(AluOp.Sltu, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
-                DecoderCodeGenerator.Commands.Sltiu => BuildAluOp(AluOp.Sltu, _aluOp1SourceSource1RegData, _aluOp2SourceImm12i),
+                DecoderCodeGenerator.Commands.Sltiu => BuildAluOp(AluOp.Sltu, _aluOp1SourceSource1RegData, _aluOp2SourceImm12iSigned),
 
                 DecoderCodeGenerator.Commands.Xor => BuildAluOp(AluOp.Xor, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
-                DecoderCodeGenerator.Commands.Xori => BuildAluOp(AluOp.Xor, _aluOp1SourceSource1RegData, _aluOp2SourceImm12i),
+                DecoderCodeGenerator.Commands.Xori => BuildAluOp(AluOp.Xor, _aluOp1SourceSource1RegData, _aluOp2SourceImm12iSigned),
 
                 DecoderCodeGenerator.Commands.Or => BuildAluOp(AluOp.Or, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
+                DecoderCodeGenerator.Commands.Ori => BuildAluOp(AluOp.Or, _aluOp1SourceSource1RegData, _aluOp2SourceImm12iSigned),
+
                 DecoderCodeGenerator.Commands.And => BuildAluOp(AluOp.And, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
+                DecoderCodeGenerator.Commands.Andi => BuildAluOp(AluOp.And, _aluOp1SourceSource1RegData, _aluOp2SourceImm12iSigned),
 
                 DecoderCodeGenerator.Commands.Srl => BuildAluOp(AluOp.Sr, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
                 DecoderCodeGenerator.Commands.Srli => BuildAluOp(AluOp.Sr, _aluOp1SourceSource1RegData, _aluOp2SourceImm12i),
