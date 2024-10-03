@@ -10,8 +10,6 @@ internal class MicrocodeGenerator
         And,
         Or,
         Xor,
-        Sltu,
-        Slt,
         Add,
         Sub,
         Mul,
@@ -38,7 +36,8 @@ internal class MicrocodeGenerator
     private readonly int _dataSelectorByte2UnSigned, _dataSelectorByte3UnSigned, _dataSelectorByte4UnSigned;
     private readonly int _dataSelectorHalf1Signed, _dataSelectorHalf2Signed, _dataSelectorHalf1UnSigned;
     private readonly int _dataSelectorHalf2UnSigned, _dataSelectorWord;
-    private readonly int _dataByte2, _dataHalf2, _dataByte4, _dataWord, _aluOp2SourceRs2;
+    private readonly int _dataByte2, _dataHalf2, _dataByte4, _dataWord;
+    private readonly int _aluOp2SourceRs2, _registersWrDataSourceC, _registersWrDataSourceSignedLt;
 
     internal MicrocodeGenerator()
     {
@@ -53,9 +52,11 @@ internal class MicrocodeGenerator
         _pcSourcePcPlusImm20j = _pcSource;
         _pcSourceSource1RegDataPlusImm12i = 2 * _pcSource;
         _pcSourceSavedPc = 3 * _pcSource;
-        _registersWrDataSource = new Bits(1).Value;
+        _registersWrDataSource = new Bits(2).Value;
         _registersWrDataSourceDataLoadF = 0;
         _registersWrDataSourceAluOut = _registersWrDataSource;
+        _registersWrDataSourceC = 2 * _registersWrDataSource;
+        _registersWrDataSourceSignedLt = 3 * _registersWrDataSource;
         _inInterruptClear = new Bits(1).Value;
         _aluClk = new Bits(1).Value;
         _aluOp1Source = new Bits(2).Value;
@@ -70,7 +71,7 @@ internal class MicrocodeGenerator
         _aluOp2SourceSourcePc = 4 * _aluOp2Source;
         _aluOp2SourceZero = 5 * _aluOp2Source;
         _aluOp2SourceRs2 = 6 * _aluOp2Source;
-        _aluOp = new Bits(5).Value;
+        _aluOp = new Bits(4).Value;
         _dataSelector = new Bits(4).Value;
         _dataSelectorByte1Signed = 0;
         _dataSelectorByte1UnSigned = _dataSelector;
@@ -122,11 +123,15 @@ internal class MicrocodeGenerator
                 DecoderCodeGenerator.Commands.Sll => BuildAluOp(AluOp.Sl, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData40),
                 DecoderCodeGenerator.Commands.Slli => BuildAluOp(AluOp.Sl, _aluOp1SourceSource1RegData, _aluOp2SourceRs2),
                 
-                DecoderCodeGenerator.Commands.Slt => BuildAluOp(AluOp.Slt, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
-                DecoderCodeGenerator.Commands.Slti => BuildAluOp(AluOp.Slt, _aluOp1SourceSource1RegData, _aluOp2SourceImm12iSigned),
+                DecoderCodeGenerator.Commands.Slt => 
+                    BuildAluOp(AluOp.Sub, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData, _registersWrDataSourceSignedLt),
+                DecoderCodeGenerator.Commands.Slti =>
+                    BuildAluOp(AluOp.Sub, _aluOp1SourceSource1RegData, _aluOp2SourceImm12iSigned, _registersWrDataSourceSignedLt),
 
-                DecoderCodeGenerator.Commands.Sltu => BuildAluOp(AluOp.Sltu, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
-                DecoderCodeGenerator.Commands.Sltiu => BuildAluOp(AluOp.Sltu, _aluOp1SourceSource1RegData, _aluOp2SourceImm12iSigned),
+                DecoderCodeGenerator.Commands.Sltu =>
+                    BuildAluOp(AluOp.Sub, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData, _registersWrDataSourceC),
+                DecoderCodeGenerator.Commands.Sltiu =>
+                    BuildAluOp(AluOp.Sub, _aluOp1SourceSource1RegData, _aluOp2SourceImm12iSigned, _registersWrDataSourceC),
 
                 DecoderCodeGenerator.Commands.Xor => BuildAluOp(AluOp.Xor, _aluOp1SourceSource1RegData, _aluOp2SourceSource2RegData),
                 DecoderCodeGenerator.Commands.Xori => BuildAluOp(AluOp.Xor, _aluOp1SourceSource1RegData, _aluOp2SourceImm12iSigned),
@@ -209,9 +214,14 @@ internal class MicrocodeGenerator
         File.WriteAllLines("microcode.mem", lines);
     }
 
+    private int BuildAluOp(AluOp op, int op1, int op2, int registersWrDataSource)
+    {
+        return _noStore | (_aluOp * (int)op) | _aluClk | registersWrDataSource | op1 | op2;
+    }
+    
     private int BuildAluOp(AluOp op, int op1, int op2)
     {
-        return _noStore | (_aluOp * (int)op) | _aluClk | _registersWrDataSourceAluOut | op1 | op2;
+        return BuildAluOp(op, op1, op2, _registersWrDataSourceAluOut);
     }
 }
 

@@ -132,8 +132,6 @@ module tiny32
     assign nrd = !go | !(clk2 | (load & clk4));
     assign nwr = go & clk4 ? store : 4'b1111;
 
-    assign registers_data_wr = registers_data_wr_f(registers_wr_data_source);
-
     assign source_address_i = source1_reg_data + { {20{imm12i[11]}}, imm12i };
     assign source_address_s = source1_reg_data + { {20{imm12s[11]}}, imm12s };
 
@@ -141,6 +139,8 @@ module tiny32
 
     assign alu_op1 = alu_op1_f(alu_op1_source);
     assign alu_op2 = alu_op2_f(alu_op2_source);
+
+    assign registers_data_wr = registers_data_wr_f(registers_wr_data_source);
 
     assign z = alu_out == 0;
     assign signed_lt = !z & ((alu_op1[31] & !alu_op2[31]) | ((alu_op1[31] == alu_op2[31]) & c));
@@ -240,8 +240,8 @@ module tiny32
         case (source)
             0: registers_data_wr_f = data_load_f(data_selector);
             1: registers_data_wr_f = alu_out;
-            2: registers_data_wr_f <= {31'h0, c};
-            3: registers_data_wr_f <= {31'h0, signed_lt};
+            2: registers_data_wr_f = {31'h0, c};
+            3: registers_data_wr_f = {31'h0, signed_lt};
         endcase
     endfunction
 
