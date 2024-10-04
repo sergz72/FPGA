@@ -1,7 +1,7 @@
 #include "../../../custom_ops.S"
 
 .section .reset_vec
-.globl _start, wfi
+.globl _start, wfi, hlt
 
 _start:
 	j start
@@ -12,6 +12,9 @@ isr:
 wfi:
 	waitirq_insn()
 	ret
+
+hlt:
+	halt_insn()
 
 start:
 	la sp, _sp
