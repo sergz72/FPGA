@@ -139,7 +139,7 @@ ROM_BITS = 10)
             ports_rdata <= {25'b0, con_button, psh_button, tra, trb, bak_button, scl_in, sda_in};
 `endif
             if (!nwr[0]) {led, scl, sda} <= data_in[2:0];
-            if (!nwr[1]) interrupt_clear <= data_in[0];
+            if (!nwr[1]) interrupt_clear <= data_in[8];
         end
     end
 
