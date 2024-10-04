@@ -27,7 +27,7 @@ internal class MicrocodeGenerator
     private readonly int _registersWr, _load, _store, _err, _setPc, _pcSource, _pcSourcePcPlusImm12b;
     private readonly int _pcSourcePcPlusImm20j, _pcSourceSource1RegDataPlusImm12i, _pcSourceSavedPc;
     private readonly int _registersWrDataSource, _registersWrDataSourceDataLoadF, _noStore;
-    private readonly int _registersWrDataSourceAluOut, _inInterruptClear, _aluClk, _aluOp1Source;
+    private readonly int _registersWrDataSourceAluOut, _aluClk, _aluOp1Source;
     private readonly int _aluOp1SourceSource1RegData, _aluOp1SourceImm20u, _aluOp1Source4, _aluOp2Source;
     private readonly int _aluOp2SourceImm12i, _aluOp2SourceImm12iSigned, _aluOp2SourceSource2RegData;
     private readonly int _aluOp2SourceSource2RegData40, _aluOp2SourceSourcePc, _aluOp2SourceZero;
@@ -57,7 +57,6 @@ internal class MicrocodeGenerator
         _registersWrDataSourceAluOut = _registersWrDataSource;
         _registersWrDataSourceC = 2 * _registersWrDataSource;
         _registersWrDataSourceSignedLt = 3 * _registersWrDataSource;
-        _inInterruptClear = new Bits(1).Value;
         _aluClk = new Bits(1).Value;
         _aluOp1Source = new Bits(2).Value;
         _aluOp1SourceSource1RegData = 0;
@@ -209,7 +208,7 @@ internal class MicrocodeGenerator
                 
                 _ => error,
             };
-            lines.Add(v.ToString("X8"));
+            lines.Add(v.ToString("X7"));
         }
         File.WriteAllLines("microcode.mem", lines);
     }

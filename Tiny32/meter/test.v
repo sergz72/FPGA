@@ -10,7 +10,7 @@ module test;
     reg bak_button;
     wire led;
 
-    main #(.TIMER_BITS(14), .RESET_DELAY_BIT(4), .CPU_CLOCK_BIT(1))
+    main #(.TIMER_BITS(10), .RESET_DELAY_BIT(4), .CPU_CLOCK_BIT(1))
          m(.clk(clk), .hlt(hlt), .error(error), .wfi(wfi), .address(address), .scl_io(scl_io), .sda_io(sda_io),
            .con_button(con_button), .psh_button(psh_button), .tra(tra), .trb(trb), .bak_button(bak_button),
            .led(led));

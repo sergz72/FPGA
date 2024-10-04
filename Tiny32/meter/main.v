@@ -40,7 +40,6 @@ ROM_BITS = 10)
 
     reg [TIMER_BITS - 1:0] timer = 0;
     reg interrupt = 0;
-    reg interrupt_clear = 0;
 
 `ifndef NO_INOUT_PINS
     reg scl = 1;
@@ -103,7 +102,7 @@ ROM_BITS = 10)
     always @(posedge clk) begin
         if (timer == {TIMER_BITS{1'b1}})
             interrupt <= 1;
-        else if (interrupt_clear)
+        else if (interrupt & !wfi)
             interrupt <= 0;
         timer <= timer + 1;
     end
@@ -139,7 +138,6 @@ ROM_BITS = 10)
             ports_rdata <= {25'b0, con_button, psh_button, tra, trb, bak_button, scl_in, sda_in};
 `endif
             if (!nwr[0]) {led, scl, sda} <= data_in[2:0];
-            if (!nwr[1]) interrupt_clear <= data_in[8];
         end
     end
 

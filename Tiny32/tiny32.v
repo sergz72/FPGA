@@ -31,7 +31,7 @@ module tiny32
     input wire [7:0] interrupt,
     output reg [1:0] stage = 0
 );
-    localparam MICROCODE_WIDTH = 27;
+    localparam MICROCODE_WIDTH = 26;
 
     reg [31:0] current_instruction = 3;
     wire [9:0] op_id;
@@ -66,7 +66,6 @@ module tiny32
     wire registers_wr;
     wire [31:0] registers_data_wr;
     wire err;
-    wire in_interrupt_clear;
     wire alu_clk;
     wire [1:0] alu_op1_source;
     wire [2:0] alu_op2_source;
@@ -113,12 +112,11 @@ module tiny32
     assign set_pc = current_microinstruction[7];
     assign pc_source = current_microinstruction[9:8];
     assign registers_wr_data_source = current_microinstruction[11:10];
-    assign in_interrupt_clear = current_microinstruction[12];
-    assign alu_clk = current_microinstruction[13];
-    assign alu_op1_source = current_microinstruction[15:14];
-    assign alu_op2_source = current_microinstruction[18:16];
-    assign alu_op = current_microinstruction[22:19];
-    assign data_selector = current_microinstruction[26:23];
+    assign alu_clk = current_microinstruction[12];
+    assign alu_op1_source = current_microinstruction[14:13];
+    assign alu_op2_source = current_microinstruction[17:15];
+    assign alu_op = current_microinstruction[21:18];
+    assign data_selector = current_microinstruction[25:22];
 
     assign op_id = {op, func3, func7};
 
@@ -322,8 +320,6 @@ module tiny32
                             saved_pc <= pc;
                             pc <= {26'h0, interrupt_no, 2'b00};
                         end
-                        if (in_interrupt_clear)
-                            in_interrupt <= 0;
                     end
                 end
                 1: begin
@@ -339,8 +335,11 @@ module tiny32
                 3: begin
                     if (go) begin
                         data_load <= data_in;
-                        if (set_pc)
+                        if (set_pc) begin
+                            if (pc_source == 2'b11) // reti command
+                                in_interrupt <= 0;
                             pc <= pc_source_f1(pc_source) + pc_source_f2(pc_source);
+                        end
                         else
                             pc <= pc + 4;
                         wfi <= op_decoder_result[5:0] == 0;

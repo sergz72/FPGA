@@ -8,5 +8,3 @@ Tools (gcc, binutils, etc..) can be obtained via the [RISC-V Website](https://ri
 Tiny32 is free and open hardware licensed under the MIT license.
 
 Tiny32 passes all RV32I tests.
-
-WARNING - Interrupt controller is untested.
