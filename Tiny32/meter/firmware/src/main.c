@@ -1,9 +1,8 @@
-#define LED_ADDRESS ((volatile int*)0xC0000000)
+#define LED_ADDRESS ((volatile char*)0xC0000000)
 
-static int state = 7;
+static char state = 7;
 
 int wfi(void);
-int getq(void);
 
 extern int interrupt;
 

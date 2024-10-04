@@ -105,12 +105,14 @@ ROM_BITS = 10)
     end
 
     picorv32 #(.ENABLE_IRQ(1),
-               .ENABLE_FAST_MUL(1),
-               .ENABLE_DIV(1),
+//               .ENABLE_FAST_MUL(1),
+//               .ENABLE_DIV(1),
                .STACKADDR(RAM_END),
                .PROGADDR_IRQ(32'h10),
-               .BARREL_SHIFTER(1),
-               .ENABLE_IRQ_TIMER(0)
+//               .BARREL_SHIFTER(1),
+               .ENABLE_IRQ_TIMER(0),
+               .ENABLE_COUNTERS(0),
+               .ENABLE_COUNTERS64(0)
         )
         cpu(.clk(cpu_clk),
                 .resetn(reset),
