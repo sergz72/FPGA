@@ -50,8 +50,7 @@ ROM_BITS = 10)
 `endif
 
     reg [TIMER_BITS - 1:0] timer = 0;
-    reg interrupt = 0;
-    wire in_interrupt;
+    reg timer_interrupt = 0;
 
 `ifndef NO_INOUT_PINS
     reg scl = 1;
@@ -62,7 +61,7 @@ ROM_BITS = 10)
     wire [31:0] address;
 `endif
 
-    wire [7:0] irq;
+    wire [7:0] irq, interrupt_ack;
     wire [31:0] data_in, mem_rdata;
     reg [31:0] rom_rdata, ram_rdata, ports_rdata;
     wire [3:0] nwr;
@@ -81,7 +80,7 @@ ROM_BITS = 10)
     reg [7:0] ram3 [0:(1<<RAM_BITS)-1];
     reg [7:0] ram4 [0:(1<<RAM_BITS)-1];
 
-    assign irq = {7'h0, interrupt};
+    assign irq = {7'h0, timer_interrupt};
 
     assign cpu_clk = timer[CPU_CLOCK_BIT];
     assign rom_selected = address[31:MEMORY_SELECTOR_START_BIT] === 0;
@@ -100,7 +99,7 @@ ROM_BITS = 10)
 `endif
 
     tiny32 cpu(.clk(cpu_clk), .nrd(nrd), .nwr(nwr), .wfi(wfi), .nreset(reset_in), .address(address), .data_in(mem_rdata), .data_out(data_in), .stage(stage),
-                 .error(error), .hlt(hlt), .ready(ready), .interrupt(irq), .in_interrupt(in_interrupt));
+                 .error(error), .hlt(hlt), .ready(ready), .interrupt(irq), .interrupt_ack(interrupt_ack));
 
     initial begin
         $readmemh("asm/code.hex", rom);
@@ -111,10 +110,10 @@ ROM_BITS = 10)
     end
 
     always @(posedge clk) begin
-        if (in_interrupt)
-            interrupt <= 0;
+        if (interrupt_ack[0])
+            timer_interrupt <= 0;
         else if (timer == {TIMER_BITS{1'b1}})
-            interrupt <= 1;
+            timer_interrupt <= 1;
         timer <= timer + 1;
     end
 

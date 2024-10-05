@@ -22,7 +22,6 @@ module tiny32
     output reg hlt = 0,
     output reg error = 0,
     output reg wfi = 0,
-    output reg in_interrupt = 0,
     output wire [31:0] address,
     input wire [31:0] data_in,
     output wire [31:0] data_out,
@@ -30,6 +29,7 @@ module tiny32
     output wire [3:0] nwr,
     input wire ready,
     input wire [7:0] interrupt,
+    output reg [7:0] interrupt_ack = 0,
     output reg [1:0] stage = 0
 );
     localparam MICROCODE_WIDTH = 26;
@@ -47,6 +47,8 @@ module tiny32
 
     reg start = 0;
     wire clk2, clk3, clk4;
+    reg in_interrupt = 0;
+    reg [7:0] interrupt_pending = 0;
 
     wire [3:0] interrupt_no;
 
@@ -133,7 +135,7 @@ module tiny32
     assign source_address_i = source1_reg_data + { {20{imm12i[11]}}, imm12i };
     assign source_address_s = source1_reg_data + { {20{imm12s[11]}}, imm12s };
 
-    assign interrupt_no = interrupt_no_f(interrupt);
+    assign interrupt_no = interrupt_no_f(interrupt_pending);
 
     assign alu_op1 = alu_op1_f(alu_op1_source);
     assign alu_op2 = alu_op2_f(alu_op2_source);
@@ -283,10 +285,14 @@ module tiny32
         if (error)
             stage <= 0;
         else begin
-            if (!nreset)
+            if (!nreset) begin
                 start <= 0;
-            else if (stage == 3)
+                interrupt_pending <= 0;
+            end
+            else if (stage == 3) begin
                 start <= 1;
+                interrupt_pending <= interrupt;
+            end
             if (ready)
                 stage <= stage + 1;
         end
@@ -315,6 +321,7 @@ module tiny32
         if (!nreset) begin
             current_instruction <= 3;
             in_interrupt <= 0;
+            interrupt_ack <= 0;
             pc <= 0;
             wfi <= 0;
         end
@@ -324,6 +331,7 @@ module tiny32
                     if (gowfi) begin
                         if (interrupt_no != 0 && !in_interrupt) begin
                             in_interrupt <= 1;
+                            interrupt_ack <= interrupt_pending;
                             wfi <= 0;
                             saved_pc <= pc;
                             pc <= {26'h0, interrupt_no, 2'b00};
@@ -344,8 +352,10 @@ module tiny32
                     if (go) begin
                         data_load <= data_in;
                         if (set_pc) begin
-                            if (pc_source == 2'b11) // reti command
+                            if (pc_source == 2'b11) begin // reti command
                                 in_interrupt <= 0;
+                                interrupt_ack <= 0;
+                            end
                             pc <= pc_source_f1(pc_source) + pc_source_f2(pc_source);
                         end
                         else

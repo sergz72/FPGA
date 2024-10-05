@@ -3,11 +3,11 @@ module tiny32_tb;
     localparam RAM_BITS = 10;
 
     wire [31:0] address;
-    wire hlt, error, wfi, nrd, in_interrupt;
+    wire hlt, error, wfi, nrd;
     wire [3:0] nwr;
     wire [1:0] stage;
     wire [31:0] data_in;
-    reg [7:0] interrupt;
+    reg [7:0] interrupt, interrupt_ack;
     reg clk, nreset, ready;
     wire mem_clk;
     wire [RAM_BITS - 1:0] ram_address;
@@ -32,7 +32,7 @@ module tiny32_tb;
     end
 
     tiny32 cpu(.clk(clk), .nrd(nrd), .nwr(nwr), .wfi(wfi), .nreset(nreset), .address(address), .data_in(mem_rdata), .data_out(data_in), .stage(stage),
-                 .error(error), .hlt(hlt), .ready(ready), .interrupt(interrupt), .in_interrupt(in_interrupt));
+                 .error(error), .hlt(hlt), .ready(ready), .interrupt(interrupt), .interrupt_ack(interrupt_ack));
 
     always #1 clk <= ~clk;
     
