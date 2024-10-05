@@ -30,6 +30,10 @@ ROM_BITS = 10)
     output reg scl = 1,
     output reg sda = 1,
 `endif
+`ifdef INTEL
+    output reg reset = 0,
+    input wire reset_in,
+`endif
     input wire con_button,
     input wire psh_button,
     input wire tra, // encoder
@@ -41,7 +45,13 @@ ROM_BITS = 10)
     localparam RAM_END = RAM_START + (1<<RAM_BITS);
     localparam MEMORY_SELECTOR_START_BIT = 30;
 
+`ifndef INTEL
     reg reset = 0;
+    wire reset_in;
+
+    assign reset_in = reset;
+`endif
+
     reg [TIMER_BITS - 1:0] timer = 0;
     reg interrupt = 0;
 
@@ -115,7 +125,7 @@ ROM_BITS = 10)
                .ENABLE_COUNTERS64(0)
         )
         cpu(.clk(cpu_clk),
-                .resetn(reset),
+                .resetn(reset_in),
                 .trap(trap),
                 .irq(irq),
                 .eoi(eoi),
