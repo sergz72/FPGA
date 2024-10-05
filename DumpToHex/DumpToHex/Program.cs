@@ -30,7 +30,7 @@ var codeLines = codeFileLines
 start = false;
 
 var roDataLines = dataFileLines
-    .SelectMany(l => BuildDataLines(l, ".rodata"))
+    .SelectMany(l => BuildDataLines(l, ".rodata", ".srodata"))
     .ToList();
 
 codeLines.AddRange(roDataLines);
@@ -39,7 +39,7 @@ File.WriteAllLines(codeFileName, codeLines);
 start = false;
 
 var dataLines = dataFileLines
-    .SelectMany(l => BuildDataLines(l, ".data"))
+    .SelectMany(l => BuildDataLines(l, ".data", ".sdata"))
     .ToList();
 if (dataLines.Count == 0) return;
 
@@ -62,14 +62,15 @@ for (var idx = 1; idx <= count; idx++)
 
 return;
 
-List<string> BuildDataLines(string line, string section)
+List<string> BuildDataLines(string line, params string[] sections)
 {
     if (line.Length == 0)
         return [];
 
     if (line.StartsWith(contentsLineStart))
     {
-        start = line[contentsLineStart.Length..].StartsWith(section);
+        var l = line[contentsLineStart.Length..];
+        start = sections.Any(s => l.StartsWith(s));
         return [];
     }
 
