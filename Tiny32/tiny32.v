@@ -22,6 +22,7 @@ module tiny32
     output reg hlt = 0,
     output reg error = 0,
     output reg wfi = 0,
+    output reg in_interrupt = 0,
     output wire [31:0] address,
     input wire [31:0] data_in,
     output wire [31:0] data_out,
@@ -47,7 +48,6 @@ module tiny32
     reg start = 0;
     wire clk2, clk3, clk4;
 
-    reg in_interrupt = 0;
     wire [3:0] interrupt_no;
 
     reg [31:0] pc, saved_pc;
@@ -263,10 +263,16 @@ module tiny32
 `ifndef NO_DIV
                 12: alu_out <= $signed(alu_op1) / $signed(alu_op2);
                 13: alu_out <= alu_op1 / alu_op2;
-                //14: alu_out <= $signed(alu_op1) % $signed(alu_op2);
+`ifdef HARD_REM
+                14: alu_out <= $signed(alu_op1) % $signed(alu_op2);
+`else
                 14: alu_out <= $signed(alu_op1) - ($signed(alu_op1) / $signed(alu_op2)) * $signed(alu_op2);
-                //15: alu_out <= alu_op1 % alu_op2;
+`endif
+`ifdef HARD_REM
+                15: alu_out <= alu_op1 % alu_op2;
+`else
                 15: alu_out <= alu_op1 - (alu_op1 / alu_op2) * alu_op2;
+`endif
 `endif
                 default: alu_out <= 0;
             endcase

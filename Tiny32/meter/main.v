@@ -51,6 +51,7 @@ ROM_BITS = 10)
 
     reg [TIMER_BITS - 1:0] timer = 0;
     reg interrupt = 0;
+    wire in_interrupt;
 
 `ifndef NO_INOUT_PINS
     reg scl = 1;
@@ -99,7 +100,7 @@ ROM_BITS = 10)
 `endif
 
     tiny32 cpu(.clk(cpu_clk), .nrd(nrd), .nwr(nwr), .wfi(wfi), .nreset(reset_in), .address(address), .data_in(mem_rdata), .data_out(data_in), .stage(stage),
-                 .error(error), .hlt(hlt), .ready(ready), .interrupt(irq));
+                 .error(error), .hlt(hlt), .ready(ready), .interrupt(irq), .in_interrupt(in_interrupt));
 
     initial begin
         $readmemh("asm/code.hex", rom);
@@ -110,10 +111,10 @@ ROM_BITS = 10)
     end
 
     always @(posedge clk) begin
-        if (timer == {TIMER_BITS{1'b1}})
-            interrupt <= 1;
-        else if (interrupt & !wfi)
+        if (in_interrupt)
             interrupt <= 0;
+        else if (timer == {TIMER_BITS{1'b1}})
+            interrupt <= 1;
         timer <= timer + 1;
     end
 
