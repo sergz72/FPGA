@@ -263,8 +263,10 @@ module tiny32
 `ifndef NO_DIV
                 12: alu_out <= $signed(alu_op1) / $signed(alu_op2);
                 13: alu_out <= alu_op1 / alu_op2;
-                14: alu_out <= $signed(alu_op1) % $signed(alu_op2);
-                15: alu_out <= alu_op1 % alu_op2;
+                //14: alu_out <= $signed(alu_op1) % $signed(alu_op2);
+                14: alu_out <= $signed(alu_op1) - ($signed(alu_op1) / $signed(alu_op2)) * $signed(alu_op2);
+                //15: alu_out <= alu_op1 % alu_op2;
+                15: alu_out <= alu_op1 - (alu_op1 / alu_op2) * alu_op2;
 `endif
                 default: alu_out <= 0;
             endcase
