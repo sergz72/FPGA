@@ -3,7 +3,7 @@
 `timescale 1 ns / 1 ps
 
 module main
-#(parameter TIMER_INTERRUPT = 0,
+#(parameter
 // 3.375 interrupts/sec
 TIMER_BITS = 23,
 // about 20 ms delay
@@ -17,6 +17,7 @@ ROM_BITS = 10)
 (
     input wire clk,
     output wire error,
+    output reg interrupt = 0,
 `ifdef MEMORY_DEBUG
     output wire [31:0] rom_addr,
 `endif
@@ -42,7 +43,6 @@ ROM_BITS = 10)
 
     reg reset = 0;
     reg [TIMER_BITS - 1:0] timer = 0;
-    reg interrupt = 0;
 
 `ifndef NO_INOUT_PINS
     reg scl = 1;
@@ -127,12 +127,10 @@ ROM_BITS = 10)
     assign dBus_cmd_ready = 1'b1;
 
     always @(posedge clk) begin
-/*        if (TIMER_INTERRUPT != 0) begin
-            if (timer == {TIMER_BITS{1'b1}})
-                interrupt <= 1;
-            else if (eoi[0])
-                interrupt <= 0;
-        end*/
+        if (timer == {TIMER_BITS{1'b1}})
+            interrupt <= 1;
+//            else if (eoi[0])
+//                interrupt <= 0;
         timer <= timer + 1;
     end
 
