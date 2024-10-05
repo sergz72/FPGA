@@ -3,8 +3,8 @@ ENTRY( _start )
 
 MEMORY
 { 
-  ROM   (rx)  : ORIGIN = 0x00000000, LENGTH = 4K
-  RAM   (rwx) : ORIGIN = 0x40000000, LENGTH = 4K 
+  ROM   (rx) : ORIGIN = 0x00000000, LENGTH = 4K
+  RAM   (rw) : ORIGIN = 0x40000000, LENGTH = 4K
 }
 
 SECTIONS
@@ -20,15 +20,28 @@ SECTIONS
     *(.rodata)
     *(.srodata)
   } >ROM
-  .data :
+
+  . = ALIGN(4);
+  
+  _sidata = .;
+  .data : AT(_sidata)
   {
     *(.sdata)
     *(.data)
-    *(.bss)
   } >RAM
 
-    .stack ORIGIN(RAM) + LENGTH(RAM) - stack_size :
+  .bss :
   {
+    PROVIDE( _bss_start = . );
+    *(.sbss*)
+    *(.bss .bss.*)
+    *(COMMON)
+    PROVIDE( _bss_end = . );
+  } >RAM
+
+  .stack ORIGIN(RAM) + LENGTH(RAM) - stack_size :
+  {
+    PROVIDE( _heap_end = . );
     . = stack_size;  
     PROVIDE( _sp = . ); 
   } >RAM
