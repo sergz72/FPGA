@@ -64,18 +64,21 @@ module uart1rx
                     start <= !rx;
                     if (!rx) begin
                         counter <= CLOCK_DIV - 1;
-                        bit_counter <= 8;
+                        bit_counter <= 9;
                     end
                 end
                 else begin
-                    if (bit_counter != 1)
+                    if (bit_counter != 1) begin
                         counter <= CLOCK_DIV - 1;
+                        data <= {rx, data[7:1]};
+                    end
                     else begin
-                        interrupt <= 1;
+                        // stop bit
+                        if (rx)
+                            interrupt <= 1;
                         start <= 0;
                     end
                     bit_counter <= bit_counter - 1;
-                    data <= {rx, data[7:1]};
                 end
             end
         end
