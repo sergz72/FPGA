@@ -17,7 +17,7 @@ ROM_BITS = 10)
 (
     input wire clk,
     output wire error,
-    output reg interrupt = 0,
+    output wire wfi,
 `ifdef MEMORY_DEBUG
     output wire [31:0] rom_addr,
 `endif
@@ -37,12 +37,12 @@ ROM_BITS = 10)
     input wire bak_button,
     output reg led = 1
 );
-    localparam RAM_START = 32'h40000000;
-    localparam RAM_END = RAM_START + (1<<RAM_BITS) - 1;
     localparam MEMORY_SELECTOR_START_BIT = 30;
 
     reg reset = 0;
     reg [TIMER_BITS - 1:0] timer = 0;
+    reg timer_interrupt = 0;
+    reg timer_interrupt_clear = 0;
 
 `ifndef NO_INOUT_PINS
     reg scl = 1;
@@ -108,9 +108,10 @@ ROM_BITS = 10)
                 .iBus_rsp_valid(iBus_rsp_valid),
                 .iBus_rsp_payload_error(iBusError),
                 .iBus_rsp_payload_inst(rom_rdata),
-                .timerInterrupt(interrupt),
+                .timerInterrupt(timer_interrupt),
                 .externalInterrupt(1'h0),
                 .softwareInterrupt(1'h0),
+                .CsrPlugin_inWfi(wfi),
                 .dBus_cmd_valid(dBus_cmd_valid),
                 .dBus_cmd_ready(dBus_cmd_ready),
                 .dBus_cmd_payload_wr(wr),
@@ -128,9 +129,9 @@ ROM_BITS = 10)
 
     always @(posedge clk) begin
         if (timer == {TIMER_BITS{1'b1}})
-            interrupt <= 1;
-//            else if (eoi[0])
-//                interrupt <= 0;
+            timer_interrupt <= 1;
+            else if (timer_interrupt_clear)
+                timer_interrupt <= 0;
         timer <= timer + 1;
     end
 
@@ -170,6 +171,7 @@ ROM_BITS = 10)
             ports_rdata <= {25'b0, con_button, psh_button, tra, trb, bak_button, scl_in, sda_in};
 `endif
             if (wr & mem_wr_mask[0]) {led, scl, sda} <= mem_wdata[2:0];
+            if (wr & mem_wr_mask[1]) timer_interrupt_clear <= mem_wdata[8];
         end
     end
 

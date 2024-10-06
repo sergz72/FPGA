@@ -10,12 +10,12 @@ module test;
     reg psh_button;
     reg tra, trb;
     reg bak_button;
-    wire led, interrupt;
+    wire led, wfi;
 
     main #(.TIMER_BITS(10), .RESET_DELAY_BIT(5), .CPU_CLOCK_BIT(1))
          m(.clk(clk), .error(error), .rom_addr(rom_addr), .scl_io(scl_io), .sda_io(sda_io),
            .con_button(con_button), .psh_button(psh_button), .tra(tra), .trb(trb), .bak_button(bak_button),
-           .led(led), .interrupt(interrupt));
+           .led(led), .wfi(wfi));
 
     pullup(scl_io);
     pullup(sda_io);
@@ -25,7 +25,7 @@ module test;
     initial begin
         $dumpfile("meter_tb.vcd");
         $dumpvars(0, test);
-        $monitor("time=%t interrupt=%d rom_addr=0x%x error=%d scl_io=%d sda_io=%d led=%d", $time, interrupt, rom_addr, error, scl_io, sda_io, led);
+        $monitor("time=%t wfi=%d rom_addr=0x%x error=%d scl_io=%d sda_io=%d led=%d", $time, wfi, rom_addr, error, scl_io, sda_io, led);
         clk = 0;
         con_button = 1;
         psh_button = 1;

@@ -6,6 +6,10 @@ _start:
 	j .
 /*ISR address*/
 isr:
+	lui t0, 0xC0000
+	li t1, 1
+	sb t1, 1(t0)
+	sb zero, 1(t0)
 	mret
 
 start:
@@ -18,18 +22,11 @@ next:
 	addi a0, a0, 4
 	j next
 done:
+	// enable interrupts
 	csrsi mstatus, 8
-	li t1, 0x800
+	// enable timer interrupt
+	li t1, 0x80
 	csrw mie, t1
-
-set_priv:
-    li x1, 3 << 11
-    li x2, 1 << 11
-    csrc mstatus, x1
-    csrs mstatus, x2
-    auipc x1, 0
-    addi x1, x1, 20
-    csrw mepc, x1
 
 	call main
 	j .

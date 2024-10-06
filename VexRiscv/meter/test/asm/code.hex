@@ -1,46 +1,36 @@
 // 00000000 <_start>:
 40001117 //       0: auipc	sp,0x40001
 00010113 //       4: mv	sp,sp
-00c0006f //       8: j	14 <start>
+01c0006f //       8: j	24 <start>
 0000006f //       c: j	c <_start+0xc>
 // 00000010 <isr>:
-30200073 //      10: mret
-// 00000014 <start>:
-40000517 //      14: auipc	a0,0x40000
-ff050513 //      18: addi	a0,a0,-16 # 40000004 <interrupt>
-40000597 //      1c: auipc	a1,0x40000
-fec58593 //      20: addi	a1,a1,-20 # 40000008 <_bss_end>
-// 00000024 <next>:
-00b50863 //      24: beq	a0,a1,34 <done>
-00052023 //      28: sw	zero,0(a0)
-00450513 //      2c: addi	a0,a0,4
-ff5ff06f //      30: j	24 <next>
-// 00000034 <done>:
-30046073 //      34: csrsi	mstatus,8
-00001337 //      38: lui	t1,0x1
-80030313 //      3c: addi	t1,t1,-2048 # 800 <stack_size+0x700>
-30431073 //      40: csrw	mie,t1
-// 00000044 <set_priv>:
-000020b7 //      44: lui	ra,0x2
-80008093 //      48: addi	ra,ra,-2048 # 1800 <stack_size+0x1700>
-00001137 //      4c: lui	sp,0x1
-80010113 //      50: addi	sp,sp,-2048 # 800 <stack_size+0x700>
-3000b073 //      54: csrc	mstatus,ra
-30012073 //      58: csrs	mstatus,sp
-00000097 //      5c: auipc	ra,0x0
-01408093 //      60: addi	ra,ra,20 # 70 <main>
-34109073 //      64: csrw	mepc,ra
-008000ef //      68: jal	ra,70 <main>
-0000006f //      6c: j	6c <set_priv+0x28>
-// 00000070 <main>:
-400006b7 //      70: lui	a3,0x40000
-0006a223 //      74: sw	zero,4(a3) # 40000004 <interrupt>
-40000737 //      78: lui	a4,0x40000
-c0000637 //      7c: lui	a2,0xc0000
-10500073 //      80: wfi
-00072783 //      84: lw	a5,0(a4) # 40000000 <state>
-0006a223 //      88: sw	zero,4(a3)
-0047c793 //      8c: xori	a5,a5,4
-00f72023 //      90: sw	a5,0(a4)
-00f62023 //      94: sw	a5,0(a2) # c0000000 <_sp+0x7ffff000>
-fe9ff06f //      98: j	80 <main+0x10>
+c00002b7 //      10: lui	t0,0xc0000
+00100313 //      14: li	t1,1
+006280a3 //      18: sb	t1,1(t0) # c0000001 <_sp+0x7ffff001>
+000280a3 //      1c: sb	zero,1(t0)
+30200073 //      20: mret
+// 00000024 <start>:
+40000517 //      24: auipc	a0,0x40000
+fdd50513 //      28: addi	a0,a0,-35 # 40000001 <_bss_end>
+40000597 //      2c: auipc	a1,0x40000
+fd558593 //      30: addi	a1,a1,-43 # 40000001 <_bss_end>
+// 00000034 <next>:
+00b50863 //      34: beq	a0,a1,44 <done>
+00052023 //      38: sw	zero,0(a0)
+00450513 //      3c: addi	a0,a0,4
+ff5ff06f //      40: j	34 <next>
+// 00000044 <done>:
+30046073 //      44: csrsi	mstatus,8
+08000313 //      48: li	t1,128
+30431073 //      4c: csrw	mie,t1
+008000ef //      50: jal	ra,58 <main>
+0000006f //      54: j	54 <done+0x10>
+// 00000058 <main>:
+40000737 //      58: lui	a4,0x40000
+c00006b7 //      5c: lui	a3,0xc0000
+10500073 //      60: wfi
+00074783 //      64: lbu	a5,0(a4) # 40000000 <state>
+0047c793 //      68: xori	a5,a5,4
+00f70023 //      6c: sb	a5,0(a4)
+00f68023 //      70: sb	a5,0(a3) # c0000000 <_sp+0x7ffff000>
+fedff06f //      74: j	60 <main+0x8>
