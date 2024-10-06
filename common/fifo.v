@@ -13,8 +13,8 @@ module fifo
     reg [WIDTH-1:0] data [0:(1<<SIZE_BITS) - 1];
     wire rclk, wclk;
 
-    rclk = nrst & nrd;
-    wclk = nrst & nwr;
+    assign rclk = nrst & nrd;
+    assign wclk = nrst & nwr;
 
     always@(negedge rclk) begin
         if(!nrst)
