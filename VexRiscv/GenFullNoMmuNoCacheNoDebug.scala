@@ -13,7 +13,7 @@ object GenFullNoMmuNoCacheNoDebug extends App{
     config = VexRiscvConfig(
       plugins = List(
         new IBusSimplePlugin(
-          resetVector = 0x0l,
+          resetVector = 0x08000000l,
           cmdForkOnSecondStage = false,
           cmdForkPersistence = false,
           prediction = STATIC,

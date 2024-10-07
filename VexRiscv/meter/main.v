@@ -8,8 +8,8 @@ module main
 UART_CLOCK_DIV = 234,
 UART_CLOCK_COUNTER_BITS = 8,
 I2C_PORTS = 1,
-// 3.375 interrupts/sec
-TIMER_BITS = 23,
+// 6.75 interrupts/sec
+TIMER_BITS = 22,
 // about 20 ms delay
 RESET_DELAY_BIT = 19,
 // div = 64
@@ -59,8 +59,8 @@ ROM_BITS = 13)
 `ifndef NO_INOUT_PINS
     reg scl0 = 1;
     reg sda0 = 1;
-    reg [I2C_PORTS - 1:0] scl = {I2C_PORTS{1'b1}},
-    reg [I2C_PORTS - 1:0] sda = {I2C_PORTS{1'b1}},
+    reg [I2C_PORTS - 1:0] scl = {I2C_PORTS{1'b1}};
+    reg [I2C_PORTS - 1:0] sda = {I2C_PORTS{1'b1}};
 `endif
 
 `ifndef MEMORY_DEBUG
@@ -72,7 +72,7 @@ ROM_BITS = 13)
     wire iBus_cmd_ready;
 
     wire dBus_cmd_ready;
-    wire dBusError, iBusError;
+    wire dBusError, iBusError, dBusDeviceSelected;
     wire dBus_cmd_valid;
     reg dBus_rsp_ready = 0;
 
@@ -82,7 +82,7 @@ ROM_BITS = 13)
     wire [1:0] mem_size;
     wire wr;
     wire cpu_clk;
-    wire rom_selected, rodata_selected, ram_selected, ports_selected;
+    wire rom_selected, rodata_selected, ram_selected, ports_selected, uart_data_selected, uart_control_selected;
     reg ram_selectedf, ports_selectedf, uart_control_selectedf, rodata_selectedf;
 
     wire uart_rx_fifo_empty, uart_tx_fifo_full;
@@ -102,9 +102,9 @@ ROM_BITS = 13)
     assign nerror = !error;
     assign nwfi = !wfi;
     
-    assign rom_selected = iBus_cmd_valid & rom_addr[31:MEMORY_SELECTOR_START_BIT] === 0;
-    assign rodata_selected = dBus_cmd_valid & rom_addr[31:MEMORY_SELECTOR_START_BIT] === 0;
-    assign ram_selected = dBus_cmd_valid & mem_addr[31:MEMORY_SELECTOR_START_BIT] === 1;
+    assign rom_selected = iBus_cmd_valid & rom_addr[31:MEMORY_SELECTOR_START_BIT] === 1;
+    assign rodata_selected = dBus_cmd_valid & mem_addr[31:MEMORY_SELECTOR_START_BIT] === 1;
+    assign ram_selected = dBus_cmd_valid & mem_addr[31:MEMORY_SELECTOR_START_BIT] === 2;
 
     assign uart_data_selected = dBus_cmd_valid & mem_addr[31:MEMORY_SELECTOR_START_BIT] === 29;
     assign uart_control_selected = dBus_cmd_valid & mem_addr[31:MEMORY_SELECTOR_START_BIT] === 30;
@@ -119,7 +119,8 @@ ROM_BITS = 13)
     assign uart_nwr = !(uart_data_selected & wr);
 
     assign iBusError = iBus_cmd_valid & !rom_selected;
-    assign dBusError = dBus_cmd_valid & !(rodata_selected | ram_selected | ports_selected | uart_control_selected | uart_data_selected);
+    assign dBusDeviceSelected = rodata_selected | ram_selected | ports_selected | uart_control_selected | uart_data_selected;
+    assign dBusError = dBus_cmd_valid & !dBusDeviceSelected;
     assign error = iBusError | dBusError;
 
 `ifndef NO_INOUT_PINS
@@ -167,7 +168,7 @@ ROM_BITS = 13)
     );
 
     uart_fifo #(.CLOCK_DIV(UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(UART_CLOCK_COUNTER_BITS))
-        ufifo(.clk(clk), .tx(tx), .rx(rx), .data_in(mem_wdata[7:0]), .data_out(data_out), .nwr(uart_nwr), .nrd(uart_nrd), .nreset(reset),
+        ufifo(.clk(clk), .tx(tx), .rx(rx), .data_in(mem_wdata[7:0]), .data_out(uart_data_out), .nwr(uart_nwr), .nrd(uart_nrd), .nreset(reset),
                 .full(uart_tx_fifo_full), .empty(uart_rx_fifo_empty));
 
     // todo i2c_display, i2c_others, spi
@@ -191,7 +192,7 @@ ROM_BITS = 13)
         if (!reset)
             dBus_rsp_ready  <= 1'b0;
         else
-            dBus_rsp_ready <= (ram_selected | ports_selected) & !wr;
+            dBus_rsp_ready <= dBusDeviceSelected & !wr;
     end
 
     always @(posedge cpu_clk) begin
