@@ -14,8 +14,8 @@ TIMER_BITS = 22,
 RESET_DELAY_BIT = 19,
 // div = 64
 CPU_CLOCK_BIT = 5,
-// 1k 32 bit words RAM
-RAM_BITS = 10,
+// 2k 32 bit words RAM
+RAM_BITS = 11,
 // 8k 32 bit words ROM
 ROM_BITS = 13)
 (

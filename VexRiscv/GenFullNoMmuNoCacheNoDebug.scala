@@ -57,7 +57,7 @@ object GenFullNoMmuNoCacheNoDebug extends App{
           misaExtensionsInit = 66,
           misaAccess     = CsrAccess.NONE,
           mtvecAccess    = CsrAccess.NONE,
-          mtvecInit      = 0x10l,
+          mtvecInit      = 0x08000010l,
           mepcAccess     = CsrAccess.READ_WRITE,
           mscratchGen    = false,
           mcauseAccess   = CsrAccess.READ_ONLY,
