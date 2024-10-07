@@ -52,8 +52,3 @@ void DrawLcdText(int x, int col, int y, char* text, const FONT_INFO* f, unsigned
     LcdDrawText(x + col * (f->character_max_width + f->character_spacing), y, text, f, textColor, bkColor, NULL);
 }
 
-//todo
-void LcdPrintf(const char *format, unsigned int column, unsigned int row, const FONT_INFO *f, int white_on_black, ...)
-{
-}
-

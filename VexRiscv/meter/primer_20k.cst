@@ -1,0 +1,29 @@
+IO_LOC clk H11;
+IO_PORT clk PULL_MODE=UP;
+
+IO_LOC "led" L14;
+IO_PORT "led" PULL_MODE=UP DRIVE=4;
+IO_LOC "nerror" L16;
+IO_PORT "nerror" PULL_MODE=UP DRIVE=4;
+IO_LOC "nwfi" N14;
+IO_PORT "nwfi" PULL_MODE=UP DRIVE=4;
+
+IO_LOC "scl0_io" P9;
+IO_PORT "scl0_io" PULL_MODE=UP DRIVE=4;
+IO_LOC "sda0_io" T9;
+IO_PORT "sda0_io" PULL_MODE=UP DRIVE=4;
+IO_LOC "con_button" P8;
+IO_PORT "con_button" PULL_MODE=UP;
+IO_LOC "psh_button" T8;
+IO_PORT "psh_button" PULL_MODE=UP;
+IO_LOC "tra" R8;
+IO_PORT "tra" PULL_MODE=UP;
+IO_LOC "trb" T7;
+IO_PORT "trb" PULL_MODE=UP;
+IO_LOC "bak_button" P6;
+IO_PORT "bak_button" PULL_MODE=UP;
+
+IO_LOC "rx" T13;
+IO_PORT "rx" PULL_MODE=UP;
+IO_LOC "tx" M11;
+IO_PORT "tx" PULL_MODE=UP DRIVE=4;

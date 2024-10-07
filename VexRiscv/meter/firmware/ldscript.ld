@@ -21,8 +21,13 @@ SECTIONS
   {
     KEEP(*(.reset_vec)) /* Startup code */
     *(.text)
+    *(.text*)
     *(.rodata)
     *(.srodata)
+
+    KEEP (*(.init))
+    KEEP (*(.fini))
+
   } >ROM
 
   . = ALIGN(4);

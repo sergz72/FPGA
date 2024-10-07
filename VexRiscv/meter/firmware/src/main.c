@@ -80,10 +80,10 @@ int main(void)
     asm volatile ("wfi");
     led_handler();
     uart_handler();
-    BuildDeviceData(measurement_no);
-    keyboard_status = keyboard_get_filtered_status();
+    //BuildDeviceData(measurement_no);
+    //keyboard_status = keyboard_get_filtered_status();
     data_ready = measurement_no == 10;
-    Process_Timer_Event(data_ready, keyboard_status);
+    //Process_Timer_Event(data_ready, keyboard_status);
     if (data_ready)
     {
       measurement_no = 0;
