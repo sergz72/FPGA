@@ -2,16 +2,14 @@
 
 /*
 
-clk|stage|rd |wr |jmp|br     |alu|load|store
-0  |0    |1  |1  |may be registers_wr
-1  |0    |1  |1  |interrupt handling
-0  |1    |0  |1  |
-1  |1    |0  |1  |instruction_load
-   |     |   |   |instruction decode
-0  |2    |1  |1/0|registers load
-1  |2    |1  |1/0|microcode load
-0  |3    |1/0|1  |may be alu_clk,
-1  |3    |1/0|1  |set pc
+wait|stage|rd |wr |jmp|br     |alu|load|store
+?   |0    |1  |1  |may be registers_wr,may be wfi, interrupt handling
+?   |1    |0  |1  |instruction_load, may be wait
+    |1    |   |   |instruction decode, registers_load
+0   |2    |1  |1  |microcode load
+?   |3    |1/0|1/0|may be load/store, may be wait
+?   |3    |1  |1  |may be alu_clk, may be wait
+0   |4    |1  |1  |set pc
 
 */
 
@@ -30,7 +28,7 @@ module tiny32
     input wire ready,
     input wire [7:0] interrupt,
     output reg [7:0] interrupt_ack = 0,
-    output reg [1:0] stage = 0
+    output reg [2:0] stage = 0
 );
     localparam MICROCODE_WIDTH = 26;
 
@@ -42,14 +40,16 @@ module tiny32
     wire [11:0] imm12i, imm12s, imm12b;
     wire [19:0] imm20u, imm20j;
     wire [31:0] source_address_i, source_address_s;
-    wire [4:0] source1_reg, source2_reg;
+    wire [4:0] source1_reg_in, source2_reg_in, source2_reg;
     wire [4:0] dest_reg;
 
     reg start = 0;
-    wire clk2, clk3, clk4;
+    wire stop, main_clk, clk1, clk2, clk3, clk4, clk5;
+    reg next_stage = 1;
+    reg next_stage_alu = 1;
+
     reg in_interrupt = 0;
     reg [7:0] interrupt_pending = 0;
-
     wire [3:0] interrupt_no;
 
     reg [31:0] pc, saved_pc;
@@ -81,21 +81,42 @@ module tiny32
     reg [31:0] alu_out, alu_out2;
 
     wire z;
-    reg c;
+    reg c, dc1, dc2;
     wire signed_lt;
 
-    wire go, gowfi;
-    
+    wire nogo, go;
+
+`ifdef DIV
+    reg div_start = 0;
+    reg div_signed = 0;
+    wire div_ready;
+    wire [31:0] quotient, remainder;
+
+    div d(.clk(!clk), .nrst(nreset), .dividend(alu_op1), .divisor(alu_op2), .start(div_start), .signed_ope(div_signed),
+            .quotient(quotient), .remainder(remainder), .ready(div_ready));
+`endif
+
     initial begin
         $readmemh("decoder.mem", op_decoder);
         $readmemh("microcode.mem", microcode);
     end
 
+    assign stop = hlt | error;
+    assign main_clk = stop | clk;
+    assign nogo = stop | !start;
+    assign go = !stop & start;
+
+    assign clk1 = stage == 0;
     assign clk2 = stage == 1;
     assign clk3 = stage == 2;
     assign clk4 = stage == 3;
+    assign clk5 = stage == 4;
 
-    assign source1_reg = current_instruction[19:15];
+    assign nrd = nogo | !(clk2 | (load & clk4));
+    assign nwr = go & clk4 ? store : 4'b1111;
+
+    assign source1_reg_in = data_in[19:15];
+    assign source2_reg_in = data_in[24:20];
     assign source2_reg = current_instruction[24:20];
     assign dest_reg = current_instruction[11:7];
     assign op = data_in[6:2];
@@ -122,15 +143,10 @@ module tiny32
 
     assign op_id = {op, func3, func7};
 
+    // stage 2,3
     assign address = stage[1] & (load || store != 4'b1111) ? (load ? source_address_i : source_address_s) : pc;
     
     assign data_out = source2_reg_data << {data_selector[1:0], 3'b000};
-
-    assign gowfi = start & ready & !error & !hlt;
-    assign go = gowfi &  !wfi;
-
-    assign nrd = !go | !(clk2 | (load & clk4));
-    assign nwr = go & clk4 ? store : 4'b1111;
 
     assign source_address_i = source1_reg_data + { {20{imm12i[11]}}, imm12i };
     assign source_address_s = source1_reg_data + { {20{imm12s[11]}}, imm12s };
@@ -245,8 +261,10 @@ module tiny32
         endcase
     endfunction
 
-    always @(negedge clk3) begin
-        if (alu_clk) begin
+    always @(posedge clk) begin
+        if (!nreset)
+            next_stage_alu <= 1;
+        else if (clk4 & alu_clk) begin
             case (alu_op)
                 0: alu_out <= alu_op1 << alu_op2;
                 1: alu_out <= alu_op1 >> alu_op2;
@@ -259,120 +277,175 @@ module tiny32
 `ifndef NO_MUL
                 8: {alu_out2, alu_out} <= alu_op1 * alu_op2;
                 9: {alu_out, alu_out2} <= $signed(alu_op1) * $signed(alu_op2);
-                10: {alu_out, alu_out2} <= $signed(alu_op1) * alu_op2;
+                10: {dc1, dc2, alu_out, alu_out2} <= $signed({alu_op1[31], alu_op1}) * $signed({1'b0, alu_op2});
                 11: {alu_out, alu_out2} <= alu_op1 * alu_op2;
 `endif
-`ifndef NO_DIV
+`ifdef HARD_DIV
                 12: alu_out <= $signed(alu_op1) / $signed(alu_op2);
                 13: alu_out <= alu_op1 / alu_op2;
+`elsif DIV
+                12: begin
+                    if (next_stage_alu) begin
+                        div_signed <= 1;
+                        next_stage_alu <= 0;
+                        div_start <= 1;
+                    end
+                    else begin
+                        next_stage_alu <= div_ready;
+                        alu_out <= quotient;
+                        div_start <= 0;
+                    end
+                end
+                13: begin
+                    if (next_stage_alu) begin
+                        div_signed <= 0;
+                        next_stage_alu <= 0;
+                        div_start <= 1;
+                    end
+                    else begin
+                        next_stage_alu <= div_ready;
+                        alu_out <= quotient;
+                        div_start <= 0;
+                    end
+                end
+`endif
 `ifdef HARD_REM
                 14: alu_out <= $signed(alu_op1) % $signed(alu_op2);
-`else
+`elsif HARD_REM_USING_DIV
                 14: alu_out <= $signed(alu_op1) - ($signed(alu_op1) / $signed(alu_op2)) * $signed(alu_op2);
+`elsif REM
+                14: begin
+                    if (next_stage_alu) begin
+                        div_signed <= 1;
+                        next_stage_alu <= 0;
+                        div_start <= 1;
+                    end
+                    else begin
+                        next_stage_alu <= div_ready;
+                        alu_out <= remainder;
+                        div_start <= 0;
+                    end
+                end
 `endif
 `ifdef HARD_REM
                 15: alu_out <= alu_op1 % alu_op2;
-`else
+`elsif HARD_REM_USING_DIV
                 15: alu_out <= alu_op1 - (alu_op1 / alu_op2) * alu_op2;
-`endif
+`elsif REM
+                15: begin
+                    if (next_stage_alu) begin
+                        div_signed <= 0;
+                        next_stage_alu <= 0;
+                        div_start <= 1;
+                    end
+                    else begin
+                        next_stage_alu <= div_ready;
+                        alu_out <= remainder;
+                        div_start <= 0;
+                    end
+                end
 `endif
                 default: alu_out <= 0;
             endcase
         end
     end
 
-    always @(negedge clk) begin
-        if (error)
-            stage <= 0;
+    always @(negedge main_clk) begin
+        if (!nreset) begin
+            start <= 0;
+            interrupt_pending <= 0;
+        end
         else begin
-            if (!nreset) begin
-                start <= 0;
-                interrupt_pending <= 0;
-            end
-            else if (stage == 3) begin
+            interrupt_pending <= interrupt;
+            if (stage == 4) begin
                 start <= 1;
-                interrupt_pending <= interrupt;
+                stage <= 0;
             end
-            if (ready)
+            else if (next_stage & next_stage_alu)
                 stage <= stage + 1;
         end
     end
 
-    always @(negedge clk) begin
+    always @(posedge clk) begin
         if (!nreset) begin
             hlt <= 0;
             error <= 0;
         end
-        else begin
-            if (go) begin
-                if (clk2) begin
-                    hlt <= op_decoder_result[7] | op_decoder_result[6];
-                    error <= op_decoder_result[6] || pc[1:0] != 0;
-                end
-                else if (clk3) begin
-                    hlt <= err;
-                    error <= err;
-                end
+        else if (start) begin
+            if (clk3) begin
+                hlt <= op_decoder_result[7] | op_decoder_result[6];
+                error <= op_decoder_result[6] || pc[1:0] != 0;
+            end
+            else if (clk4) begin
+                hlt <= err;
+                error <= err;
             end
         end
     end
 
-    always @(posedge clk) begin
+    always @(posedge main_clk) begin
         if (!nreset) begin
             current_instruction <= 3;
             in_interrupt <= 0;
             interrupt_ack <= 0;
             pc <= 0;
             wfi <= 0;
+            next_stage <= 1;
         end
-        else begin
+        else if (start) begin
             case (stage)
                 0: begin
-                    if (gowfi) begin
-                        if (interrupt_no != 0 && !in_interrupt) begin
-                            in_interrupt <= 1;
-                            interrupt_ack <= interrupt_pending;
-                            wfi <= 0;
-                            saved_pc <= pc;
-                            pc <= {26'h0, interrupt_no, 2'b00};
-                        end
+                    if (interrupt_no != 0 && !in_interrupt) begin
+                        in_interrupt <= 1;
+                        interrupt_ack <= interrupt_pending;
+                        wfi <= 0;
+                        saved_pc <= pc;
+                        pc <= {26'h0, interrupt_no, 2'b00};
+                        next_stage <= 1;
                     end
+                    else
+                        next_stage <= !wfi;
                 end
                 1: begin
-                    if (go) begin
+                    if (ready) begin
                         current_instruction <= data_in;
                         op_decoder_result <= data_in[1:0] != 2'b11 ? 8'b11000001 : op_decoder[op_id];
+                        next_stage <= 1;
                     end
+                    else
+                        next_stage <= 0;
                 end
-                2: begin
-                    if (go)
-                        current_microinstruction <= microcode[{op_decoder_result[5:0], source_address_i[1:0], source_address_s[1:0]}];
-                end
+                2: current_microinstruction <= microcode[{op_decoder_result[5:0], source_address_i[1:0], source_address_s[1:0]}];
                 3: begin
-                    if (go) begin
+                    if (ready) begin
                         data_load <= data_in;
-                        if (set_pc) begin
-                            if (pc_source == 2'b11) begin // reti command
-                                in_interrupt <= 0;
-                                interrupt_ack <= 0;
-                            end
-                            pc <= pc_source_f1(pc_source) + pc_source_f2(pc_source);
-                        end
-                        else
-                            pc <= pc + 4;
-                        wfi <= op_decoder_result[5:0] == 0;
+                        next_stage <= 1;
                     end
+                    else
+                        next_stage <= 0;
+                end
+                4: begin
+                    if (set_pc) begin
+                        if (pc_source == 2'b11) begin // reti command
+                            in_interrupt <= 0;
+                            interrupt_ack <= 0;
+                        end
+                        pc <= pc_source_f1(pc_source) + pc_source_f2(pc_source);
+                    end
+                    else
+                        pc <= pc + 4;
+                    wfi <= op_decoder_result[5:0] == 0;
                 end
             endcase
         end
     end
 
-    always @(negedge clk) begin
-        if (clk4 & !registers_wr)
+    always @(posedge clk) begin
+        if (clk1 & !registers_wr)
             registers[dest_reg] <= registers_data_wr;
         else if (clk2) begin
-            source1_reg_data <= source1_reg == 0 ? 0 : registers[source1_reg];
-            source2_reg_data <= source2_reg == 0 ? 0 : registers[source2_reg];
+            source1_reg_data <= source1_reg_in == 0 ? 0 : registers[source1_reg_in];
+            source2_reg_data <= source2_reg_in == 0 ? 0 : registers[source2_reg_in];
         end
     end
 endmodule
