@@ -3,8 +3,10 @@
 0000 // 0002 halt
 0220 // 0003 jmp pc+2
 0000 // 0004 halt
-0137 // 0005 mvh X, 01
-0032 // 0006 mvl X, 00, X = 0x0100
-005C // 0007 mov (X), A
-0042 // 0008 mov A, (X)
-0000 // 0009 halt
+FF36 // 0005 mvh X, FF
+FF32 // 0006 mvl X, FF, X = 0xFFFF
+0034 // 0007 mvh A, 0
+0030 // 0008 mvl A, 0
+0170 // 0009 xori A, 1
+0058 // 000A mov (X), A
+FE2F // 000B jmp pc-2

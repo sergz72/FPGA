@@ -95,14 +95,14 @@ module tiny16
     assign movrm = opcode == 4;
     // format |offset,8bit|4'h5|dst,2bit,src,2bit|
     assign movmr = opcode == 5;
-    // format |offset,8bit|4'h5|dst,2bit,src,2bit|
+    // format |offset,8bit|4'h6|dst,2bit,src,2bit|
     assign movrr = opcode == 6;
-    // format |value,8bit|4'h6|0value,1bit,reg,2bit|
-    assign xori = current_instruction[7:3] == 5'hC;
-    // format |value,8bit|4'h6|1value,1bit,reg,2bit|
-    assign andi = current_instruction[7:3] == 5'hD;
     // format |value,8bit|4'h7|0value,1bit,reg,2bit|
-    assign ori = current_instruction[7:3] == 5'hE;
+    assign xori = current_instruction[7:3] == 5'hE;
+    // format |value,8bit|4'h7|1value,1bit,reg,2bit|
+    assign andi = current_instruction[7:3] == 5'hF;
+    // format |value,8bit|4'h8|0value,1bit,reg,2bit|
+    assign ori = current_instruction[7:3] == 5'h10;
 
     assign err = !halt & !nop & !br & !jmp & !mvi & !movrm & !movmr & !movrr & !adi & !shr & !shl & !xori & !andi & !ori;
     
@@ -175,9 +175,9 @@ module tiny16
                         registers[dest_reg] <= registers[source_reg];
                     else if (mvi) begin
                         if (hi)
-                            registers[dest_reg][15:8] <= value;
+                            registers[source_reg][15:8] <= value;
                         else
-                            registers[dest_reg][7:0] <= value;
+                            registers[source_reg][7:0] <= value;
                     end
                     else if (adi | shl | shr | xori | andi | ori)
                         registers[source_reg] <= acc;
