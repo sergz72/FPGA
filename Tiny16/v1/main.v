@@ -1,13 +1,12 @@
 module main
-#(parameter ROM_BITS = 4)
+#(parameter ROM_BITS = 4, CPU_CLOCK_BIT = 18, RESET_BIT = 21, COUNTER_BITS = 22)
 (
     input wire clk,
-    output wire nerror,
     output wire nhlt,
     output reg led = 1
 );
     wire [15:0] address;
-    wire nrd, nwr, error, hlt;
+    wire nrd, nwr, hlt;
     wire [3:0] stage;
     wire [15:0] data_out;
     wire [15:0] data_in;
@@ -15,21 +14,19 @@ module main
     wire rom_selected, port_selected;
     wire [ROM_BITS-1:0] rom_address;
     reg nreset = 0;
-    reg [21:0] counter = 0;
+    reg [COUNTER_BITS - 1:0] counter = 0;
 //    wire mem_clk;
 
     reg [15:0] rom [0:(1<<ROM_BITS)-1];
 
     initial begin
-        $display("Loading program...");
         $readmemh("asm/a.out", rom);
     end
 
-    tiny16 cpu(.clk(counter[18]), .rd(nrd), .wr(nwr), .reset(nreset), .address(address), .data_in(data_out), .data_out(data_in), .stage(stage),
-                 .error(error), .hlt(hlt));
+    tiny16 cpu(.clk(counter[CPU_CLOCK_BIT]), .rd(nrd), .wr(nwr), .reset(nreset), .address(address), .data_in(data_out), .data_out(data_in), .stage(stage),
+                 .hlt(hlt));
 
 //    assign mem_clk = rd & wr;
-    assign nerror = !error;
     assign nhlt = !hlt;
     assign data_out = rom_rdata;
     assign rom_address = address[ROM_BITS-1:0];
@@ -40,7 +37,7 @@ module main
         counter <= counter + 1;
     end
 
-    always @(posedge counter[21]) begin
+    always @(posedge counter[RESET_BIT]) begin
         nreset <= 1;
     end
 

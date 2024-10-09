@@ -4,31 +4,41 @@
 
 module main
 #(parameter
-// 3.375 interrupts/sec
-TIMER_BITS = 23,
+// 115200 at 27MHz
+UART_CLOCK_DIV = 234,
+UART_CLOCK_COUNTER_BITS = 8,
+I2C_PORTS = 1,
+// 6.75 interrupts/sec
+TIMER_BITS = 22,
 // about 20 ms delay
 RESET_DELAY_BIT = 19,
 // div = 64
 CPU_CLOCK_BIT = 5,
-// 1k 32 bit words RAM
-RAM_BITS = 10,
-// 1k 32 bit words ROM
-ROM_BITS = 10)
+// 2k 32 bit words RAM
+RAM_BITS = 11,
+// 8k 32 bit words ROM
+ROM_BITS = 13)
 (
     input wire clk,
     output wire trap,
     output wire mem_invalid,
 `ifdef MEMORY_DEBUG
-    output wire [31:0] mem_addr,
+    output wire [31:0] mem_la_addr,
 `endif
 `ifndef NO_INOUT_PINS
-    inout wire scl_io,
-    inout wire sda_io,
+    inout wire scl0_io,
+    inout wire sda0_io,
+    inout wire [I2C_PORTS - 1:0] scl_io,
+    inout wire [I2C_PORTS - 1:0] sda_io,
 `else
-    input wire scl_in,
-    input wire sda_in,
-    output reg scl = 1,
-    output reg sda = 1,
+    input wire scl0_in,
+    input wire sda0_in,
+    output reg scl0 = 1,
+    output reg sda0 = 1,
+    input wire [I2C_PORTS - 1:0] scl_in,
+    input wire [I2C_PORTS - 1:0] sda_in,
+    output reg [I2C_PORTS - 1:0] scl = {I2C_PORTS{1'b1}},
+    output reg [I2C_PORTS - 1:0] sda = {I2C_PORTS{1'b1}},
 `endif
 `ifdef INTEL
     output reg reset = 0,
@@ -39,11 +49,13 @@ ROM_BITS = 10)
     input wire tra, // encoder
     input wire trb, // encoder
     input wire bak_button,
-    output reg led = 1
+    output reg led = 1,
+    output wire tx,
+    input wire rx
 );
-    localparam RAM_START = 32'h40000000;
+    localparam RAM_START = 32'h10000000;
     localparam RAM_END = RAM_START + (1<<RAM_BITS);
-    localparam MEMORY_SELECTOR_START_BIT = 30;
+    localparam MEMORY_SELECTOR_START_BIT = 27;
 
 `ifndef INTEL
     reg reset = 0;
@@ -56,12 +68,14 @@ ROM_BITS = 10)
     reg interrupt = 0;
 
 `ifndef NO_INOUT_PINS
-    reg scl = 1;
-    reg sda = 1;
+    reg scl0 = 1;
+    reg sda0 = 1;
+    reg [I2C_PORTS - 1:0] scl = {I2C_PORTS{1'b1}};
+    reg [I2C_PORTS - 1:0] sda = {I2C_PORTS{1'b1}};
 `endif
 
 `ifndef MEMORY_DEBUG
-    wire [31:0] mem_addr;
+    wire [31:0] mem_la_addr;
 `endif
 
     wire [31:0] irq, eoi, mem_wdata;
@@ -72,7 +86,7 @@ ROM_BITS = 10)
     reg mem_ready = 0;
 	wire mem_la_read;
 	wire mem_la_write;
-	wire [31:0] mem_la_addr;
+	wire [31:0] mem_addr;
 	wire [31:0] mem_la_wdata;
 	wire [ 3:0] mem_la_wstrb;
 	wire pcpi_valid;
@@ -82,9 +96,17 @@ ROM_BITS = 10)
 	wire trace_valid;
 	wire [35:0] trace_data;
     wire cpu_clk;
-    wire rom_selected, ram_selected, ports_selected;
+    wire rom_selected, ram_selected, ports_selected, uart_data_selected, uart_control_selected;
     reg rom_ready = 0;
     reg ram_ready = 0;
+    reg uart_data_ready = 0;
+    reg uart_control_ready = 0;
+    wire [RAM_BITS - 1:0] ram_address;
+    wire [31-MEMORY_SELECTOR_START_BIT:0] memory_selector;
+
+    wire uart_rx_fifo_empty, uart_tx_fifo_full;
+    wire uart_nrd, uart_nwr;
+    wire [7:0] uart_data_out;
 
     reg [31:0] rom [0:(1<<ROM_BITS)-1];
     reg [7:0] ram1 [0:(1<<RAM_BITS)-1];
@@ -94,17 +116,43 @@ ROM_BITS = 10)
 
     assign irq = {28'h0, interrupt, 3'h0};
 
+    assign memory_selector = mem_la_addr[31:MEMORY_SELECTOR_START_BIT];
+
     assign cpu_clk = timer[CPU_CLOCK_BIT];
     assign mem_invalid = mem_valid & !mem_ready;
-    assign rom_selected = mem_valid & mem_addr[31:MEMORY_SELECTOR_START_BIT] === 0;
-    assign ram_selected = mem_valid & mem_addr[31:MEMORY_SELECTOR_START_BIT] === 1;
-    assign ports_selected = mem_valid & mem_addr[31:MEMORY_SELECTOR_START_BIT] === 3;
-    assign mem_rdata = rom_ready ? rom_rdata : (ram_ready ? ram_rdata : ports_rdata);
+    assign rom_selected = memory_selector === 1;
+    assign ram_selected = memory_selector === 2;
+    assign uart_data_selected = memory_selector === 5'h1D;
+    assign uart_control_selected = memory_selector === 5'h1E;
+    assign ports_selected = memory_selector === 5'h1F;
+    assign mem_rdata = mem_rdata_f(memory_selector);
+
+    assign uart_nrd = !(mem_invalid & uart_data_selected & mem_la_read);
+    assign uart_nwr = !(mem_invalid & uart_data_selected & mem_la_write);
+
+    assign ram_address = mem_la_addr[RAM_BITS + 1:2];
 
 `ifndef NO_INOUT_PINS
-    assign scl_io = scl ? 1'bz : 0;
-    assign sda_io = sda ? 1'bz : 0;
+    assign scl0_io = scl0 ? 1'bz : 0;
+    assign sda0_io = sda0 ? 1'bz : 0;
+
+    genvar i;
+    generate
+        for (i = 0; i < I2C_PORTS; i = i + 1) begin
+            assign sda_io[i] = sda[i] ? 1'bz : 0;
+        end
+    endgenerate
 `endif
+
+    function [31:0] mem_rdata_f(input [31-MEMORY_SELECTOR_START_BIT:0] source);
+        case (source)
+            1: mem_rdata_f = rom_rdata;
+            2: mem_rdata_f = ram_rdata;
+            29: mem_rdata_f = {24'h0, uart_data_out};
+            30: mem_rdata_f = {30'h0, uart_rx_fifo_empty, uart_tx_fifo_full};
+            default: mem_rdata_f = ports_rdata;
+        endcase
+    endfunction
 
     initial begin
         $readmemh("asm/code.hex", rom);
@@ -118,10 +166,11 @@ ROM_BITS = 10)
                .ENABLE_FAST_MUL(1),
                .ENABLE_DIV(1),
                .STACKADDR(RAM_END),
-               .PROGADDR_IRQ(32'h10),
+               .PROGADDR_IRQ(32'h0800_0010),
+               .PROGADDR_RESET(32'h0800_0000),
                .BARREL_SHIFTER(1),
-               .ENABLE_IRQ_TIMER(0),
-               .ENABLE_COUNTERS(0),
+               .ENABLE_IRQ_TIMER(1),
+               .ENABLE_COUNTERS(1),
                .ENABLE_COUNTERS64(0)
         )
         cpu(.clk(cpu_clk),
@@ -153,6 +202,12 @@ ROM_BITS = 10)
                 .trace_data(trace_data)
         );
 
+    uart_fifo #(.CLOCK_DIV(UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(UART_CLOCK_COUNTER_BITS))
+        ufifo(.clk(clk), .tx(tx), .rx(rx), .data_in(mem_wdata[7:0]), .data_out(uart_data_out), .nwr(uart_nwr), .nrd(uart_nrd), .nreset(reset),
+                .full(uart_tx_fifo_full), .empty(uart_rx_fifo_empty));
+
+    // todo i2c_others, spi
+
     always @(posedge clk) begin
         if (timer == {TIMER_BITS{1'b1}})
             interrupt <= 1;
@@ -165,35 +220,33 @@ ROM_BITS = 10)
         reset <= 1;
     end
 
-    always @(negedge cpu_clk) begin
-        mem_ready <= rom_selected | ram_selected | ports_selected;
-        rom_ready <= rom_selected;
-        ram_ready <= ram_selected;
+    always @(posedge mem_valid) begin
+        mem_ready <= rom_selected | ram_selected | ports_selected | uart_control_selected | uart_data_selected;
     end
 
-    always @(negedge cpu_clk) begin
+    always @(posedge mem_valid) begin
         if (rom_selected)
-            rom_rdata <= rom[mem_addr[ROM_BITS + 1:2]];
+            rom_rdata <= rom[mem_la_addr[ROM_BITS + 1:2]];
     end
 
-    always @(negedge cpu_clk) begin
+    always @(posedge mem_valid) begin
         if (ram_selected) begin
-            if (mem_wstrb[0]) ram1[mem_addr[RAM_BITS + 1:2]] <= mem_wdata[ 7: 0];
-            if (mem_wstrb[1]) ram2[mem_addr[RAM_BITS + 1:2]] <= mem_wdata[15: 8];
-            if (mem_wstrb[2]) ram3[mem_addr[RAM_BITS + 1:2]] <= mem_wdata[23:16];
-            if (mem_wstrb[3]) ram4[mem_addr[RAM_BITS + 1:2]] <= mem_wdata[31:24];
-            ram_rdata <= {ram4[mem_addr[RAM_BITS + 1:2]], ram3[mem_addr[RAM_BITS + 1:2]], ram2[mem_addr[RAM_BITS + 1:2]], ram1[mem_addr[RAM_BITS + 1:2]]};
+            if (mem_la_wstrb[0]) ram1[ram_address] <= mem_la_wdata[ 7: 0];
+            if (mem_la_wstrb[1]) ram2[ram_address] <= mem_la_wdata[15: 8];
+            if (mem_la_wstrb[2]) ram3[ram_address] <= mem_la_wdata[23:16];
+            if (mem_la_wstrb[3]) ram4[ram_address] <= mem_la_wdata[31:24];
+            ram_rdata <= {ram4[ram_address], ram3[ram_address], ram2[ram_address], ram1[ram_address]};
         end
     end
 
-    always @(negedge cpu_clk) begin
+    always @(posedge mem_valid) begin
         if (ports_selected) begin
 `ifndef NO_INOUT_PINS
-            ports_rdata <= {25'b0, con_button, psh_button, tra, trb, bak_button, scl_io, sda_io};
+            ports_rdata <= {25'b0, con_button, psh_button, tra, trb, bak_button, scl0_io, sda0_io};
 `else
-            ports_rdata <= {25'b0, con_button, psh_button, tra, trb, bak_button, scl_in, sda_in};
+            ports_rdata <= {25'b0, con_button, psh_button, tra, trb, bak_button, scl0_in, sda0_in};
 `endif
-            if (mem_wstrb[0]) {led, scl, sda} <= mem_wdata[2:0];
+            if (mem_la_wstrb[0]) {led, scl0, sda0} <= mem_la_wdata[2:0];
         end
     end
 
