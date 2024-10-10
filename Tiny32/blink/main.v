@@ -29,10 +29,6 @@ ROM_BITS = 10)
     output reg scl = 1,
     output reg sda = 1,
 `endif
-`ifdef INTEL
-    output reg nreset = 0,
-    input wire reset_in,
-`endif
     input wire con_button,
     input wire psh_button,
     input wire tra, // encoder
@@ -42,12 +38,7 @@ ROM_BITS = 10)
 );
     localparam MEMORY_SELECTOR_START_BIT = 30;
 
-`ifndef INTEL
     reg nreset = 0;
-    wire reset_in;
-
-    assign reset_in = nreset;
-`endif
 
     reg [TIMER_BITS - 1:0] timer = 0;
     reg timer_interrupt = 0;
@@ -66,7 +57,6 @@ ROM_BITS = 10)
     reg [31:0] rom_rdata, ram_rdata, ports_rdata;
     wire [3:0] nwr;
     wire nrd;
-    reg ready = 1;
     wire cpu_clk;
     wire rom_selected, ram_selected, ports_selected;
     wire [2:0] stage;
@@ -98,8 +88,8 @@ ROM_BITS = 10)
     assign sda_io = sda ? 1'bz : 0;
 `endif
 
-    tiny32 cpu(.clk(cpu_clk), .nrd(nrd), .nwr(nwr), .wfi(wfi), .nreset(reset_in), .address(address), .data_in(mem_rdata), .data_out(data_in), .stage(stage),
-                 .error(error), .hlt(hlt), .ready(ready), .interrupt(irq), .interrupt_ack(interrupt_ack));
+    tiny32 cpu(.clk(cpu_clk), .nrd(nrd), .nwr(nwr), .wfi(wfi), .nreset(nreset), .address(address), .data_in(mem_rdata), .data_out(data_in), .stage(stage),
+                 .error(error), .hlt(hlt), .ready(1), .interrupt(irq), .interrupt_ack(interrupt_ack));
 
     initial begin
         $readmemh("asm/code.hex", rom);

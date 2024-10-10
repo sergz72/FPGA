@@ -40,10 +40,6 @@ ROM_BITS = 13)
     output reg [I2C_PORTS - 1:0] scl = {I2C_PORTS{1'b1}},
     output reg [I2C_PORTS - 1:0] sda = {I2C_PORTS{1'b1}},
 `endif
-`ifdef INTEL
-    output reg reset = 0,
-    input wire reset_in,
-`endif
     input wire con_button,
     input wire psh_button,
     input wire tra, // encoder
@@ -57,12 +53,7 @@ ROM_BITS = 13)
     localparam RAM_END = RAM_START + (1<<RAM_BITS);
     localparam MEMORY_SELECTOR_START_BIT = 27;
 
-`ifndef INTEL
     reg reset = 0;
-    wire reset_in;
-
-    assign reset_in = reset;
-`endif
 
     reg [TIMER_BITS - 1:0] timer = 0;
     reg interrupt = 0;
@@ -138,7 +129,7 @@ ROM_BITS = 13)
 
     genvar i;
     generate
-        for (i = 0; i < I2C_PORTS; i = i + 1) begin
+        for (i = 0; i < I2C_PORTS; i = i + 1) begin : i2c_generate
             assign sda_io[i] = sda[i] ? 1'bz : 0;
         end
     endgenerate
@@ -174,7 +165,7 @@ ROM_BITS = 13)
                .ENABLE_COUNTERS64(0)
         )
         cpu(.clk(cpu_clk),
-                .resetn(reset_in),
+                .resetn(reset),
                 .trap(trap),
                 .irq(irq),
                 .eoi(eoi),

@@ -200,7 +200,10 @@ module tiny16
     end
 
     always @(negedge clk) begin
-        stage <= {stage[STAGE_WIDTH - 2:0], stage[STAGE_WIDTH - 1]};
+        if (!reset)
+            stage <= 1;
+        else
+            stage <= {stage[STAGE_WIDTH - 2:0], stage[STAGE_WIDTH - 1]};
     end
 
     always @(posedge clk) begin

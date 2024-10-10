@@ -1,3 +1,3 @@
 #! /bin/sh
 
-verilator $* -I.. --binary --trace --top tiny16_tb ../tiny16.v ../test.v
+verilator $* --binary --trace --top main_tb main.v ../tiny16.v main_tb.v

@@ -1,307 +1,226 @@
-`include "alu.vh"
-
 module tiny16
 (
     input wire clk,
     input wire reset,
     output reg hlt = 0,
-    output reg error = 0,
-    output wire [15:0] address,
+    output reg wfi = 0,
+    output reg [15:0] address = 0,
     input wire [15:0] data_in,
-    output wire [15:0] data_out,
+    output reg [15:0] data_out,
     output wire rd,
     output wire wr,
-    input wire ready,
+    output reg [STAGE_WIDTH - 1:0] stage = 1,
     input wire interrupt,
-    output reg [2:0] stage = 0
+    output reg in_interrupt = 0
 );
-    localparam MICROCODE_WIDTH = 30;
-    localparam SP = 15;
-    localparam NOP = {6'h1, 10'h0};
-    localparam INT = 6'h13;
+    localparam STAGE_WIDTH = 4;
 
-    reg [15:0] current_instruction, instruction_parameter;
+    // register names
+    localparam A  = 0;
+    localparam W  = 1;
+    localparam X  = 2;
+    localparam SP = 3;
+
+    localparam NOP = 16'hFFFF;
+
+    reg [15:0] current_instruction = NOP;
+    reg [15:0] registers [0:3];
+    reg [15:0] acc, saved_pc;
+    reg [15:0] pc = 0;
     reg start = 0;
-    wire stage_reset;
 
-    reg in_interrupt = 0;
-    wire in_interrupt_clear;
-
-    reg [15:0] pc;
-
-    reg [MICROCODE_WIDTH - 1:0] microcode [0:1023];
-    reg [MICROCODE_WIDTH - 1:0] current_microinstruction = 7;
-
-    reg [15:0] registers [0:15];
-    wire [15:0] registers_data_wr;
-    reg [15:0] source_reg_data, dest_reg_data, sp_data;
-    wire [3:0] registers_address_wr;
-    wire registers_wr, registers_wr_others, registers_wr_alu;
-
-    wire [15:0] value8_to_16, value7_to_16, value6_to_16, value11_to_16, value4_to_16, alu_op_adder_to_16;
+    wire halt, wfi_, reti, jmp, movrm, movmr, adi, movrr, mvh, add, adc, sub, sbc, shl, shr, neg, not_, and_, or_, xor_;
+    wire call_reg, call, br, loadpc;
+    wire [15:0] value12_to_16, value8_to_16, value10_to_16;
+    wire [3:0] opcode;
+    wire [11:0] opcode12;
+    wire load, store;
+    wire [1:0] source_reg;
+    wire [1:0] dest_reg;
+    wire [7:0] value;
     wire [9:0] value10;
-    wire [7:0] value8;
-    wire [6:0] value7;
-    wire [5:0] value6;
-    wire [3:0] value4;
-    wire [1:0] value2;
-    wire [10:0] value11;
+    wire [11:0] value12;
 
-    wire [3:0] source_reg;
-    wire [3:0] dest_reg;
-    wire go;
-    wire n, c, z;
-
-    wire [15:0] alu_out, alu_out2;
-    wire [10:0] alu_op_adder;
-    wire [4:0] alu_op_id;
-    wire [15:0] alu_op1, alu_op2, alu_op3;
+    wire clk2, clk4;
 
     wire [2:0] condition, condition_temp;
     wire condition_neg, condition_pass;
-    wire [2:0] condition_in, condition_temp_in;
-    wire condition_neg_in, condition_pass_in;
+    wire z, n;
+    reg c;
 
-    wire halt, err;
-    wire load, fetch2, alu_op1_source, alu_op2_source, stage_reset_no_mul, stage_reset_mul, set_pc;
-    wire alu_clk, wr_others, wr_alu;
-    wire [1:0] registers_wr_address_source, data_out_source, address_source, alu_op_id_source;
-    wire [2:0] pc_source;
-    wire [3:0] registers_wr_data_source;
-    wire mul;
+    wire go;
 
-    alu #(.BITS(16))
-        m_alu(.clk(alu_clk), .op_id(alu_op_id), .op1(alu_op1), .op2(alu_op2), .op3(alu_op3), .c(c), .z(z), .out(alu_out), .out2(alu_out2));
-
-    initial begin
-        $readmemh("microcode.mem", microcode);
-    end
-
-    assign n = alu_out[15];
-
-    assign source_reg = current_instruction[3:0];
-    assign dest_reg = current_instruction[7:4];
-
+    assign opcode = current_instruction[7:4];
+    assign opcode12 = current_instruction[15:4];
+    assign value10 = {current_instruction[1:0], current_instruction[15:8]};
+    assign value = current_instruction[15:8];
+    assign value12 = {current_instruction[3:0], current_instruction[15:8]};
+    assign source_reg = current_instruction[1:0];
+    assign dest_reg = current_instruction[3:2];
     assign condition = current_instruction[2:0];
     assign condition_neg = current_instruction[3];
-    assign condition_in = data_in[2:0];
-    assign condition_neg_in = data_in[3];
 
-    assign value10 = current_instruction[9:0];
-    assign value8 = current_instruction[11:4];
-    assign value7 = current_instruction[10:4];
-    assign value2 = current_instruction[11:10];
-    assign value4 = {current_instruction[11:10], current_instruction[5:4]};
-    assign value6 = current_instruction[11:6];
-    assign value11 = current_instruction[10:0];
-    assign alu_op_adder = instruction_parameter[15:5];
-
-    assign alu_op_id = alu_op_id_f(alu_op_id_source);
-    
-    assign address = address_source_f(address_source);
-    
-    assign data_out = data_out_f(data_out_source);
-
-    assign alu_op1 = alu_op1_f(alu_op1_source);
-    assign alu_op2 = alu_op2_f(alu_op2_source);
-    assign alu_op3 = 0;
-
-    assign go = start & ready & !error & !hlt;
+    assign z = acc == 0;
+    assign n = acc[15];
 
     assign condition_temp = condition & {c, z, n};
     assign condition_pass = (condition_temp[0] | condition_temp[1] | condition_temp[2]) ^ condition_neg;
-    assign condition_temp_in = condition_in & {c, z, n};
-    assign condition_pass_in = (condition_temp_in[0] | condition_temp_in[1] | condition_temp_in[2]) ^ condition_neg_in;
 
-    assign value4_to_16 = {value4[3], value4[3], value4[3], value4[3], value4[3], value4[3], value4[3], value4[3], value4[3], value4[3], value4[3], value4[3], value4};
-    assign value6_to_16 = {value6[5], value6[5], value6[5], value6[5], value6[5], value6[5], value6[5], value6[5], value6[5], value6[5], value6};
-    assign value7_to_16 = {value7[6], value7[6], value7[6], value7[6], value7[6], value7[6], value7[6], value7[6], value7[6], value7};
-    assign value8_to_16 = {value8[7], value8[7], value8[7], value8[7], value8[7], value8[7], value8[7], value8[7], value8};
-    assign value11_to_16 = {value11[10], value11[10], value11[10], value11[10], value11[10], value11};
-    assign alu_op_adder_to_16 = {alu_op_adder[10], alu_op_adder[10], alu_op_adder[10], alu_op_adder[10], alu_op_adder[10], alu_op_adder};
+    // format |offset,8bit|4'h0|offset,4bit|
+    assign jmp = opcode == 0;
+    // format |offset,8bit|4'h1|condition,4bit|
+    assign br = opcode == 1;
+    // format |data,8bit|4'h2|reg,2bit,data,2bit|
+    assign mvh = opcode == 2;
+    // format |value,8bit|4'h3|reg,2bit,value,2bit|
+    assign adi = opcode == 3;
+    // format |offset,8bit|4'h4|dst,2bit,src,2bit|
+    assign movmr = opcode == 4;
+    // format |offset,8bit|4'h5|dst,2bit,src,2bit|
+    assign movrm = opcode == 5;
 
-    assign registers_wr_others = current_microinstruction[0];
-    assign registers_wr_alu = current_microinstruction[1];
-    assign load = current_microinstruction[2];
-    assign wr_others = current_microinstruction[3];
-    assign wr_alu = current_microinstruction[4];
+    // format |8'h0|4'h6|XXXX|
+    assign halt = opcode12 == 6;
+    // format |8'h1|4'h6|XXXX|
+    assign wfi_ = opcode12 == 12'h16;
+    // format |8'h2|4'h6|XXXX|
+    assign reti = opcode12 == 12'h26;
 
-    assign halt = current_microinstruction[5];
-    assign err = current_microinstruction[6];            
+    // format |8'h3|4'h6|reg,2bit,XX|
+    assign shr = opcode12 == 12'h36;
+    // format |8'h4|4'h6|reg,2bit,XX|
+    assign shl = opcode12 == 12'h46;
+    // format |8'h5|4'h6|reg,2bit,XX|
+    assign not_ = opcode12 == 12'h56;
+    // format |8'h6|4'h6|reg,2bit,XX|
+    assign neg = opcode12 == 12'h66;
 
-    assign fetch2 = current_microinstruction[7];
-    assign set_pc = current_microinstruction[8];
+    // format |8'h7|4'h6|dst,2bit,src,2bit|
+    assign movrr = opcode12 == 12'h76;
 
-    assign pc_source = current_microinstruction[11:9];
-    assign address_source = current_microinstruction[13:12];
+    // format |8'h8|4'h6|dst,2bit,src,2bit|
+    assign add = opcode12 == 12'h86;
+    // format |8'h9|4'h6|dst,2bit,src,2bit|
+    assign adc = opcode12 == 12'h96;
+    // format |8'hA|4'h6|dst,2bit,src,2bit|
+    assign sub = opcode12 == 12'hA6;
+    // format |8'hB|4'h6|dst,2bit,src,2bit|
+    assign sbc = opcode12 == 12'hB6;
+    // format |8'hC|4'h6|dst,2bit,src,2bit|
+    assign and_ = opcode12 == 12'hC6;
+    // format |8'hD|4'h6|dst,2bit,src,2bit|
+    assign or_ = opcode12 == 12'hD6;
+    // format |8'hE|4'h6|dst,2bit,src,2bit|
+    assign xor_ = opcode12 == 12'hE6;
+    // format |8'hF|4'h9|dst,2bit,reg,2bit|
+    assign call_reg = opcode12 == 12'hF6;
 
-    assign data_out_source = current_microinstruction[15:14];
+    // format |value,8bit|4'h7|XX|reg,2bit|
+    assign loadpc = opcode == 7;
+    // format |offset,8bit|4'h8|reg,2bit,offset,2bit|
+    assign call = opcode == 8;
 
-    assign registers_wr_data_source = current_microinstruction[19:16];
-    assign registers_wr_address_source = current_microinstruction[21:20];
+    assign load = movrm | loadpc;
+    assign store = movmr | call | call_reg;
 
-    assign stage_reset_no_mul = current_microinstruction[22];
-    assign stage_reset_mul = current_microinstruction[23];
+    assign clk2 = stage[1];
+    assign clk4 = stage[3];
 
-    assign alu_op1_source = current_microinstruction[24];
-    assign alu_op2_source = current_microinstruction[25];
-    assign alu_op_id_source = current_microinstruction[27:26];
-    assign alu_clk = current_microinstruction[28];
+    assign rd = !go | !(clk2 | (load & clk4));
+    assign wr = !go | !(store & clk4);
 
-    assign in_interrupt_clear = current_microinstruction[29];
+    assign go = start & !hlt;
 
-    assign mul = alu_op_id == `ALU_OP_MUL;
+    assign value8_to_16 = {value[7], value[7], value[7], value[7], value[7], value[7], value[7], value[7], value};
+    assign value10_to_16 = {value10[9], value10[9], value10[9], value10[9], value10[9], value10[9], value10};
+    assign value12_to_16 = {value12[11], value12[11], value12[11], value12[11], value12};
 
-    assign rd = (!start | error | hlt) | ((stage != 0) && !load && !fetch2);
-
-    assign registers_address_wr = registers_address_wr_f(registers_wr_address_source);
-    assign registers_data_wr = registers_data_wr_f(registers_wr_data_source);
-    assign registers_wr = registers_wr_others && (registers_wr_alu || alu_op_id[4:2] == 0);
-    assign stage_reset = (mul & stage_reset_mul) | (!mul & stage_reset_no_mul);
-    assign wr = wr_others && (wr_alu || alu_op_id[4:2] == 0);
-
-    function [15:0] pc_source_f(input [2:0] source);
-        case (source)
-            0: pc_source_f = pc + 2;
-            1: pc_source_f = pc + value8_to_16;
-            2: pc_source_f = pc + value11_to_16;
-            3: pc_source_f = source_reg_data + value7_to_16;
-            4: pc_source_f = data_in;
-            5: pc_source_f = instruction_parameter;
-            6: pc_source_f = {6'h0, value10};
-            default: pc_source_f = pc + 1;
-        endcase
-    endfunction
-
-    function [15:0] address_source_f(input [1:0] source);
-        case (source)
-            0: address_source_f = pc;
-            1: address_source_f = sp_data;
-            2: address_source_f = registers_data_wr + {14'h0, value2};
-            3: address_source_f = registers_data_wr + value4_to_16;
-        endcase
-    endfunction
-
-    function [15:0] registers_data_wr_f(input [3:0] source);
-        case (source)
-            0: registers_data_wr_f = source_reg_data + value4_to_16;
-            1: registers_data_wr_f = {8'h0, value8};
-            2: registers_data_wr_f = dest_reg_data - 1;
-            3: registers_data_wr_f = source_reg_data - 1;
-            4: registers_data_wr_f = sp_data - 1;
-            5: registers_data_wr_f = data_in;
-            6: registers_data_wr_f = alu_out;
-            7: registers_data_wr_f = alu_out2;
-            8: registers_data_wr_f = alu_out + alu_op_adder_to_16;
-            9: registers_data_wr_f = dest_reg_data + 1;
-            10: registers_data_wr_f = sp_data + 1;
-            default: registers_data_wr_f = source_reg_data + 1;
-        endcase
-    endfunction
-
-    function [3:0] registers_address_wr_f(input [1:0] source);
-        case (source)
-            0: registers_address_wr_f = source_reg;
-            1: registers_address_wr_f = dest_reg;
-            2: registers_address_wr_f = dest_reg + 1;
-            3: registers_address_wr_f = SP;
-        endcase
-    endfunction
-
-    function [15:0] data_out_f(input [1:0] source);
-        case (source)
-            0: data_out_f = source_reg_data;
-            1: data_out_f = instruction_parameter;
-            2: data_out_f = {13'h0, c, z, n};
-            3: data_out_f = pc + 1;
-        endcase
-    endfunction
-
-    function [4:0] alu_op_id_f(input [1:0] source);
-        case (source)
-            0: alu_op_id_f = current_instruction[12:8];
-            1: alu_op_id_f = current_instruction[8:4];
-            default: alu_op_id_f = instruction_parameter[4:0];
-        endcase
-    endfunction
-
-    function [15:0] alu_op1_f(input source);
-        case (source)
-            0: alu_op1_f = source_reg_data;
-            1: alu_op1_f = dest_reg_data;
-        endcase
-    endfunction
-
-    function [15:0] alu_op2_f(input source);
-        case (source)
-            0: alu_op2_f = source_reg_data;
-            1: alu_op2_f = data_in + alu_op_adder_to_16;
-        endcase
-    endfunction
-
-    always @(negedge clk) begin
-        if (error | stage_reset)
-            stage <= 0;
-        else begin
-            if (!reset)
-                start <= 0;
-            else if (stage == 7)
-                start <= 1;
-            if (ready)
-                stage <= stage + 1;
-        end
+    always @(posedge clk) begin
+        if (stage[STAGE_WIDTH - 1])
+            start <= reset;
     end
 
     always @(negedge clk) begin
-        if (registers_wr == 0)
-            registers[registers_address_wr] <= registers_data_wr;
-        sp_data <= registers[SP];
-        source_reg_data <= registers[source_reg];
-        dest_reg_data <= registers[dest_reg];
+        if (!reset)
+            stage <= 1;
+        else if (!wfi)
+            stage <= {stage[STAGE_WIDTH - 2:0], stage[STAGE_WIDTH - 1]};
     end
 
     always @(posedge clk) begin
-        if (reset == 0) begin
+        if (!reset) begin
+            pc <= 0;
             current_instruction <= NOP;
+            address <= 0;
+            hlt <= 0;
             in_interrupt <= 0;
         end
-        else begin
-            if (go) begin
-                if (stage == 0) begin
+        else if (go) begin
+            case (stage)
+                1: begin
                     if (interrupt & !in_interrupt) begin
                         in_interrupt <= 1;
-                        current_instruction <= {INT, 10'h1};
-                        current_microinstruction <= microcode[{INT, 4'h0}];
+                        wfi <= 0;
+                        saved_pc <= pc;
+                        pc <= 1;
+                        address <= 1;
                     end
                     else begin
-                        current_instruction <= data_in;
-                        current_microinstruction <= microcode[{data_in[15:10], condition_pass_in, 3'h0}];
+                        address <= pc;
+                        wfi <= wfi_;
                     end
                 end
-                else begin
-                    if (in_interrupt_clear)
-                        in_interrupt <= 0;
-                    current_microinstruction <= microcode[{current_instruction[15:10], condition_pass, stage}];
+                2: begin
+                    current_instruction <= data_in;
                 end
-            end
+                4: begin
+                    hlt <= halt;
+                    if (reti) begin
+                        pc <= saved_pc;
+                        in_interrupt <= 0;
+                    end
+                    else if (call_reg)
+                       pc <= registers[source_reg];
+                    else
+                        pc <= pc + (jmp ? value12_to_16 : (call ? value10_to_16 : ((br & condition_pass) ? value8_to_16 : 1)));
+                    case (1'b1)
+                        load: address <= (source_reg == 0 ? 0 : registers[source_reg]) + value8_to_16;
+                        store: begin
+                            if (call | call_reg) begin
+                                address <= registers[dest_reg] - 1;
+                                data_out <= pc + 1;
+                            end
+                            else begin
+                                address <= (dest_reg == 0 ? 0 : registers[dest_reg]) + value8_to_16;
+                                data_out <= registers[source_reg];
+                            end
+                        end
+                        adi: {c, acc} <= registers[dest_reg] + value10_to_16;
+                        add: {c, acc} <= registers[dest_reg] + registers[source_reg];
+                        adc: {c, acc} <= registers[dest_reg] + registers[source_reg] + {15'h0, c};
+                        sub: {c, acc} <= registers[dest_reg] - registers[source_reg];
+                        sbc: {c, acc} <= registers[dest_reg] - registers[source_reg] - {15'h0, c};
+                        shl: {c, acc} <= {registers[dest_reg], 1'b0};
+                        shr: {acc, c} <= {1'b0, registers[dest_reg]};
+                        and_: acc <= registers[dest_reg] & registers[source_reg];
+                        or_: acc <= registers[dest_reg] | registers[source_reg];
+                        xor_: acc <= registers[dest_reg] ^ registers[source_reg];
+                        not_: acc <= ~registers[dest_reg];
+                        neg: acc <= -registers[dest_reg];
+                    endcase
+                end
+                8: begin
+                    case (1'b1)
+                        loadpc: pc <= data_in;
+                        movrm: registers[dest_reg] <= data_in;
+                        movrr: registers[dest_reg] <= registers[source_reg];
+                        mvh: registers[dest_reg] <= {value10, 6'h0};
+                        adi | shl | shr | not_ | neg | add | adc | sub | sbc | shl | shr | and_ | or_ | xor_:
+                            registers[dest_reg] <= acc;
+                    endcase
+                end
+            endcase
         end
     end
 
-    always @(negedge clk) begin
-        if (reset == 0) begin
-            pc <= 0;
-            hlt <= 0;
-            error <= 0;
-        end
-        else begin
-            if (go) begin
-                hlt <= halt | err;
-                error <= err;
-                if (fetch2)
-                    instruction_parameter <= data_in;
-                if (set_pc)
-                    pc <= pc_source_f(pc_source);
-            end
-        end
-    end
 endmodule
