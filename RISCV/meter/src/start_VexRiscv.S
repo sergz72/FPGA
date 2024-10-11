@@ -1,5 +1,5 @@
 .section .reset_vec
-.globl _start
+.globl _start, _wfi
 _start:
 	la sp, _sp
 	j start
@@ -11,6 +11,10 @@ isr:
 	sb t1, 1(t0)
 	sb zero, 1(t0)
 	mret
+
+_wfi:
+	wfi
+	ret
 
 start:
 	// clearing bss...

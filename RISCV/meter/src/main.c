@@ -77,7 +77,7 @@ int main(void)
 
   while (1)
   {  
-    asm volatile ("wfi");
+    _wfi();
     led_handler();
     uart_handler();
     //BuildDeviceData(measurement_no);

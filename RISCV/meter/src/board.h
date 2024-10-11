@@ -27,6 +27,8 @@ void SDA_LOW(int);
 int SDA_IN(int);
 int SCL_IN(int);
 
+void _wfi(void);
+
 #define MAX_SHELL_COMMANDS 30
 #define MAX_SHELL_COMMAND_PARAMETERS 10
 #define MAX_SHELL_COMMAND_PARAMETER_LENGTH 50
