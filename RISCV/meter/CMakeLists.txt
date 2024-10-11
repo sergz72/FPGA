@@ -18,8 +18,9 @@ SET(CMAKE_EXE_LINKER_FLAGS_INIT "-Wl,-gc-sections,--print-memory-usage -T ${LINK
 project(riscv_meter C ASM)
 
 file(GLOB SOURCES
-        "src/*.*"
-        "src/devices/*.*"
+        "src/*.c"
+        "src/devices/*.c"
+        "src/start_picorv32.S"
         "../../ARM_CLION/common_lib/shell/shell.c"
         "../../ARM_CLION/common_lib/fixed_queue.c"
         "../../ARM_CLION/common_lib/myprintf.c"

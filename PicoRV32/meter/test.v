@@ -22,7 +22,7 @@ module test;
     wire interrupt;
     reg interrupt_clear, nreset;
 
-    main #(.TIMER_BITS(8), .RESET_DELAY_BIT(4), .CPU_CLOCK_BIT(1), .UART_CLOCK_DIV(8), .UART_CLOCK_COUNTER_BITS(4), .I2C_PORTS(I2C_PORTS))
+    main #(.TIMER_BITS(11), .RESET_DELAY_BIT(3), .CPU_CLOCK_BIT(0), .UART_CLOCK_DIV(8), .UART_CLOCK_COUNTER_BITS(4), .I2C_PORTS(I2C_PORTS))
          m(.clk(clk), .trap(trap), .mem_invalid(mem_invalid), .mem_la_addr(mem_la_addr), .scl0_io(scl0_io), .sda0_io(sda0_io),
            .con_button(con_button), .psh_button(psh_button), .tra(tra), .trb(trb), .bak_button(bak_button),
            .led(led), .scl_io(scl_io), .sda_io(sda_io), .tx(tx), .rx(rx));
