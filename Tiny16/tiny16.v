@@ -29,8 +29,8 @@ module tiny16
     reg [15:0] pc = 0;
     reg start = 0;
 
-    wire halt, wfi_, reti, jmp, movrm, movmr, adi, movrr, mvh, add, adc, sub, sbc, shl, shr, neg, not_, and_, or_, xor_;
-    wire call_reg, call, br, loadpc;
+    wire halt, wfi_, reti, jmp, movrm, movmr, adi, movrr, mvh, add, sub, shl, shr, and_, or_, xor_;
+    wire call_reg, call, br, loadpc, andi, ori, xori;
     wire [15:0] value12_to_16, value8_to_16, value10_to_16;
     wire [3:0] opcode;
     wire [11:0] opcode12;
@@ -47,6 +47,8 @@ module tiny16
     wire condition_neg, condition_pass;
     wire z, n;
     reg c;
+    wire [15:0] alu_op1, alu_op2;
+    wire alu_immediate;
 
     wire go;
 
@@ -72,53 +74,52 @@ module tiny16
     assign br = opcode == 1;
     // format |data,8bit|4'h2|reg,2bit,data,2bit|
     assign mvh = opcode == 2;
-    // format |value,8bit|4'h3|reg,2bit,value,2bit|
-    assign adi = opcode == 3;
+    // format |offset,8bit|4'h3|dst,2bit,src,2bit|
+    assign movmr = opcode == 3;
     // format |offset,8bit|4'h4|dst,2bit,src,2bit|
-    assign movmr = opcode == 4;
-    // format |offset,8bit|4'h5|dst,2bit,src,2bit|
-    assign movrm = opcode == 5;
+    assign movrm = opcode == 4;
 
-    // format |8'h0|4'h6|XXXX|
-    assign halt = opcode12 == 6;
-    // format |8'h1|4'h6|XXXX|
-    assign wfi_ = opcode12 == 12'h16;
-    // format |8'h2|4'h6|XXXX|
-    assign reti = opcode12 == 12'h26;
+    // format |8'h0|4'h5|XXXX|
+    assign halt = opcode12 == 5;
+    // format |8'h1|4'h5|XXXX|
+    assign wfi_ = opcode12 == 12'h15;
+    // format |8'h2|4'h5|XXXX|
+    assign reti = opcode12 == 12'h25;
 
-    // format |8'h3|4'h6|reg,2bit,XX|
-    assign shr = opcode12 == 12'h36;
-    // format |8'h4|4'h6|reg,2bit,XX|
-    assign shl = opcode12 == 12'h46;
-    // format |8'h5|4'h6|reg,2bit,XX|
-    assign not_ = opcode12 == 12'h56;
-    // format |8'h6|4'h6|reg,2bit,XX|
-    assign neg = opcode12 == 12'h66;
+    // format |8'h3|4'h5|reg,2bit,XX|
+    assign shr = opcode12 == 12'h35;
+    // format |8'h4|4'h5|reg,2bit,XX|
+    assign shl = opcode12 == 12'h45;
 
-    // format |8'h7|4'h6|dst,2bit,src,2bit|
-    assign movrr = opcode12 == 12'h76;
+    // format |8'h5|4'h5|dst,2bit,src,2bit|
+    assign movrr = opcode12 == 12'h55;
 
-    // format |8'h8|4'h6|dst,2bit,src,2bit|
-    assign add = opcode12 == 12'h86;
-    // format |8'h9|4'h6|dst,2bit,src,2bit|
-    assign adc = opcode12 == 12'h96;
-    // format |8'hA|4'h6|dst,2bit,src,2bit|
-    assign sub = opcode12 == 12'hA6;
-    // format |8'hB|4'h6|dst,2bit,src,2bit|
-    assign sbc = opcode12 == 12'hB6;
-    // format |8'hC|4'h6|dst,2bit,src,2bit|
-    assign and_ = opcode12 == 12'hC6;
-    // format |8'hD|4'h6|dst,2bit,src,2bit|
-    assign or_ = opcode12 == 12'hD6;
-    // format |8'hE|4'h6|dst,2bit,src,2bit|
-    assign xor_ = opcode12 == 12'hE6;
-    // format |8'hF|4'h9|dst,2bit,reg,2bit|
-    assign call_reg = opcode12 == 12'hF6;
+    // format |8'h6|4'h5|dst,2bit,src,2bit|
+    assign add = opcode12 == 12'h65;
+    // format |8'h7|4'h5|dst,2bit,src,2bit|
+    assign sub = opcode12 == 12'h75;
+    // format |8'h8|4'h5|dst,2bit,src,2bit|
+    assign and_ = opcode12 == 12'h85;
+    // format |8'h9|4'h5|dst,2bit,src,2bit|
+    assign or_ = opcode12 == 12'h95;
+    // format |8'hA|4'h5|dst,2bit,src,2bit|
+    assign xor_ = opcode12 == 12'hA5;
+    // format |8'hB|4'h5|dst,2bit,reg,2bit|
+    assign call_reg = opcode12 == 12'hB5;
 
-    // format |value,8bit|4'h7|XX|reg,2bit|
-    assign loadpc = opcode == 7;
-    // format |offset,8bit|4'h8|reg,2bit,offset,2bit|
-    assign call = opcode == 8;
+    // format |value,8bit|4'h6|XX|reg,2bit|
+    assign loadpc = opcode == 6;
+    // format |offset,8bit|4'h7|reg,2bit,offset,2bit|
+    assign call = opcode == 7;
+
+    // format |value,8bit|4'h8|reg,2bit,value,2bit|
+    assign adi = opcode == 8;
+    // format |value,8bit|4'h9|reg,2bit,value,2bit|
+    assign andi = opcode == 9;
+    // format |value,8bit|4'hA|reg,2bit,value,2bit|
+    assign ori = opcode == 4'hA;
+    // format |value,8bit|4'hB|reg,2bit,value,2bit|
+    assign xori = opcode == 4'hB;
 
     assign load = movrm | loadpc;
     assign store = movmr | call | call_reg;
@@ -134,6 +135,11 @@ module tiny16
     assign value8_to_16 = {value[7], value[7], value[7], value[7], value[7], value[7], value[7], value[7], value};
     assign value10_to_16 = {value10[9], value10[9], value10[9], value10[9], value10[9], value10[9], value10};
     assign value12_to_16 = {value12[11], value12[11], value12[11], value12[11], value12};
+
+    assign alu_immediate = adi | andi | ori | xori;
+
+    assign alu_op1 = registers[dest_reg];
+    assign alu_op2 = alu_immediate ? value10_to_16 : registers[source_reg];
 
     always @(posedge clk) begin
         if (stage[STAGE_WIDTH - 1])
@@ -195,18 +201,13 @@ module tiny16
                                 data_out <= registers[source_reg];
                             end
                         end
-                        adi: {c, acc} <= registers[dest_reg] + value10_to_16;
-                        add: {c, acc} <= registers[dest_reg] + registers[source_reg];
-                        adc: {c, acc} <= registers[dest_reg] + registers[source_reg] + {15'h0, c};
-                        sub: {c, acc} <= registers[dest_reg] - registers[source_reg];
-                        sbc: {c, acc} <= registers[dest_reg] - registers[source_reg] - {15'h0, c};
-                        shl: {c, acc} <= {registers[dest_reg], 1'b0};
-                        shr: {acc, c} <= {1'b0, registers[dest_reg]};
-                        and_: acc <= registers[dest_reg] & registers[source_reg];
-                        or_: acc <= registers[dest_reg] | registers[source_reg];
-                        xor_: acc <= registers[dest_reg] ^ registers[source_reg];
-                        not_: acc <= ~registers[dest_reg];
-                        neg: acc <= -registers[dest_reg];
+                        adi | add: {c, acc} <= alu_op1 + alu_op2;
+                        sub: {c, acc} <= alu_op1 - alu_op2;
+                        shl: {c, acc} <= {alu_op1, 1'b0};
+                        shr: {acc, c} <= {1'b0, alu_op1};
+                        andi | and_: acc <= alu_op1 & alu_op2;
+                        ori | or_: acc <= alu_op1 | alu_op2;
+                        xori | xor_: acc <= alu_op1 ^ alu_op2;
                     endcase
                 end
                 8: begin
@@ -215,7 +216,7 @@ module tiny16
                         movrm: registers[dest_reg] <= data_in;
                         movrr: registers[dest_reg] <= registers[source_reg];
                         mvh: registers[dest_reg] <= {value10, 6'h0};
-                        adi | shl | shr | not_ | neg | add | adc | sub | sbc | shl | shr | and_ | or_ | xor_:
+                        adi | shl | shr | add | sub | and_ | or_ | xor_ | andi | ori | xori:
                             registers[dest_reg] <= acc;
                     endcase
                 end
