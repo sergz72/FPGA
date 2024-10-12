@@ -11,7 +11,8 @@ module tiny16
     output wire wr,
     output reg [STAGE_WIDTH - 1:0] stage = 1,
     input wire interrupt,
-    output reg in_interrupt = 0
+    output reg in_interrupt = 0,
+    input wire ready
 );
     localparam STAGE_WIDTH = 4;
 
@@ -49,8 +50,10 @@ module tiny16
     reg c;
     wire [15:0] alu_op1, alu_op2;
     wire alu_immediate;
+    wire alu_op;
 
     wire go;
+    reg next_stage = 1;
 
     assign opcode = current_instruction[7:4];
     assign opcode12 = current_instruction[15:4];
@@ -137,6 +140,7 @@ module tiny16
     assign value12_to_16 = {value12[11], value12[11], value12[11], value12[11], value12};
 
     assign alu_immediate = adi | andi | ori | xori;
+    assign alu_op = alu_immediate | shl | shr | add | sub | and_ | or_ | xor_;
 
     assign alu_op1 = registers[dest_reg];
     assign alu_op2 = alu_immediate ? value10_to_16 : registers[source_reg];
@@ -149,7 +153,7 @@ module tiny16
     always @(negedge clk) begin
         if (!reset)
             stage <= 1;
-        else if (!wfi)
+        else if (!wfi & next_stage)
             stage <= {stage[STAGE_WIDTH - 2:0], stage[STAGE_WIDTH - 1]};
     end
 
@@ -160,6 +164,7 @@ module tiny16
             address <= 0;
             hlt <= 0;
             in_interrupt <= 0;
+            next_stage <= 1;
         end
         else if (go) begin
             case (stage)
@@ -177,6 +182,7 @@ module tiny16
                     end
                 end
                 2: begin
+                    next_stage <= ready;
                     current_instruction <= data_in;
                 end
                 4: begin
@@ -216,8 +222,7 @@ module tiny16
                         movrm: registers[dest_reg] <= data_in;
                         movrr: registers[dest_reg] <= registers[source_reg];
                         mvh: registers[dest_reg] <= {value10, 6'h0};
-                        adi | shl | shr | add | sub | and_ | or_ | xor_ | andi | ori | xori:
-                            registers[dest_reg] <= acc;
+                        alu_op: registers[dest_reg] <= acc;
                     endcase
                 end
             endcase
