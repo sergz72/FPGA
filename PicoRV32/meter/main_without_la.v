@@ -231,10 +231,10 @@ ROM_BITS = 13)
 
     always @(negedge cpu_clk) begin
         if (ram_selected) begin
-            if (mem_wstrb[0]) ram1[ram_address] <= mem_la_wdata[ 7: 0];
-            if (mem_wstrb[1]) ram2[ram_address] <= mem_la_wdata[15: 8];
-            if (mem_wstrb[2]) ram3[ram_address] <= mem_la_wdata[23:16];
-            if (mem_wstrb[3]) ram4[ram_address] <= mem_la_wdata[31:24];
+            if (mem_wstrb[0]) ram1[ram_address] <= mem_wdata[ 7: 0];
+            if (mem_wstrb[1]) ram2[ram_address] <= mem_wdata[15: 8];
+            if (mem_wstrb[2]) ram3[ram_address] <= mem_wdata[23:16];
+            if (mem_wstrb[3]) ram4[ram_address] <= mem_wdata[31:24];
             ram_rdata <= {ram4[ram_address], ram3[ram_address], ram2[ram_address], ram1[ram_address]};
         end
     end
