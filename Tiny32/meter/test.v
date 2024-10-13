@@ -2,8 +2,6 @@
 
 module test;
     localparam I2C_PORTS = 1;
-    localparam UART_CLOCK_DIV = `OSC_FREQ / 115200;
-    localparam UART_CLOCK_COUNTER_BITS = $clog2(`OSC_FREQ / 115200) + 1;
 
     reg clk;
     wire nhlt, nerror, nwfi;
@@ -29,9 +27,9 @@ module test;
            .scl_io(scl_io), .sda_io(sda_io), .con_button(con_button), .psh_button(psh_button), .tra(tra), .trb(trb),
            .bak_button(bak_button), .led(led), .tx(tx), .rx(rx));
 
-    uart1tx #(.CLOCK_DIV(UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(UART_CLOCK_COUNTER_BITS))
+    uart1tx #(.CLOCK_DIV(`UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(`UART_CLOCK_COUNTER_BITS))
         utx(.clk(clk), .tx(rx), .data(tx_data), .send(send), .busy(busy), .nreset(nreset));
-    uart1rx #(.CLOCK_DIV(UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(UART_CLOCK_COUNTER_BITS))
+    uart1rx #(.CLOCK_DIV(`UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(`UART_CLOCK_COUNTER_BITS))
         urx(.clk(clk), .rx(tx), .data(data_out), .interrupt(interrupt), .interrupt_clear(interrupt_clear), .nreset(nreset));
 
     pullup(scl0_io);

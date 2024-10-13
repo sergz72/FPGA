@@ -2,11 +2,7 @@
 
 module main
 #(parameter
-UART_BAUD = 115200,
 I2C_PORTS = 1,
-// 1ms
-RESET_DELAY = 1,
-CPU_FREQ = 1000000,
 // 2k 32 bit words RAM
 RAM_BITS = 11,
 // 8k 32 bit words ROM
@@ -43,19 +39,12 @@ ROM_BITS = 13)
     output wire tx,
     input wire rx
 );
-    localparam UART_CLOCK_DIV = `OSC_FREQ / UART_BAUD;
-    localparam UART_CLOCK_COUNTER_BITS = $clog2(`OSC_FREQ / UART_BAUD) + 1;
-    localparam CPU_TIMER_BITS = $clog2(`OSC_FREQ * RESET_DELAY / 1000) + 1;
-    localparam CPU_CLOCK_BIT = $clog2(`OSC_FREQ / CPU_FREQ) - 1;
-    localparam MHZ_TIMER_BITS = $clog2(`OSC_FREQ / 1000000);
-    localparam MHZ_TIMER_VALUE = `OSC_FREQ / 1000000;
-
     localparam MEMORY_SELECTOR_START_BIT = 27;
 
     reg nreset = 0;
 
-    reg [CPU_TIMER_BITS - 1:0] cpu_timer = 0;
-    reg [MHZ_TIMER_BITS - 1:0] mhz_timer = 0;
+    reg [`CPU_TIMER_BITS - 1:0] cpu_timer = 0;
+    reg [`MHZ_TIMER_BITS - 1:0] mhz_timer = 0;
     wire timer_interrupt;
     wire [31:0] time_value;
     wire mhz_clock;
@@ -106,7 +95,7 @@ ROM_BITS = 13)
 
     assign memory_selector = address[31:MEMORY_SELECTOR_START_BIT];
 
-    assign cpu_clk = cpu_timer[CPU_CLOCK_BIT];
+    assign cpu_clk = cpu_timer[`CPU_CLOCK_BIT];
     assign rom_selected = memory_selector === 1;
     assign ram_selected = memory_selector === 2;
     assign time_selected = memory_selector === 5'h1B;
@@ -126,7 +115,7 @@ ROM_BITS = 13)
 
     assign mem_clk = nrd & (nwr === 4'b1111);
 
-    assign mhz_clock = mhz_timer[MHZ_TIMER_BITS - 1];
+    assign mhz_clock = mhz_timer[`MHZ_TIMER_BITS - 1];
     
 `ifndef NO_INOUT_PINS
     assign scl0_io = scl0 ? 1'bz : 0;
@@ -155,7 +144,7 @@ ROM_BITS = 13)
         cpu(.clk(cpu_clk), .nrd(nrd), .nwr(nwr), .wfi(wfi), .nreset(nreset), .address(address), .data_in(mem_rdata), .data_out(data_in), .stage(stage),
                  .error(error), .hlt(hlt), .ready(1), .interrupt(irq), .interrupt_ack(interrupt_ack));
 
-    uart_fifo #(.CLOCK_DIV(UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(UART_CLOCK_COUNTER_BITS))
+    uart_fifo #(.CLOCK_DIV(`UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(`UART_CLOCK_COUNTER_BITS))
         ufifo(.clk(clk), .tx(tx), .rx(rx), .data_in(data_in[7:0]), .data_out(uart_data_out), .nwr(uart_nwr), .nrd(uart_nrd), .nreset(nreset),
                 .full(uart_tx_fifo_full), .empty(uart_rx_fifo_empty));
 
@@ -174,7 +163,7 @@ ROM_BITS = 13)
     end
 
     always @(posedge clk) begin
-        if (cpu_timer[CPU_TIMER_BITS -1])
+        if (cpu_timer[`CPU_TIMER_BITS -1])
             nreset <= 1;
         cpu_timer <= cpu_timer + 1;
     end
@@ -182,7 +171,7 @@ ROM_BITS = 13)
     always @(posedge clk) begin
         if (!nreset)
             mhz_timer <= 0;
-        else if (mhz_timer == MHZ_TIMER_BITS'(MHZ_TIMER_VALUE - 1))
+        else if (mhz_timer == `MHZ_TIMER_VALUE)
             mhz_timer <= 0;
         else
             mhz_timer <= mhz_timer + 1;
