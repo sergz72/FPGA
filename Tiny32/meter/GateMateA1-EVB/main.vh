@@ -1,0 +1,7 @@
+// OSC freq = 10000000, CPU freq = 1000000, Reset delay = 1, UART baud = 115200
+`define UART_CLOCK_DIV 87
+`define UART_CLOCK_COUNTER_BITS 7
+`define CPU_TIMER_BITS 14
+`define CPU_CLOCK_BIT 4
+`define MHZ_TIMER_BITS 4
+`define MHZ_TIMER_VALUE 9
