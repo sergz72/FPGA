@@ -14,6 +14,7 @@ wait|stage|rd |wr |jmp|br     |alu|load|store
 */
 
 module tiny32
+#(parameter RESET_PC = 32'h0, ISR_ADDRESS = 24'h0)
 (
     input wire clk,
     input wire nreset,
@@ -388,7 +389,7 @@ module tiny32
             current_instruction <= 3;
             in_interrupt <= 0;
             interrupt_ack <= 0;
-            pc <= 0;
+            pc <= RESET_PC;
             wfi <= 0;
             next_stage <= 1;
         end
@@ -400,7 +401,7 @@ module tiny32
                         interrupt_ack <= interrupt_pending;
                         wfi <= 0;
                         saved_pc <= pc;
-                        pc <= {26'h0, interrupt_no, 2'b00};
+                        pc <= {ISR_ADDRESS, 2'b00, interrupt_no, 2'b00};
                         next_stage <= 1;
                     end
                     else

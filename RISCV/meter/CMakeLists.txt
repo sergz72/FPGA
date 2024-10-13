@@ -20,7 +20,8 @@ project(riscv_meter C ASM)
 file(GLOB SOURCES
         "src/*.c"
         "src/devices/*.c"
-        "src/start_picorv32.S"
+#        "src/start_picorv32.S"
+        "src/start_tiny32.S"
         "../../ARM_CLION/common_lib/shell/shell.c"
         "../../ARM_CLION/common_lib/fixed_queue.c"
         "../../ARM_CLION/common_lib/myprintf.c"

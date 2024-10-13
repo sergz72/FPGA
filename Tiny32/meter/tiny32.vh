@@ -1,2 +1,2 @@
-`define NO_DIV
-`define NO_MUL
+`define DIV
+`define REM
