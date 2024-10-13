@@ -1,1 +1,2 @@
 `define MEMORY_DEBUG
+`define OSC_FREQ 2000000

@@ -1,5 +1,9 @@
+`include "main.vh"
+
 module test;
     localparam I2C_PORTS = 1;
+    localparam UART_CLOCK_DIV = `OSC_FREQ / 115200;
+    localparam UART_CLOCK_COUNTER_BITS = $clog2(`OSC_FREQ / 115200) + 1;
 
     reg clk;
     wire nhlt, nerror, nwfi;
@@ -20,15 +24,14 @@ module test;
     wire interrupt;
     reg interrupt_clear, nreset;
 
-    main #(.TIMER_BITS(12), .RESET_DELAY_BIT(3), .CPU_CLOCK_BIT(0), .UART_CLOCK_DIV(8), .UART_CLOCK_COUNTER_BITS(4), .I2C_PORTS(I2C_PORTS))
+    main #(.I2C_PORTS(I2C_PORTS))
          m(.clk(clk), .nhlt(nhlt), .nerror(nerror), .nwfi(nwfi), .address(address), .scl0_io(scl0_io), .sda0_io(sda0_io),
-           .scl_io(scl_io), .sda_io(sda_io),
-           .con_button(con_button), .psh_button(psh_button), .tra(tra), .trb(trb), .bak_button(bak_button),
-           .led(led), .tx(tx), .rx(rx));
+           .scl_io(scl_io), .sda_io(sda_io), .con_button(con_button), .psh_button(psh_button), .tra(tra), .trb(trb),
+           .bak_button(bak_button), .led(led), .tx(tx), .rx(rx));
 
-    uart1tx #(.CLOCK_DIV(8), .CLOCK_COUNTER_BITS(4))
+    uart1tx #(.CLOCK_DIV(UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(UART_CLOCK_COUNTER_BITS))
         utx(.clk(clk), .tx(rx), .data(tx_data), .send(send), .busy(busy), .nreset(nreset));
-    uart1rx #(.CLOCK_DIV(8), .CLOCK_COUNTER_BITS(4))
+    uart1rx #(.CLOCK_DIV(UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(UART_CLOCK_COUNTER_BITS))
         urx(.clk(clk), .rx(tx), .data(data_out), .interrupt(interrupt), .interrupt_clear(interrupt_clear), .nreset(nreset));
 
     pullup(scl0_io);
@@ -63,7 +66,7 @@ module test;
         interrupt_clear = 1;
         #5
         interrupt_clear = 0;
-        #5
+        #200000
         $finish;
     end
 endmodule
