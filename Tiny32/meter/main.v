@@ -46,9 +46,9 @@ ROM_BITS = 13)
     localparam UART_CLOCK_DIV = `OSC_FREQ / UART_BAUD;
     localparam UART_CLOCK_COUNTER_BITS = $clog2(`OSC_FREQ / UART_BAUD) + 1;
     localparam CPU_TIMER_BITS = $clog2(`OSC_FREQ * RESET_DELAY / 1000) + 1;
-    localparam CPU_CLOCK_BIT = $clog2(`OSC_FREQ / CPU_FREQ);
+    localparam CPU_CLOCK_BIT = $clog2(`OSC_FREQ / CPU_FREQ) - 1;
     localparam MHZ_TIMER_BITS = $clog2(`OSC_FREQ / 1000000);
-    localparam MHZ_TIMER_VALUE = `OSC_FREQ / 1000000 - 1;
+    localparam MHZ_TIMER_VALUE = `OSC_FREQ / 1000000;
 
     localparam MEMORY_SELECTOR_START_BIT = 27;
 
@@ -97,7 +97,7 @@ ROM_BITS = 13)
     reg [7:0] ram2 [0:(1<<RAM_BITS)-1];
     reg [7:0] ram3 [0:(1<<RAM_BITS)-1];
     reg [7:0] ram4 [0:(1<<RAM_BITS)-1];
-
+    
     assign nhlt = !hlt;
     assign nerror = !error;
     assign nwfi = !wfi;
@@ -182,7 +182,7 @@ ROM_BITS = 13)
     always @(posedge clk) begin
         if (!nreset)
             mhz_timer <= 0;
-        else if (mhz_timer == MHZ_TIMER_VALUE - 1)
+        else if (mhz_timer == MHZ_TIMER_BITS'(MHZ_TIMER_VALUE - 1))
             mhz_timer <= 0;
         else
             mhz_timer <= mhz_timer + 1;

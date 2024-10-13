@@ -66,7 +66,7 @@ module test;
         interrupt_clear = 1;
         #5
         interrupt_clear = 0;
-        #200000
+        #500000
         $finish;
     end
 endmodule

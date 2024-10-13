@@ -27,7 +27,7 @@ module uart1tx
             counter <= 0;
         end
         else if (bit_counter != 0) begin
-            if (counter == CLOCK_DIV - 1) begin
+            if (counter == CLOCK_COUNTER_BITS'(CLOCK_DIV - 1)) begin
                 counter <= 0;
                 data_out <= {1'b1, data_out[10:1]};
                 bit_counter <= bit_counter - 1;
@@ -64,7 +64,7 @@ module uart1rx
                 interrupt <= 0;
             if (!rx) begin
                 start <= 1;
-                counter <= CLOCK_DIV / 2 - 1;
+                counter <= CLOCK_COUNTER_BITS'(CLOCK_DIV / 2 - 1);
             end
         end
         else begin
@@ -74,13 +74,13 @@ module uart1rx
                 if (bit_counter == 0) begin
                     start <= !rx;
                     if (!rx) begin
-                        counter <= CLOCK_DIV - 1;
+                        counter <= CLOCK_COUNTER_BITS'(CLOCK_DIV - 1);
                         bit_counter <= 9;
                     end
                 end
                 else begin
                     if (bit_counter != 1) begin
-                        counter <= CLOCK_DIV - 1;
+                        counter <= CLOCK_COUNTER_BITS'(CLOCK_DIV - 1);
                         data <= {rx, data[7:1]};
                     end
                     else begin
