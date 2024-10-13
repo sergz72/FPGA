@@ -1,7 +1,10 @@
 #include "custom_ops_tiny32.S"
 
+TIMER_ADDRESS = 0xE0000000
+TIME_ADDRESS = 0xD8000000
+
 .section .reset_vec
-.globl _start, _wfi, hlt
+.globl _start, _wfi, hlt, delay, delay_start, gettime
 
 _start:
 	j start
@@ -15,6 +18,22 @@ _wfi:
 
 hlt:
 	halt_insn()
+
+delay_start:
+	lui t0, TIMER_ADDRESS >> 12
+	sw a0, 0(t0)
+	ret
+
+delay:
+	lui t0, TIMER_ADDRESS >> 12
+	sw a0, 0(t0)
+	waitirq_insn()
+	ret
+
+gettime:
+	lui t0, TIME_ADDRESS >> 12
+	lw a0, 0(t0)
+	ret
 
 start:
         // clearing bss...

@@ -9,17 +9,6 @@
 #include "dev_si5351.h"
 
 //todo
-void delay(unsigned int us)
-{
-}
-
-void delayms(unsigned int ms)
-{
-  while (ms--)
-    delay(1000);
-}
-
-//todo
 void lcd_init(void)
 {
 }

@@ -62,10 +62,12 @@ static void process_command(void)
 
 int main(void)
 {
-  unsigned int measurement_no = 0, data_ready;
-  unsigned int keyboard_status;
+  static unsigned int measurement_no, data_ready;
+  //static unsigned int keyboard_status;
+  static unsigned int time_start, time_diff;
 
   command_p = command;
+  measurement_no = 0;
 
   //shell_init(printf, NULL);
 
@@ -77,7 +79,7 @@ int main(void)
 
   while (1)
   {  
-    _wfi();
+    time_start = gettime();
     led_handler();
     uart_handler();
     //BuildDeviceData(measurement_no);
@@ -95,5 +97,9 @@ int main(void)
     }
     else
       measurement_no++;
+    time_diff = gettime() - time_start;
+    // 100 ms
+    if (time_diff < 100000)
+      delay(100000 - time_diff);
   }
 }

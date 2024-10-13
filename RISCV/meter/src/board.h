@@ -17,7 +17,12 @@ typedef unsigned long long int uint64_t;
 #define MAX_MEASUREMENT_NO 10
 
 void delay(unsigned int);
-void delayms(unsigned int);
+#define delayms(v) delay(1000 * v)
+void delay_start(unsigned int);
+#define delayms_start(v) delay_start(1000 * v)
+unsigned int gettime(void);
+void _wfi(void);
+
 void lcd_init(void);
 int I2CCheck(int idx, int device_id);
 void SCL_HIGH(int);
@@ -26,8 +31,6 @@ void SDA_HIGH(int);
 void SDA_LOW(int);
 int SDA_IN(int);
 int SCL_IN(int);
-
-void _wfi(void);
 
 #define MAX_SHELL_COMMANDS 30
 #define MAX_SHELL_COMMAND_PARAMETERS 10
