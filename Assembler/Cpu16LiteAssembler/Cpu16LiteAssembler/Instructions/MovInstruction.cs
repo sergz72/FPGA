@@ -6,7 +6,8 @@ internal sealed class MovInstruction : Instruction
 {
     private readonly uint _type, _regNo, _value2, _adder;
     
-    internal MovInstruction(string line, uint type, uint regNo, uint value2, uint adder): base(line)
+    internal MovInstruction(string line, string file, int lineNo, uint type, uint regNo, uint value2, uint adder):
+        base(line, file, lineNo)
     {
         _type = type;
         _regNo = regNo;
@@ -14,7 +15,7 @@ internal sealed class MovInstruction : Instruction
         _adder = adder;
     }
     
-    public override uint[] BuildCode(uint labelAddress)
+    public override uint[] BuildCode(uint labelAddress, uint pc)
     {
         if (_type is InstructionCodes.MovImmediate or InstructionCodes.MovRpImmediate or
             InstructionCodes.MovRpImmediateRpDec or InstructionCodes.MovRpImmediateRpInc)
@@ -26,11 +27,11 @@ internal sealed class MovInstruction : Instruction
 
 internal sealed class MovInstructionCreator : InstructionCreator
 {
-    public override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
+    public override Instruction Create(ICompiler compiler, string line, string file, int lineNo, List<Token> parameters)
     {
         var idx = 0;
         if (parameters.Count >= 4 && ParseRp(parameters, ref idx, out var increment, out var decrement))
-            return CreateIndirect1(compiler, line, parameters[idx..], increment, decrement);
+            return CreateIndirect1(compiler, line, file, lineNo, parameters[idx..], increment, decrement);
         if (parameters.Count < 3 || parameters[0].Type != TokenType.Name)
             throw new InstructionException("register name and register/immediate expected");
         if (!parameters[1].IsChar(','))
@@ -41,13 +42,13 @@ internal sealed class MovInstructionCreator : InstructionCreator
             var rp = compiler.CalculateExpression(parameters, ref start);
             if (rp is < 0 or > 255)
                 throw new InstructionException("rp value is out of range");
-            return new MovInstruction(line, InstructionCodes.LoadRp, 0, 0, (uint)rp);
+            return new MovInstruction(line, file, lineNo, InstructionCodes.LoadRp, 0, 0, (uint)rp);
         }
         if (!GetRegisterNumber(compiler, parameters[0].StringValue, out var regNo))
             throw new InstructionException("register name expected");
         idx = 2;
         if (ParseRp(parameters, ref idx, out increment, out decrement))
-            return CreateIndirect2(compiler, line, regNo, parameters, idx, increment, decrement);
+            return CreateIndirect2(compiler, line, file, lineNo, regNo, parameters, idx, increment, decrement);
         if (GetRegisterNumber(compiler, parameters[2].StringValue, out var regNo2))
         {
             var adder = 0;
@@ -61,12 +62,12 @@ internal sealed class MovInstructionCreator : InstructionCreator
                 adder = compiler.CalculateExpression(parameters, ref start);
             }
 
-            return new MovInstruction(line, InstructionCodes.MovReg, regNo, regNo2, (uint)adder);
+            return new MovInstruction(line, file, lineNo, InstructionCodes.MovReg, regNo, regNo2, (uint)adder);
         }
 
         var start2 = 2;
         var value2 = compiler.CalculateExpression(parameters, ref start2);
-        return new MovInstruction(line, InstructionCodes.MovImmediate, regNo, (uint)value2, 0);
+        return new MovInstruction(line, file, lineNo, InstructionCodes.MovImmediate, regNo, (uint)value2, 0);
     }
 
     public static bool ParseRp(List<Token> parameters, ref int idx, out bool increment, out bool decrement)
@@ -107,7 +108,7 @@ internal sealed class MovInstructionCreator : InstructionCreator
         return true;
     }
 
-    private Instruction CreateIndirect2(ICompiler compiler, string line, uint regNo, List<Token> parameters, int idx,
+    private Instruction CreateIndirect2(ICompiler compiler, string line, string file, int lineNo, uint regNo, List<Token> parameters, int idx,
         bool increment, bool decrement)
     {
         var adder = 0;
@@ -118,13 +119,13 @@ internal sealed class MovInstructionCreator : InstructionCreator
             adder = compiler.CalculateExpression(parameters, ref idx);
         }
         if (increment)
-            return new MovInstruction(line, InstructionCodes.MovRegisterRpRpInc, regNo, (uint)adder, 0);
+            return new MovInstruction(line, file, lineNo, InstructionCodes.MovRegisterRpRpInc, regNo, (uint)adder, 0);
         if (decrement)
-            return new MovInstruction(line, InstructionCodes.MovRegisterRpRpDec, regNo, (uint)adder, 0);
-        return new MovInstruction(line, InstructionCodes.MovRegisterRp, regNo, (uint)adder, 0);
+            return new MovInstruction(line, file, lineNo, InstructionCodes.MovRegisterRpRpDec, regNo, (uint)adder, 0);
+        return new MovInstruction(line, file, lineNo, InstructionCodes.MovRegisterRp, regNo, (uint)adder, 0);
     }
     
-    private Instruction CreateIndirect1(ICompiler compiler, string line, List<Token> parameters,
+    private Instruction CreateIndirect1(ICompiler compiler, string line, string file, int lineNo, List<Token> parameters,
         bool increment, bool decrement)
     {
         if (parameters.Count < 2 || !parameters[0].IsChar(','))
@@ -144,18 +145,18 @@ internal sealed class MovInstructionCreator : InstructionCreator
             }
 
             if (increment)
-                return new MovInstruction(line, InstructionCodes.MovRpRegisterRpInc, regNo, (uint)adder, 0);
+                return new MovInstruction(line, file, lineNo, InstructionCodes.MovRpRegisterRpInc, regNo, (uint)adder, 0);
             if (decrement)
-                return new MovInstruction(line, InstructionCodes.MovRpRegisterRpDec, regNo, (uint)adder, 0);
-            return new MovInstruction(line, InstructionCodes.MovRpRegister, regNo, (uint)adder, 0);
+                return new MovInstruction(line, file, lineNo, InstructionCodes.MovRpRegisterRpDec, regNo, (uint)adder, 0);
+            return new MovInstruction(line, file, lineNo, InstructionCodes.MovRpRegister, regNo, (uint)adder, 0);
         }
 
         var start1 = 1;
         var value2 = compiler.CalculateExpression(parameters, ref start1);
         if (increment)
-            return new MovInstruction(line, InstructionCodes.MovRpImmediateRpInc, 0, (uint)value2, 0);
+            return new MovInstruction(line, file, lineNo, InstructionCodes.MovRpImmediateRpInc, 0, (uint)value2, 0);
         if (decrement)
-            return new MovInstruction(line, InstructionCodes.MovRpImmediateRpDec, 0, (uint)value2, 0);
-        return new MovInstruction(line, InstructionCodes.MovRpImmediate, 0, (uint)value2, 0);
+            return new MovInstruction(line, file, lineNo, InstructionCodes.MovRpImmediateRpDec, 0, (uint)value2, 0);
+        return new MovInstruction(line, file, lineNo, InstructionCodes.MovRpImmediate, 0, (uint)value2, 0);
     }
 }

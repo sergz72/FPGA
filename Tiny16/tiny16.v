@@ -26,12 +26,12 @@ module tiny16
 
     reg [15:0] current_instruction = NOP;
     reg [15:0] registers [0:3];
-    reg [15:0] acc, saved_pc;
+    reg [15:0] acc, saved_acc, saved_pc;
     reg [15:0] pc = 0;
     reg start = 0;
 
     wire halt, wfi_, reti, jmp, movrm, movmr, adi, movrr, mvh, add, sub, shl, shr, and_, or_, xor_;
-    wire call_reg, call, br, loadpc, andi, ori, xori;
+    wire call_reg, call, br, loadpc, andi, ori, xori, testi, cmpi, test, cmp;
     wire [15:0] value12_to_16, value8_to_16, value10_to_16;
     wire [3:0] opcode;
     wire [11:0] opcode12;
@@ -47,7 +47,7 @@ module tiny16
     wire [2:0] condition, condition_temp;
     wire condition_neg, condition_pass;
     wire z, n;
-    reg c;
+    reg c, saved_c;
     wire [15:0] alu_op1, alu_op2;
     wire alu_immediate;
     wire alu_op;
@@ -107,8 +107,12 @@ module tiny16
     assign or_ = opcode12 == 12'h95;
     // format |8'hA|4'h5|dst,2bit,src,2bit|
     assign xor_ = opcode12 == 12'hA5;
-    // format |8'hB|4'h5|dst,2bit,reg,2bit|
-    assign call_reg = opcode12 == 12'hB5;
+    // format |8'hB|4'h5|dst,2bit,src,2bit|
+    assign test = opcode12 == 12'hB5;
+    // format |8'hC|4'h5|dst,2bit,src,2bit|
+    assign cmp = opcode12 == 12'hC5;
+    // format |8'hD|4'h5|dst,2bit,reg,2bit|
+    assign call_reg = opcode12 == 12'hD5;
 
     // format |value,8bit|4'h6|XX|reg,2bit|
     assign loadpc = opcode == 6;
@@ -123,6 +127,10 @@ module tiny16
     assign ori = opcode == 4'hA;
     // format |value,8bit|4'hB|reg,2bit,value,2bit|
     assign xori = opcode == 4'hB;
+    // format |value,8bit|4'hC|reg,2bit,value,2bit|
+    assign testi = opcode == 4'hC;
+    // format |value,8bit|4'hD|reg,2bit,value,2bit|
+    assign cmpi = opcode == 4'hD;
 
     assign load = movrm | loadpc;
     assign store = movmr | call | call_reg;
@@ -139,8 +147,8 @@ module tiny16
     assign value10_to_16 = {value10[9], value10[9], value10[9], value10[9], value10[9], value10[9], value10};
     assign value12_to_16 = {value12[11], value12[11], value12[11], value12[11], value12};
 
-    assign alu_immediate = adi | andi | ori | xori;
-    assign alu_op = alu_immediate | shl | shr | add | sub | and_ | or_ | xor_;
+    assign alu_immediate = adi | andi | ori | xori | testi | cmpi;
+    assign alu_op = adi | andi | ori | xori | shl | shr | add | sub | and_ | or_ | xor_;
 
     assign alu_op1 = registers[dest_reg];
     assign alu_op2 = alu_immediate ? value10_to_16 : registers[source_reg];
@@ -173,6 +181,8 @@ module tiny16
                         in_interrupt <= 1;
                         wfi <= 0;
                         saved_pc <= pc;
+                        saved_c <= c;
+                        saved_acc <= acc;
                         pc <= 1;
                         address <= 1;
                     end
@@ -190,6 +200,8 @@ module tiny16
                     if (reti) begin
                         pc <= saved_pc;
                         in_interrupt <= 0;
+			c <= saved_c;
+                        acc <= saved_acc;
                     end
                     else if (call_reg)
                        pc <= registers[source_reg];
@@ -208,10 +220,10 @@ module tiny16
                             end
                         end
                         adi | add: {c, acc} <= alu_op1 + alu_op2;
-                        sub: {c, acc} <= alu_op1 - alu_op2;
+                        sub | cmp | cmpi: {c, acc} <= alu_op1 - alu_op2;
                         shl: {c, acc} <= {alu_op1, 1'b0};
                         shr: {acc, c} <= {1'b0, alu_op1};
-                        andi | and_: acc <= alu_op1 & alu_op2;
+                        andi | and_ | test | testi: acc <= alu_op1 & alu_op2;
                         ori | or_: acc <= alu_op1 | alu_op2;
                         xori | xor_: acc <= alu_op1 ^ alu_op2;
                     endcase

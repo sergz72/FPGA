@@ -1,6 +1,6 @@
 ﻿using GenericAssembler;
 
-namespace Tiny16Assembler.Instructions;
+namespace Tiny16Assembler.V2Instructions;
 
 internal static class AluOperations
 {
@@ -74,9 +74,10 @@ internal static class InstructionCodes
     internal const uint AluMImm = 60;
 }
 
-internal sealed class OpCodeInstruction(string line, uint opCode, uint parameter) : Instruction(line)
+internal sealed class OpCodeInstruction(string line, string file, int lineNo, uint opCode, uint parameter) :
+    Instruction(line, file, lineNo)
 {
-    public override uint[] BuildCode(uint labelAddress)
+    public override uint[] BuildCode(uint labelAddress, uint pc)
     {
         return [(opCode << 10) | parameter];
     }
@@ -84,11 +85,11 @@ internal sealed class OpCodeInstruction(string line, uint opCode, uint parameter
 
 internal sealed class OpCodeInstructionCreator(uint opCode, uint parameter = 0) : InstructionCreator
 {
-    public override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
+    public override Instruction Create(ICompiler compiler, string line, string file, int lineNo, List<Token> parameters)
     {
         if (parameters.Count != 0)
             throw new InstructionException("unexpected instruction parameters");
-        return new OpCodeInstruction(line, opCode, parameter);
+        return new OpCodeInstruction(line, file, lineNo, opCode, parameter);
     }
 }
 

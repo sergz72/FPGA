@@ -1,11 +1,11 @@
-﻿using Tiny16Assembler.Instructions;
-using GenericAssembler;
+﻿using GenericAssembler;
+using Tiny16Assembler.V2Instructions;
 
 namespace Tiny16Assembler;
 
-internal sealed class Tiny16Compiler: GenericCompiler
+internal sealed class Tiny16V2Compiler: GenericCompiler
 {
-    internal Tiny16Compiler(List<string> sources, string outputFileName, OutputFormat outputFormat, bool noDiv32,
+    internal Tiny16V2Compiler(List<string> sources, string outputFileName, OutputFormat outputFormat, bool noDiv32,
         			bool noRem32, bool noMul, bool noDiv16, bool noRem16):
         base(sources, outputFileName, outputFormat, Creators, new GenericParser())
     {

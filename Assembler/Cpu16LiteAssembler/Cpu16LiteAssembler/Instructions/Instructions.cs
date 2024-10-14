@@ -114,9 +114,9 @@ internal static class InstructionCodes
     internal const uint MovRegisterRpRpDec = 0xEA;
 }
 
-internal sealed class OpCodeInstruction(string line, uint opCode) : Instruction(line)
+internal sealed class OpCodeInstruction(string line, string file, int lineNo, uint opCode) : Instruction(line, file, lineNo)
 {
-    public override uint[] BuildCode(uint labelAddress)
+    public override uint[] BuildCode(uint labelAddress, uint pc)
     {
         return [opCode];
     }
@@ -124,10 +124,10 @@ internal sealed class OpCodeInstruction(string line, uint opCode) : Instruction(
 
 internal sealed class OpCodeInstructionCreator(uint opCode) : InstructionCreator
 {
-    public override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
+    public override Instruction Create(ICompiler compiler, string line, string file, int lineNo, List<Token> parameters)
     {
         if (parameters.Count != 0)
             throw new InstructionException("unexpected instruction parameters");
-        return new OpCodeInstruction(line, opCode);
+        return new OpCodeInstruction(line, file, lineNo, opCode);
     }
 }

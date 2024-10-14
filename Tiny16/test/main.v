@@ -27,7 +27,7 @@ module main
     end
 
     tiny16 cpu(.clk(clk), .rd(nrd), .wr(nwr), .reset(nreset), .address(address), .data_in(data_out), .data_out(data_in), .stage(stage),
-               .hlt(hlt), .interrupt(interrupt), .in_interrupt(in_interrupt), .wfi(wfi));
+               .hlt(hlt), .interrupt(interrupt), .in_interrupt(in_interrupt), .wfi(wfi), .ready(1'b1));
 
     assign nhlt = !hlt;
     assign nwfi = !wfi;

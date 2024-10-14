@@ -6,7 +6,8 @@ internal sealed class InOutInstruction : Instruction
 {
     private readonly uint _type, _regNo, _regNo2, _adder;
     
-    internal InOutInstruction(string line, uint type, uint regNo, uint regNo2, uint adder): base(line)
+    internal InOutInstruction(string line, string file, int lineNo, uint type, uint regNo, uint regNo2, uint adder):
+        base(line, file, lineNo)
     {
         _type = type;
         _regNo = regNo;
@@ -14,7 +15,7 @@ internal sealed class InOutInstruction : Instruction
         _adder = adder;
     }
     
-    public override uint[] BuildCode(uint labelAddress)
+    public override uint[] BuildCode(uint labelAddress, uint pc)
     {
         return [_type | (_regNo << 8) | (_regNo2 << 16) | (_adder << 24)];
     }
@@ -22,7 +23,7 @@ internal sealed class InOutInstruction : Instruction
 
 internal sealed class InInstructionCreator : InstructionCreator
 {
-    public override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
+    public override Instruction Create(ICompiler compiler, string line, string file, int lineNo, List<Token> parameters)
     {
         if (parameters.Count < 5 || parameters[0].Type != TokenType.Name || !parameters[1].IsChar(',') ||
             !GetRegisterNumber(compiler, parameters[0].StringValue, out var regNo))
@@ -34,13 +35,13 @@ internal sealed class InInstructionCreator : InstructionCreator
         if (!io)
             throw new InstructionException("incorrect io address format");
 
-        return new InOutInstruction(line, InstructionCodes.In, regNo, regNo2, (uint)offset);
+        return new InOutInstruction(line, file, lineNo, InstructionCodes.In, regNo, regNo2, (uint)offset);
     }
 }
 
 internal sealed class OutInstructionCreator : InstructionCreator
 {
-    public override Instruction Create(ICompiler compiler, string line, List<Token> parameters)
+    public override Instruction Create(ICompiler compiler, string line, string file, int lineNo, List<Token> parameters)
     {
         if (parameters.Count < 5)
             throw new InstructionException("io address and register name expected");
@@ -55,21 +56,21 @@ internal sealed class OutInstructionCreator : InstructionCreator
         if (start == parameters.Count)
             throw new InstructionException("unexpected end of line");
         if (MovInstructionCreator.ParseRp(parameters, ref start, out var increment, out var decrement))
-            return CreateIndirect(line, regNo, offset, increment, decrement);
+            return CreateIndirect(line, file, lineNo, regNo, offset, increment, decrement);
         if (parameters[start].Type != TokenType.Name ||
             !GetRegisterNumber(compiler, parameters[start].StringValue, out var regNo2))
             throw new InstructionException("register name expected");
 
-        return new InOutInstruction(line, InstructionCodes.Out, regNo2, regNo, (uint)offset);
+        return new InOutInstruction(line, file, lineNo, InstructionCodes.Out, regNo2, regNo, (uint)offset);
     }
 
-    private Instruction CreateIndirect(string line, uint regNo, int offset, bool increment, bool decrement)
+    private Instruction CreateIndirect(string line, string file, int lineNo, uint regNo, int offset, bool increment, bool decrement)
     {
         if (increment)
-            return new InOutInstruction(line, InstructionCodes.OutRpInc, 0, regNo, (uint)offset);
+            return new InOutInstruction(line, file, lineNo, InstructionCodes.OutRpInc, 0, regNo, (uint)offset);
         if (decrement)
-            return new InOutInstruction(line, InstructionCodes.OutRpDec, 0, regNo, (uint)offset);
-        return new InOutInstruction(line, InstructionCodes.OutRp, 0, regNo, (uint)offset);
+            return new InOutInstruction(line, file, lineNo, InstructionCodes.OutRpDec, 0, regNo, (uint)offset);
+        return new InOutInstruction(line, file, lineNo, InstructionCodes.OutRp, 0, regNo, (uint)offset);
     }
     
     internal static bool GetRegisterNumberWithIoFlag(ICompiler compiler, List<Token> parameters, ref int start, bool withOffset,
@@ -113,12 +114,12 @@ internal sealed class OutInstructionCreator : InstructionCreator
             if (parameters[start].IsChar('+'))
             {
                 start++;
-                ReadOffset(compiler, parameters, ref start, out offset);
+                offset = ReadOffset(compiler, parameters, ref start);
             }
             else if (parameters[start].IsChar('-'))
             {
                 start++;
-                ReadOffset(compiler, parameters, ref start, out var off);
+                var off = ReadOffset(compiler, parameters, ref start);
                 offset = -off;
             }
             else

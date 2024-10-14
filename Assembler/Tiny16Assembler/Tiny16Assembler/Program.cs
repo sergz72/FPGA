@@ -10,6 +10,8 @@ var noRem32 = true;
 var noDiv16 = true;
 var noRem16 = true;
 var noMul = true;
+var arch = "v3";
+var archExpected = false;
 
 foreach (var arg in args)
 {
@@ -17,6 +19,11 @@ foreach (var arg in args)
     {
         outputFileName = arg;
         outputFileNameExpected = false;
+    }
+    else if (archExpected)
+    {
+        arch = arg;
+        archExpected = false;
     }
     else
     {
@@ -32,6 +39,9 @@ foreach (var arg in args)
                     break;
                 case "-b":
                     outputFormat = OutputFormat.Bin;
+                    break;
+                case "--arch":
+                    archExpected = true;
                     break;
                 case "--hmul": // hardware mul
                     noMul = false;
@@ -62,7 +72,12 @@ if (sources.Count == 0 || outputFileNameExpected)
     Usage();
 else
 {
-    var compiler = new Tiny16Compiler(sources, outputFileName, outputFormat, noDiv32, noRem32, noMul, noDiv16, noRem16);
+    GenericCompiler compiler = arch switch
+    {
+        "v2" => new Tiny16V2Compiler(sources, outputFileName, outputFormat, noDiv32, noRem32, noMul, noDiv16, noRem16),
+        "v3" => new Tiny16V3Compiler(sources, outputFileName, outputFormat),
+        _ => throw new Exception($"Unknown architecture {arch}")
+    };
     try
     {
         compiler.Compile();
@@ -77,5 +92,5 @@ return;
 
 void Usage()
 {
-    Console.WriteLine("Usage: Cpu16Assembler [-o outputFileName] sources");
+    Console.WriteLine("Usage: Tiny16Assembler [-o outputFileName] [- x outputFormat] [--arch arch] sources");
 }

@@ -11,7 +11,9 @@ public interface ICompiler
     int CalculateExpression(List<Token> tokens, ref int start);
     string FindRegisterNumber(string registerName);
     int FindConstantValue(string name);
+    uint? FindLabel(string name);
     void RaiseException(string errorMessage);
+    Token GetNextToken(List<Token> tokens, ref int start);
 }
 
 public class GenericCompiler: ICompiler
@@ -71,6 +73,11 @@ public class GenericCompiler: ICompiler
         return result;
     }
 
+    public uint? FindLabel(string name)
+    {
+        return Labels.TryGetValue(name, out var address) ? address : null;
+    }
+
     public string FindRegisterNumber(string registerName)
     {
         return RegisterNames.GetValueOrDefault(registerName, registerName);
@@ -79,6 +86,13 @@ public class GenericCompiler: ICompiler
     public int CalculateExpression(List<Token> tokens, ref int start)
     {
         return EParser.Parse(tokens, ref start);
+    }
+
+    public Token GetNextToken(List<Token> tokens, ref int start)
+    {
+        if (start == tokens.Count)
+            throw new CompilerException(CurrentFileName, CurrentLineNo, "unexpected end of line");
+        return tokens[start++];
     }
     
     public void Compile()
@@ -122,9 +136,9 @@ public class GenericCompiler: ICompiler
     protected List<BinaryItem> CreateBinary()
     {
         var retries = 10000;
+        uint pc = 0;
         while (retries > 0)
         {
-            uint pc = 0;
             var again = false;
             foreach (var instruction in Instructions)
             {
@@ -149,10 +163,12 @@ public class GenericCompiler: ICompiler
             throw new CompilerException("CreateBinary", 0, "Instructions size update was unsuccessful.");
 
         var bytes = new List<BinaryItem>();
+        pc = 0;
         foreach (var instruction in Instructions)
         {
                 var labelAddress = instruction.RequiredLabel != null ? Labels[instruction.RequiredLabel] : 0;
-                var code = instruction.BuildCode(labelAddress);
+                var code = instruction.BuildCode(labelAddress, pc);
+                pc += (uint)code.Length;
                 bytes.Add(new BinaryItem(code, instruction.Line));
         }
 
@@ -219,7 +235,7 @@ public class GenericCompiler: ICompiler
                                     tokens = tokens[2..];
                                 }
 
-                                var instruction = ParseInstruction(line, tokens);
+                                var instruction = ParseInstruction(line, fileName, CurrentLineNo, tokens);
                                 Instructions.Add(instruction);
                                 Pc += instruction.Size;
                                 break;
@@ -285,7 +301,7 @@ public class GenericCompiler: ICompiler
         RegisterNames.Add(name, rname);
     }
     
-    protected Instruction ParseInstruction(string line, List<Token> tokens)
+    protected Instruction ParseInstruction(string line, string file, int lineNo, List<Token> tokens)
     {
         if (tokens[0].Type != TokenType.Name)
             throw new CompilerException(CurrentFileName, CurrentLineNo, "instruction name expected");
@@ -294,7 +310,7 @@ public class GenericCompiler: ICompiler
         {
             if (!InstructionCreators.TryGetValue(tokens[0].StringValue, out var creator))
                 throw new Exception("unknown instruction: " + tokens[0].StringValue);
-            return creator.Create(this, line, tokens[1..]);
+            return creator.Create(this, line, file, lineNo, tokens[1..]);
         }
         catch (Exception e)
         {
