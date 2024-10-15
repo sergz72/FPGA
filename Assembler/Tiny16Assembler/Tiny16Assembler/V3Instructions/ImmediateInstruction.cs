@@ -10,14 +10,13 @@ internal sealed class ImmediateInstructionCreator(uint opCode) : InstructionCrea
             throw new InstructionException("register, immediate are expected");
         var start = 0;
         var token = compiler.GetNextToken(parameters, ref start);
-        if (token.Type != TokenType.Name)
+        if (token.Type != TokenType.Name || !InstructionsHelper.GetRegisterNumber(token.StringValue, out var registerNumber))
             throw new InstructionException("register name expected");
-        var registerNumber = InstructionsHelper.GetRegisterNumber(token.StringValue);
         if (!compiler.GetNextToken(parameters, ref start).IsChar(','))
             throw new InstructionException("syntax error");
         var immediate = compiler.CalculateExpression(parameters, ref start);
-        InstructionsHelper.ValidateOffset(immediate);
-        var o = (uint)(immediate & 0x3FF);
+        InstructionsHelper.ValidateOffset10u(immediate);
+        var o = (uint)immediate;
         return new OpCodeInstruction(line, file, lineNo, o & 0xFF, opCode, registerNumber, o >> 8);
     }
 }

@@ -2,8 +2,13 @@ using GenericAssembler;
 
 namespace Tiny16Assembler.V3Instructions;
 
-internal sealed class JmpInstruction(string line, string file, int lineNo, string label) : Instruction(line, file, lineNo)
+internal sealed class JmpInstruction : Instruction
 {
+    internal JmpInstruction(string line, string file, int lineNo, string label): base(line, file, lineNo)
+    {
+        RequiredLabel = label;
+    }
+    
     public override uint[] BuildCode(uint labelAddress, uint pc)
     {
         var offset = (int)labelAddress - (int)pc;

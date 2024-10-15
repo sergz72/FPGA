@@ -6,7 +6,7 @@ namespace Tiny16Assembler;
 internal sealed class Tiny16V3Compiler : GenericCompiler
 {
     internal Tiny16V3Compiler(List<string> sources, string outputFileName, OutputFormat outputFormat) :
-        base(sources, outputFileName, outputFormat, Creators, new GenericParser())
+        base(sources, outputFileName, outputFormat, Creators, new GenericParser(), 4)
     {
     }
     
@@ -44,23 +44,24 @@ internal sealed class Tiny16V3Compiler : GenericCompiler
         {"xori", new ImmediateInstructionCreator(InstructionCodes.Xori)},
         {"xor", new RegisterInstructionCreator(InstructionCodes.OpcodeForOpcode12Commands, InstructionCodes.Xor)},
         
-        {"br", new BrInstructionCreator(Conditions.None)},
-        {"brc", new BrInstructionCreator(Conditions.C)},
-        {"brlt", new BrInstructionCreator(Conditions.C)},
-        {"brz", new BrInstructionCreator(Conditions.Z)},
-        {"breq", new BrInstructionCreator(Conditions.Z)},
-        {"brnc", new BrInstructionCreator(Conditions.NC)},
-        {"brge", new BrInstructionCreator(Conditions.NC)},
-        {"brnz", new BrInstructionCreator(Conditions.NZ)},
-        {"brne", new BrInstructionCreator(Conditions.NZ)},
-        {"brgt", new BrInstructionCreator(Conditions.GT)},
-        {"brle", new BrInstructionCreator(Conditions.LE)},
-        {"brmi", new BrInstructionCreator(Conditions.MI)},
-        {"brpl", new BrInstructionCreator(Conditions.PL)},
+        {"b", new BrInstructionCreator(Conditions.None)},
+        {"bc", new BrInstructionCreator(Conditions.C)},
+        {"blt", new BrInstructionCreator(Conditions.C)},
+        {"bz", new BrInstructionCreator(Conditions.Z)},
+        {"beq", new BrInstructionCreator(Conditions.Z)},
+        {"bnc", new BrInstructionCreator(Conditions.NC)},
+        {"bge", new BrInstructionCreator(Conditions.NC)},
+        {"bnz", new BrInstructionCreator(Conditions.NZ)},
+        {"bne", new BrInstructionCreator(Conditions.NZ)},
+        {"bgt", new BrInstructionCreator(Conditions.GT)},
+        {"ble", new BrInstructionCreator(Conditions.LE)},
+        {"bmi", new BrInstructionCreator(Conditions.MI)},
+        {"bpl", new BrInstructionCreator(Conditions.PL)},
         
-        {"jmp", new JmpInstructionCreator()},
-        {"call", new CallInstructionCreator()},
-        {"ret", new RetInstructionCreator()},
+        {"j", new JmpInstructionCreator()},
+        {"jal", new JalInstructionCreator()},
+        {"jalr", new RegisterInstructionCreator(InstructionCodes.OpcodeForOpcode12Commands, InstructionCodes.JalReg)},
+        {"loadpc", new LoadPCInstructionCreator()},
 
         {"lw", new LoadStoreInstructionCreator(InstructionCodes.Lw)},
         {"sw", new LoadStoreInstructionCreator(InstructionCodes.Sw)},

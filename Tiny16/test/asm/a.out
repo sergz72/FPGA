@@ -1,9 +1,0 @@
-0200 // 0000 jmp pc+2
-0260 // 0001 reti
-FC2B // 0002 mvh X, FF00
-FF38 // 0003 adi X, FF, X = 0xFFFF
-0020 // 0004 mvh A, 0
-0160 // 0005 wfi
-0130 // 0006 adi A, 1
-0048 // 0007 mov (X), A
-FD0F // 0008 jmp pc-3

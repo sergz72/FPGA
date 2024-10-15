@@ -29,9 +29,8 @@ public class LoadAddressInstructionCreator: InstructionCreator
     public override Instruction Create(ICompiler compiler, string line, string file, int lineNo, List<Token> parameters)
     {
         if (parameters.Count != 3 || parameters[0].Type != TokenType.Name || parameters[2].Type != TokenType.Name ||
-            !parameters[1].IsChar(','))
+            !parameters[1].IsChar(',') || !InstructionsHelper.GetRegisterNumber(parameters[0].StringValue, out var registerNumber))
             throw new InstructionException("register name and label name expected");
-        var registerNumber = InstructionsHelper.GetRegisterNumber(parameters[0].StringValue);
         return new LoadAddressInstruction(line, file, lineNo, registerNumber, parameters[2].StringValue);
     }
 }

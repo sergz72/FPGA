@@ -113,7 +113,7 @@ public class GenericCompiler: ICompiler
                     foreach (var code in data.Code)
                     {
                         var codes = code.ToString("x" + CodeSize);
-                        var pcs = code.ToString("x" + PcSize);
+                        var pcs = pc.ToString("x" + PcSize);
                         writer.Write($"{codes} // {pcs} {data.Line}\n");
                         pc++;
                     }

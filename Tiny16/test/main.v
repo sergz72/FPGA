@@ -1,5 +1,5 @@
 module main
-#(parameter ROM_BITS = 4, RESET_BIT = 3, TIMER_BIT = 23, COUNTER_BITS = 24)
+#(parameter ROM_BITS = 8, RAM_BITS = 8, RESET_BIT = 3, TIMER_BIT = 23, COUNTER_BITS = 24)
 (
     input wire clk,
     output wire nhlt,
@@ -11,16 +11,19 @@ module main
     wire [3:0] stage;
     wire [15:0] data_out;
     wire [15:0] data_in;
-    reg [15:0] rom_rdata;
-    wire rom_selected, port_selected;
+    reg [15:0] rom_rdata, ram_rdata;
+    wire rom_selected, ram_selected, port_selected;
     wire [ROM_BITS-1:0] rom_address;
+    wire [RAM_BITS-1:0] ram_address;
     reg nreset = 0;
     reg [COUNTER_BITS - 1:0] counter = 0;
     reg interrupt = 0;
     wire in_interrupt;
     wire wfi;
+    wire mem_clk;
 
     reg [15:0] rom [0:(1<<ROM_BITS)-1];
+    reg [15:0] ram [0:(1<<RAM_BITS)-1];
 
     initial begin
         $readmemh("asm/a.out", rom);
@@ -31,10 +34,13 @@ module main
 
     assign nhlt = !hlt;
     assign nwfi = !wfi;
-    assign data_out = rom_rdata;
+    assign data_out = rom_selected ? rom_rdata : ram_rdata;
     assign rom_address = address[ROM_BITS-1:0];
+    assign ram_address = address[RAM_BITS-1:0];
     assign rom_selected = address[15:14] == 0;
-    assign port_selected = address[15:14] == 3;
+    assign port_selected = address[15:14] == 2;
+    assign ram_selected = address[15:14] == 3;
+    assign mem_clk = nrd & nwr;
 
     always @(posedge clk) begin
         counter <= counter + 1;
@@ -52,13 +58,21 @@ module main
             interrupt <= 1;
     end
 
-    always @(posedge clk) begin
+    always @(negedge mem_clk) begin
         if (!nwr & port_selected)
             led <= data_in[0];
     end
 
-    always @(negedge clk) begin
+    always @(negedge mem_clk) begin
         if (rom_selected)
             rom_rdata <= rom[rom_address];
+    end
+
+    always @(negedge mem_clk) begin
+        if (ram_selected) begin
+            if (!nwr)
+               ram[ram_address] <= data_in;
+            ram_rdata <= ram[ram_address];
+        end
     end
 endmodule

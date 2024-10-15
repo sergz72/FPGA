@@ -32,7 +32,7 @@ internal static class InstructionCodes
     internal const uint Xor = 10;
     internal const uint Test = 11;
     internal const uint Cmp = 12;
-    internal const uint CallReg = 13;
+    internal const uint JalReg = 13;
 
     internal const uint Jmp = 0;
     internal const uint Br = 1;
@@ -40,7 +40,7 @@ internal static class InstructionCodes
     internal const uint Sw = 3;
     internal const uint Lw = 4;
     internal const uint Loadpc = 6;
-    internal const uint Call = 7;
+    internal const uint Jal = 7;
     
     internal const uint Adi = 8;
     internal const uint Andi = 9;
@@ -71,21 +71,29 @@ internal sealed class OpCodeInstructionCreator(uint opCode, uint hiByte) : Instr
 
 internal static class InstructionsHelper
 {
-    internal static uint GetRegisterNumber(string name)
+    internal static bool GetRegisterNumber(string name, out uint registerNumber)
     {
-        return name switch
+        uint? regNo = name switch
         {
             "A" => 0,
             "W" => 1,
             "X" => 2,
             "SP" => 3,
-            _ => throw new InstructionException($"unknown register {name}")
+            _ => null
         };
+        registerNumber = regNo ?? 0;
+        return regNo.HasValue;
     }
     
-    internal static void ValidateOffset(int offset)
+    internal static void ValidateOffset10(int offset)
     {
         if (offset is > 511 or < -512)
+            throw new InstructionException($"invalid immediate or offset {offset}");
+    }
+
+    internal static void ValidateOffset10u(int offset)
+    {
+        if (offset is > 1023 or < 0)
             throw new InstructionException($"invalid immediate or offset {offset}");
     }
     
@@ -105,18 +113,25 @@ internal static class InstructionsHelper
                 else
                     offset = compiler.FindConstantValue(token.StringValue);
                 break;
+            case TokenType.Symbol:
+                if (token.StringValue != "-")
+                    throw new InstructionException("number or name expected");
+                token = compiler.GetNextToken(parameters, ref start);
+                if (token.Type != TokenType.Number)
+                    throw new InstructionException("number expected");
+                offset = -token.IntValue;
+                break;
             default:
                 throw new InstructionException("number or name expected");
         }
-        ValidateOffset(offset);
+        ValidateOffset10(offset);
         if (!compiler.GetNextToken(parameters, ref start).IsChar('('))
             throw new InstructionException("( expected");
         token = compiler.GetNextToken(parameters, ref start);
         if (token is { Type: TokenType.Number, IntValue: 0 })
             return 0;
-        if (token.Type != TokenType.Name)
+        if (token.Type != TokenType.Name || !GetRegisterNumber(token.StringValue, out var registerNumber))
             throw new InstructionException("register name expected");
-        var registerNumber = GetRegisterNumber(token.StringValue);
         if (!compiler.GetNextToken(parameters, ref start).IsChar(')'))
             throw new InstructionException(") expected");
         return registerNumber;
