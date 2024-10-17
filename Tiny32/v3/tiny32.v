@@ -34,9 +34,6 @@ module tiny32
     localparam NOP = 32'h00000013; // ADDI ZERO, 0
 
     reg [31:0] current_instruction = NOP;
-    wire [9:0] op_id;
-    wire [4:0] op;
-    wire [1:0] func7;
     wire [2:0] func3;
     wire [11:0] imm12i, imm12s, imm12b;
     wire [19:0] imm20u, imm20j;
@@ -116,9 +113,7 @@ module tiny32
     assign source2_reg_in = data_in[24:20];
     assign source2_reg = current_instruction[24:20];
     assign dest_reg = current_instruction[11:7];
-    assign op = data_in[6:2];
     assign func3 = data_in[14:12];
-    assign func7 = func7_f(data_in[31:25]);
     assign imm12i = current_instruction[31:20];
     assign imm12s = {current_instruction[31:25], current_instruction[11:7]};
     assign imm12b = {current_instruction[31], current_instruction[7], current_instruction[30:25], current_instruction[11:8]};
@@ -139,8 +134,6 @@ module tiny32
     assign data_selector = current_microinstruction[25:22];
     assign hlt_ = current_microinstruction[26];
     assign wfi_ = current_microinstruction[27];
-
-    assign op_id = {op, func3, func7};
 
     // stage 2,3
     assign address = stage[1] & (load || store != 4'b1111) ? (load ? source_address_i : source_address_s) : pc;
@@ -171,15 +164,6 @@ module tiny32
             8'b0000001?: interrupt_no_f = 4'h2;
             8'b00000001: interrupt_no_f = 4'h1;
             8'b00000000: interrupt_no_f = 4'h0;
-        endcase
-    endfunction
-
-    function [1:0] func7_f(input [6:0] source);
-        case (source)
-            7'b0000000: func7_f = 2'b00;
-            7'b0000001: func7_f = 2'b01;
-            7'b0100000: func7_f = 2'b10;
-            default: func7_f = 2'b11;
         endcase
     endfunction
 
