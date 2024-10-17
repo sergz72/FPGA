@@ -85,6 +85,7 @@ module tiny32
     wire nogo, go;
 
 `ifndef NO_DIV
+`ifndef HARD_DIV
     reg div_start = 0;
     reg div_signed = 0;
     wire div_ready;
@@ -92,6 +93,7 @@ module tiny32
 
     div d(.clk(!clk), .nrst(nreset), .dividend(alu_op1), .divisor(alu_op2), .start(div_start), .signed_ope(div_signed),
             .quotient(quotient), .remainder(remainder), .ready(div_ready));
+`endif
 `endif
 
     instruction_decoder #(.MICROCODE_WIDTH(MICROCODE_WIDTH)) id (.instruction(current_instruction), .source_address_i(source_address_i[1:0]),
@@ -258,7 +260,7 @@ module tiny32
         endcase
     endfunction
 
-    always @(posedge clk) begin
+    always @(posedge main_clk) begin
         if (!nreset)
             next_stage_alu <= 1;
         else if (clk3 & alu_clk) begin
@@ -356,11 +358,9 @@ module tiny32
         end
         else begin
             interrupt_pending <= interrupt;
-            if (stage == 3) begin
+            if (stage == 3)
                 start <= 1;
-                stage <= 0;
-            end
-            else if (next_stage & next_stage_alu)
+            if (next_stage & next_stage_alu)
                 stage <= stage + 1;
         end
     end
@@ -379,6 +379,7 @@ module tiny32
         else if (start) begin
             case (stage)
                 0: begin
+                    error <= pc[1:0] != 0;
                     if (interrupt_no != 0 && !in_interrupt) begin
                         in_interrupt <= 1;
                         interrupt_ack <= interrupt_pending;
@@ -399,33 +400,33 @@ module tiny32
                         next_stage <= 0;
                 end
                 2: begin
-                    hlt <= hlt_ | err;
-                    error <= err || pc[1:0] != 0;
+                    hlt <= hlt_;
+                    error <= err;
                 end
                 3: begin
                     if (ready) begin
                         data_load <= data_in;
                         next_stage <= 1;
+
+                        if (set_pc) begin
+                            if (pc_source == 2'b11) begin // reti command
+                                in_interrupt <= 0;
+                                interrupt_ack <= 0;
+                            end
+                            pc <= pc_source_f1(pc_source) + pc_source_f2(pc_source);
+                        end
+                        else
+                            pc <= pc + 4;
                     end
                     else
                         next_stage <= 0;
-
-                    if (set_pc) begin
-                        if (pc_source == 2'b11) begin // reti command
-                            in_interrupt <= 0;
-                            interrupt_ack <= 0;
-                        end
-                        pc <= pc_source_f1(pc_source) + pc_source_f2(pc_source);
-                    end
-                    else
-                        pc <= pc + 4;
                     wfi <= wfi_;
                 end
             endcase
         end
     end
 
-    always @(posedge clk) begin
+    always @(posedge main_clk) begin
         if (clk1 & !registers_wr)
             registers[dest_reg] <= registers_data_wr;
         else if (clk2) begin

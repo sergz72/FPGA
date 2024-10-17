@@ -1,2 +1,0 @@
-`define DIV
-`define REM

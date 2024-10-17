@@ -1,3 +1,5 @@
+`include "tiny32.vh"
+
 module tiny32_tb;
     localparam ROM_BITS = 11;
     localparam RAM_BITS = 10;
@@ -5,7 +7,7 @@ module tiny32_tb;
     wire [31:0] address;
     wire hlt, error, wfi, nrd;
     wire [3:0] nwr;
-    wire [1:0] stage;
+    wire [`STAGE_WIDTH - 1:0] stage;
     wire [31:0] data_in;
     reg [7:0] interrupt, interrupt_ack;
     reg clk, nreset, ready;

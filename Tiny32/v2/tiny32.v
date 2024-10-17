@@ -262,7 +262,7 @@ module tiny32
         endcase
     endfunction
 
-    always @(posedge clk) begin
+    always @(posedge main_clk) begin
         if (!nreset)
             next_stage_alu <= 1;
         else if (clk4 & alu_clk) begin
@@ -373,14 +373,14 @@ module tiny32
             error <= 0;
         end
         else if (start) begin
+            if (clk1)
+                error <= pc[1:0] != 0;
             if (clk3) begin
-                hlt <= op_decoder_result[7] | op_decoder_result[6];
-                error <= op_decoder_result[6] || pc[1:0] != 0;
+                hlt <= op_decoder_result[7];
+                error <= op_decoder_result[6];
             end
-            else if (clk4) begin
-                hlt <= err;
+            else if (clk4)
                 error <= err;
-            end
         end
     end
 
@@ -441,7 +441,7 @@ module tiny32
         end
     end
 
-    always @(posedge clk) begin
+    always @(posedge main_clk) begin
         if (clk1 & !registers_wr)
             registers[dest_reg] <= registers_data_wr;
         else if (clk2) begin

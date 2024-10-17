@@ -1,4 +1,5 @@
 `include "main.vh"
+`include "tiny32.vh"
 
 module main
 #(parameter
@@ -59,7 +60,7 @@ ROM_BITS = 10)
     wire nrd;
     wire cpu_clk;
     wire rom_selected, ram_selected, ports_selected;
-    wire [2:0] stage;
+    wire [`STAGE_WIDTH - 1:0] stage;
     wire mem_clk;
     wire [RAM_BITS - 1:0] ram_address;
     wire [ROM_BITS - 1:0] rom_address;

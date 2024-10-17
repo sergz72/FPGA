@@ -88,11 +88,21 @@ module uart_fifo_tb;
         nwr = 0;
         #5
         nwr = 1;
-        #200
+        data_in = 8'hA5;
+        #5
+        nwr = 0;
+        #5
+        nwr = 1;
+        #500
         nrd = 0;
         #5
         nrd = 1;
-        data_in = 8'hA5;
+	#5
+        nrd = 0;
+        #5
+        nrd = 1;
+        data_in = 8'h99;
+        #5
         nwr = 0;
         #5
         nwr = 1;
