@@ -30,11 +30,15 @@ module tiny32
     output reg [7:0] interrupt_ack = 0,
     output reg [1:0] stage = 0
 );
-    localparam MICROCODE_WIDTH = 28;
-    localparam NOP = 32'h00000013; // ADDI ZERO, 0
+    reg lb, lh, lw, lbu, lhu, alu_immediate, auipc, sb, sh, sw, alu_regreg, lui, br, jalr, jal, reti;
+    reg wfi_;
+    wire [2:0] func3_in, func3;
+    wire [6:0] op, func7;
+    reg load, store_;
+    wire set_pc;
+    wire [3:0] store;
 
-    reg [31:0] current_instruction = NOP;
-    wire [2:0] func3;
+    reg [31:0] current_instruction;
     wire [11:0] imm12i, imm12s, imm12b;
     wire [19:0] imm20u, imm20j;
     wire [31:0] source_address_i, source_address_s;
@@ -54,10 +58,6 @@ module tiny32
 
     reg [31:0] data_load;
 
-    wire [MICROCODE_WIDTH - 1:0] current_microinstruction;
-    wire hlt_ , wfi_;
-    wire load, set_pc;
-    wire [3:0] store;
     wire [1:0] pc_source;
     wire [1:0] registers_wr_data_source;
     wire registers_wr;
@@ -93,9 +93,6 @@ module tiny32
 `endif
 `endif
 
-    instruction_decoder #(.MICROCODE_WIDTH(MICROCODE_WIDTH)) id (.instruction(current_instruction), .source_address_i(source_address_i[1:0]),
-                          .source_address_s(source_address_s[1:0]), .decoded_instruction(current_microinstruction));
-
     assign stop = hlt | error;
     assign main_clk = stop | clk;
     assign nogo = stop | !start;
@@ -109,22 +106,23 @@ module tiny32
     assign nrd = nogo | !(clk2 | (load & clk4));
     assign nwr = go & clk4 ? store : 4'b1111;
 
+    assign op = data_in[6:0];
+    assign func3_in = data_in[14:12];
+    assign func3 = current_instruction[14:12];
+    assign func7 = current_instruction[31:25];
     assign source1_reg_in = data_in[19:15];
     assign source2_reg_in = data_in[24:20];
     assign source2_reg = current_instruction[24:20];
     assign dest_reg = current_instruction[11:7];
-    assign func3 = data_in[14:12];
     assign imm12i = current_instruction[31:20];
     assign imm12s = {current_instruction[31:25], current_instruction[11:7]};
     assign imm12b = {current_instruction[31], current_instruction[7], current_instruction[30:25], current_instruction[11:8]};
     assign imm20u = current_instruction[31:12];
     assign imm20j = {current_instruction[31], current_instruction[19:12], current_instruction[20], current_instruction[30:21]};
 
-    assign registers_wr = current_microinstruction[0];
-    assign load = current_microinstruction[1];
-    assign store = current_microinstruction[5:2];
-    assign err = current_microinstruction[6];
-    assign set_pc = current_microinstruction[7];
+    assign set_pc = reti | br | jalr | jal;
+    assign registers_wr = store_ | br | reti | hlt | wfi_;
+
     assign pc_source = current_microinstruction[9:8];
     assign registers_wr_data_source = current_microinstruction[11:10];
     assign alu_clk = current_microinstruction[12];
@@ -132,8 +130,6 @@ module tiny32
     assign alu_op2_source = current_microinstruction[17:15];
     assign alu_op = current_microinstruction[21:18];
     assign data_selector = current_microinstruction[25:22];
-    assign hlt_ = current_microinstruction[26];
-    assign wfi_ = current_microinstruction[27];
 
     // stage 2,3
     assign address = stage[1] & (load || store != 4'b1111) ? (load ? source_address_i : source_address_s) : pc;
@@ -378,27 +374,55 @@ module tiny32
                 1: begin
                     if (ready) begin
                         current_instruction <= data_in;
+
+                        load <= op == 3;
+                        lb <= op == 3 && func3_in == 0;
+                        lh <= op == 3 && func3_in == 1;
+                        lw <= op == 3 && func3_in == 2;
+                        lbu <= op == 3 && func3_in == 4;
+                        lhu <= op == 3 && func3_in == 5;
+
+                        alu_immediate <= op == 19;
+
+                        auipc <= op == 23;
+
+                        store_ <= op == 35;
+                        sb <= op == 35 && func3_in == 0;
+                        sh <= op == 35 && func3_in == 1;
+                        sw <= op == 35 && func3_in == 2;
+
+                        alu_regreg <= op == 51;
+
+                        lui <= op == 55;
+
+                        br <= op == 99;
+
+                        jalr <= op == 103;
+                        jal <= op == 111;
+
+                        wfi_ <= op == 11 && func3_in == 0;
+                        reti <= op == 11 && func3_in == 2;
+                        hlt <= op == 11 && func3_in == 2;
+
                         next_stage <= 1;
                     end
                     else
                         next_stage <= 0;
                 end
                 2: begin
-                    hlt <= hlt_;
-                    error <= err;
+                    error <= !lb & !lh &!lw & !lbu & !lhu & !alu_immediate & !auipc & ! sb & !sh & !sw & !alu_regreg & !lui & !br & !jalr & !jal & !hlt & !wfi_ & !reti;
                 end
                 3: begin
                     if (ready) begin
                         data_load <= data_in;
                         next_stage <= 1;
 
-                        if (set_pc) begin
-                            if (pc_source == 2'b11) begin // reti command
-                                in_interrupt <= 0;
-                                interrupt_ack <= 0;
-                            end
-                            pc <= pc_source_f1(pc_source) + pc_source_f2(pc_source);
+                        if (reti) begin
+                            in_interrupt <= 0;
+                            interrupt_ack <= 0;
                         end
+                        if (set_pc)
+                            pc <= pc_source_f1(pc_source) + pc_source_f2(pc_source);
                         else
                             pc <= pc + 4;
                     end
