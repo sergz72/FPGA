@@ -1,3 +1,5 @@
+`include "tiny16.vh"
+
 module tiny16
 (
     input wire clk,
@@ -53,6 +55,14 @@ module tiny16
 
     wire go;
     reg next_stage = 1;
+
+`ifdef MUL
+    wire mul;
+    reg [15:0] acc2;
+`endif
+`ifdef DIV
+    wire div, rem;
+`endif
 
     assign opcode = current_instruction[6:4];
     assign opcode12 = current_instruction[15:4];
@@ -116,6 +126,18 @@ module tiny16
     // format |9'hE|3'h5|dst,2bit,XX|
     assign movrimm = opcode12 == 12'h75;
 
+`ifdef MUL
+    // format |9'hF|3'h5|dst,2bit,src,2bit|
+    assign mul = opcode12 == 12'h7D;
+`endif
+
+`ifdef DIV
+    // format |9'h10|3'h5|dst,2bit,src,2bit|
+    assign div = opcode12 == 12'h85;
+    // format |9'h11|3'h5|dst,2bit,src,2bit|
+    assign rem = opcode12 == 12'h8D;
+`endif
+
     // format |value,9bit|3'h6|XX|reg,2bit|
     assign loadpc = opcode == 6;
     // format |offset,9bit|3'h7|reg,2bit,offset,2bit|
@@ -136,7 +158,17 @@ module tiny16
     assign value11_to_16 = {value11[10], value11[10], value11[10], value11[10], value11[10], value11};
     assign value13_to_16 = {value13[12], value13[12], value13[12], value13};
 
-    assign alu_op = shl | shr | add | sub | and_ | or_ | xor_;
+    assign alu_op = shl | shr | add | sub | and_ | or_ | xor_
+`ifdef MUL
+    | mul
+`ifdef DIV
+    | div | rem;
+`else
+    ;
+`endif
+`else
+    ;
+`endif
 
     assign alu_op1 = registers[dest_reg];
     assign alu_op2 = registers[source_reg];
@@ -217,6 +249,13 @@ module tiny16
                         and_ | test: acc <= alu_op1 & alu_op2;
                         or_: acc <= alu_op1 | alu_op2;
                         xor_: acc <= alu_op1 ^ alu_op2;
+`ifdef MUL
+                        mul: {acc2, acc} <= alu_op1 * alu_op2;
+`endif
+`ifdef DIV
+                        div: acc <= alu_op1 / alu_op2;
+                        rem: acc <= alu_op1 % alu_op2;
+`endif
                     endcase
                 end
                 8: begin
