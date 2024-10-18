@@ -28,7 +28,7 @@ module tiny16
 
     reg [15:0] current_instruction = NOP;
     reg [15:0] registers [0:3];
-    reg [15:0] acc, saved_acc, saved_pc;
+    reg [15:0] acc, saved_acc, saved_pc, saved_pc2;
     reg [15:0] pc = 0;
     reg start = 0;
 
@@ -216,6 +216,7 @@ module tiny16
                 2: begin
                     next_stage <= ready;
                     current_instruction <= data_in;
+                    saved_pc2 <= pc;
                 end
                 4: begin
                     hlt <= halt;
@@ -231,11 +232,11 @@ module tiny16
                         pc <= pc + (jmp ? value13_to_16 : (call ? value11_to_16 : ((br & condition_pass) ? value9_to_16 : (movrimm ? 2 : 1))));
                     case (1'b1)
                         load: address <= (source_reg == 0 ? 0 : registers[source_reg]) + value9_to_16;
-                        movrimm: address <= pc + 1;
+                        movrimm: address <= saved_pc2 + 1;
                         store: begin
                             if (call | call_reg) begin
                                 address <= registers[dest_reg] - 1;
-                                data_out <= pc + 1;
+                                data_out <= saved_pc2 + 1;
                             end
                             else begin
                                 address <= (dest_reg == 0 ? 0 : registers[dest_reg]) + value9_to_16;
