@@ -30,7 +30,7 @@ module tiny16
     reg [15:0] pc = 0;
     reg start = 0;
 
-    wire halt, wfi_, reti, jmp, movrm, movmr, movrr, mvh, add, sub, shl, shr, and_, or_, xor_;
+    wire halt, wfi_, reti, jmp, movrm, movmr, movrr, movrimm, mvh, add, sub, shl, shr, and_, or_, xor_;
     wire call_reg, call, br, loadpc, test, cmp;
     wire [15:0] value13_to_16, value9_to_16, value11_to_16;
     wire [2:0] opcode;
@@ -113,6 +113,9 @@ module tiny16
     // format |9'hD|3'h5|dst,2bit,reg,2bit|
     assign call_reg = opcode12 == 12'h6D;
 
+    // format |9'hE|3'h5|dst,2bit,src,2bit|
+    assign movrimm = opcode12 == 12'h75;
+
     // format |value,9bit|3'h6|XX|reg,2bit|
     assign loadpc = opcode == 6;
     // format |offset,9bit|3'h7|reg,2bit,offset,2bit|
@@ -124,7 +127,7 @@ module tiny16
     assign clk2 = stage[1];
     assign clk4 = stage[3];
 
-    assign rd = !go | !(clk2 | (load & clk4));
+    assign rd = !go | !(clk2 | ((load | movrimm) & clk4));
     assign wr = !go | !(store & clk4);
 
     assign go = start & !hlt;
@@ -193,9 +196,10 @@ module tiny16
                     else if (call_reg)
                        pc <= registers[source_reg];
                     else
-                        pc <= pc + (jmp ? value13_to_16 : (call ? value11_to_16 : ((br & condition_pass) ? value9_to_16 : 1)));
+                        pc <= pc + (jmp ? value13_to_16 : (call ? value11_to_16 : ((br & condition_pass) ? value9_to_16 : (movrimm ? 2 : 1))));
                     case (1'b1)
                         load: address <= (source_reg == 0 ? 0 : registers[source_reg]) + value9_to_16;
+                        movrimm: address <= pc + 1;
                         store: begin
                             if (call | call_reg) begin
                                 address <= registers[dest_reg] - 1;
@@ -218,7 +222,7 @@ module tiny16
                 8: begin
                     case (1'b1)
                         loadpc: pc <= data_in;
-                        movrm: registers[dest_reg] <= data_in;
+                        movrm | movrimm: registers[dest_reg] <= data_in;
                         movrr: registers[dest_reg] <= registers[source_reg];
                         mvh: registers[dest_reg] <= {value11, 5'h0};
                         alu_op: registers[dest_reg] <= acc;
