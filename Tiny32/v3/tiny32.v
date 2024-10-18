@@ -30,12 +30,11 @@ module tiny32
     output reg [7:0] interrupt_ack = 0,
     output reg [1:0] stage = 0
 );
-    reg lb, lh, lw, lbu, lhu, alu_immediate, auipc, sb, sh, sw, alu_regreg, lui, br, jalr, jal, reti;
+    reg lb, lh, lw, lbu, lhu, alu_immediate, auipc, sb, sh, sw, alu_clk, lui, br, jalr, jal, reti;
     reg wfi_;
     wire [2:0] func3_in, func3;
     wire [6:0] op, func7;
     reg load, store_;
-    wire set_pc;
     wire [3:0] store;
 
     reg [31:0] current_instruction;
@@ -58,12 +57,9 @@ module tiny32
 
     reg [31:0] data_load;
 
-    wire [1:0] pc_source;
     wire [1:0] registers_wr_data_source;
     wire registers_wr;
     wire [31:0] registers_data_wr;
-    wire err;
-    wire alu_clk;
     wire [1:0] alu_op1_source;
     wire [2:0] alu_op2_source;
     wire [3:0] data_selector;
@@ -120,10 +116,8 @@ module tiny32
     assign imm20u = current_instruction[31:12];
     assign imm20j = {current_instruction[31], current_instruction[19:12], current_instruction[20], current_instruction[30:21]};
 
-    assign set_pc = reti | br | jalr | jal;
     assign registers_wr = store_ | br | reti | hlt | wfi_;
 
-    assign pc_source = current_microinstruction[9:8];
     assign registers_wr_data_source = current_microinstruction[11:10];
     assign alu_clk = current_microinstruction[12];
     assign alu_op1_source = current_microinstruction[14:13];
@@ -172,24 +166,6 @@ module tiny32
             6: condition_f = c;
             7: condition_f = !c;
             default: condition_f = 0;
-        endcase
-    endfunction
-
-    function [31:0] pc_source_f1(input [1:0] source);
-        case (source)
-            0: pc_source_f1 = pc;
-            1: pc_source_f1 = pc;
-            2: pc_source_f1 = source1_reg_data;
-            3: pc_source_f1 = saved_pc;
-        endcase
-    endfunction
-
-    function [31:0] pc_source_f2(input [1:0] source);
-        case (source)
-            0: pc_source_f2 = condition_f(func3) ? { {19{imm12b[11]}}, imm12b, 1'b0 } : 4;
-            1: pc_source_f2 = { {11{imm20j[19]}}, imm20j, 1'b0 };
-            2: pc_source_f2 = { {20{imm12i[11]}}, imm12i };
-            3: pc_source_f2 = 0;
         endcase
     endfunction
 
@@ -391,7 +367,7 @@ module tiny32
                         sh <= op == 35 && func3_in == 1;
                         sw <= op == 35 && func3_in == 2;
 
-                        alu_regreg <= op == 51;
+                        alu_clk <= op == 19 || op == 51;
 
                         lui <= op == 55;
 
@@ -416,15 +392,17 @@ module tiny32
                     if (ready) begin
                         data_load <= data_in;
                         next_stage <= 1;
-
-                        if (reti) begin
-                            in_interrupt <= 0;
-                            interrupt_ack <= 0;
-                        end
-                        if (set_pc)
-                            pc <= pc_source_f1(pc_source) + pc_source_f2(pc_source);
-                        else
-                            pc <= pc + 4;
+                        case (1'b1)
+                            reti: begin
+                                pc <= saved_pc;
+                                in_interrupt <= 0;
+                                interrupt_ack <= 0;
+                            end
+                            br: pc <= condition_f(func3) + { {19{imm12b[11]}}, imm12b, 1'b0 } : 4;
+                            jalr: pc <= source1_reg_data + { {20{imm12i[11]}}, imm12i };
+                            jal: pc <= pc + { {11{imm20j[19]}}, imm20j, 1'b0 };
+                            default: pc <= pc + 4;
+                        endcase
                     end
                     else
                         next_stage <= 0;
