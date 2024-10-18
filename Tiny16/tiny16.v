@@ -33,11 +33,11 @@ module tiny16
     reg start = 0;
 
     wire halt, wfi_, reti, jmp, movrm, movmr, movrr, movrimm, mvl, add, sub, shl, shr, and_, or_, xor_;
-    wire call_reg, call, br, loadpc, test, cmp;
+    wire call_reg, call, br, loadpc, test, cmp, jmp16;
     wire [15:0] value13_to_16, value9_to_16, value11_to_16;
     wire [2:0] opcode;
     wire [11:0] opcode12;
-    wire load, store;
+    wire load, store, fetch2;
     wire [1:0] source_reg;
     wire [1:0] dest_reg;
     wire [8:0] value9;
@@ -126,16 +126,19 @@ module tiny16
     // format |9'hE|3'h5|dst,2bit,XX|
     assign movrimm = opcode12 == 12'h75;
 
+    // format |9'hF|3'h5|XXXX|
+    assign jmp16 = opcode12 == 12'h7D;
+
 `ifdef MUL
-    // format |9'hF|3'h5|dst,2bit,src,2bit|
-    assign mul = opcode12 == 12'h7D;
+    // format |9'h10|3'h5|dst,2bit,src,2bit|
+    assign mul = opcode12 == 12'h85;
 `endif
 
 `ifdef DIV
-    // format |9'h10|3'h5|dst,2bit,src,2bit|
-    assign div = opcode12 == 12'h85;
     // format |9'h11|3'h5|dst,2bit,src,2bit|
-    assign rem = opcode12 == 12'h8D;
+    assign div = opcode12 == 12'h8D;
+    // format |9'h12|3'h5|dst,2bit,src,2bit|
+    assign rem = opcode12 == 12'h95;
 `endif
 
     // format |value,9bit|3'h6|XX|reg,2bit|
@@ -149,7 +152,9 @@ module tiny16
     assign clk2 = stage[1];
     assign clk4 = stage[3];
 
-    assign nrd = !go | !(clk2 | ((load | movrimm) & clk4));
+    assign fetch2 = movrimm | jmp16;
+
+    assign nrd = !go | !(clk2 | ((load | fetch2) & clk4));
     assign nwr = !go | !(store & clk4);
 
     assign go = start & !hlt;
@@ -232,7 +237,7 @@ module tiny16
                         pc <= pc + (jmp ? value13_to_16 : (call ? value11_to_16 : ((br & condition_pass) ? value9_to_16 : (movrimm ? 2 : 1))));
                     case (1'b1)
                         load: address <= (source_reg == 0 ? 0 : registers[source_reg]) + value9_to_16;
-                        movrimm: address <= saved_pc2 + 1;
+                        fetch2: address <= saved_pc2 + 1;
                         store: begin
                             if (call | call_reg) begin
                                 address <= registers[dest_reg] - 1;
@@ -261,7 +266,7 @@ module tiny16
                 end
                 8: begin
                     case (1'b1)
-                        loadpc: pc <= data_in;
+                        loadpc | jmp16: pc <= data_in;
                         movrm | movrimm: registers[dest_reg] <= data_in;
                         movrr: registers[dest_reg] <= registers[source_reg];
                         mvl: registers[dest_reg] <= value11_to_16;

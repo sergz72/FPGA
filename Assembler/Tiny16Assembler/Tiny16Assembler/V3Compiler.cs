@@ -33,6 +33,9 @@ internal sealed class Tiny16V3Compiler : GenericCompiler
         {"and", new RegisterInstructionCreator(InstructionCodes.OpcodeForOpcode12Commands, InstructionCodes.And)},
         {"or", new RegisterInstructionCreator(InstructionCodes.OpcodeForOpcode12Commands, InstructionCodes.Or)},
         {"xor", new RegisterInstructionCreator(InstructionCodes.OpcodeForOpcode12Commands, InstructionCodes.Xor)},
+        {"mul", new RegisterInstructionCreator(InstructionCodes.OpcodeForOpcode12Commands, InstructionCodes.Mul)},
+        {"div", new RegisterInstructionCreator(InstructionCodes.OpcodeForOpcode12Commands, InstructionCodes.Div)},
+        {"rem", new RegisterInstructionCreator(InstructionCodes.OpcodeForOpcode12Commands, InstructionCodes.Rem)},
         
         {"b", new BrInstructionCreator(Conditions.None)},
         {"bc", new BrInstructionCreator(Conditions.C)},
@@ -49,6 +52,7 @@ internal sealed class Tiny16V3Compiler : GenericCompiler
         {"bpl", new BrInstructionCreator(Conditions.PL)},
         
         {"j", new JmpInstructionCreator()},
+        {"j16", new Jmp16InstructionCreator()},
         {"jal", new JalInstructionCreator()},
         {"jalr", new RegisterInstructionCreator(InstructionCodes.OpcodeForOpcode12Commands, InstructionCodes.JalReg)},
         {"loadpc", new LoadPCInstructionCreator()},

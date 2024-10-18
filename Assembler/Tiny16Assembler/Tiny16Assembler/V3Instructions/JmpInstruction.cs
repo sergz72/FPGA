@@ -19,12 +19,22 @@ internal sealed class JmpInstruction : Instruction
     }
 }
 
-internal sealed class JmpInstructionCreator() : InstructionCreator
+internal sealed class JmpInstructionCreator : InstructionCreator
 {
     public override Instruction Create(ICompiler compiler, string line, string file, int lineNo, List<Token> parameters)
     {
         if (parameters.Count != 1 || parameters[0].Type != TokenType.Name)
             throw new InstructionException("label name expected");
         return new JmpInstruction(line, file, lineNo, parameters[0].StringValue);
+    }
+}
+
+internal sealed class Jmp16InstructionCreator : InstructionCreator
+{
+    public override Instruction Create(ICompiler compiler, string line, string file, int lineNo, List<Token> parameters)
+    {
+        if (parameters.Count != 1 || parameters[0].Type != TokenType.Name)
+            throw new InstructionException("label name expected");
+        return new LoadAddressInstruction(line, file, lineNo, InstructionCodes.Jmp16, 0, parameters[2].StringValue);
     }
 }
