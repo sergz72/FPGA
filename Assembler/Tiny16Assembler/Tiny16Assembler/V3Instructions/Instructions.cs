@@ -37,7 +37,7 @@ internal static class InstructionCodes
 
     internal const uint Jmp = 0;
     internal const uint Br = 1;
-    internal const uint Lui = 2;
+    internal const uint Lli = 2;
     internal const uint Sw = 3;
     internal const uint Lw = 4;
     internal const uint Loadpc = 6;
@@ -85,10 +85,10 @@ internal static class InstructionsHelper
             throw new InstructionException($"invalid immediate or offset {offset}");
     }
 
-    internal static void ValidateOffset11u(int offset)
+    internal static void ValidateOffset9(int offset)
     {
-        if (offset is > 2047 or < 0)
-            throw new InstructionException($"invalid immediate or offset {offset}");
+        if (offset is > 255 or < -256)
+            throw new InstructionException($"invalid offset {offset}");
     }
     
     internal static uint GetRegisterNumberWithOffset(ICompiler compiler, List<Token> parameters,
@@ -118,9 +118,9 @@ internal static class InstructionsHelper
             default:
                 throw new InstructionException("number or name expected");
         }
-        ValidateOffset11(offset);
+        ValidateOffset9(offset);
         if (!compiler.GetNextToken(parameters, ref start).IsChar('('))
-            throw new InstructionException("( expected");
+            return 0;
         token = compiler.GetNextToken(parameters, ref start);
         if (token is { Type: TokenType.Number, IntValue: 0 })
             return 0;

@@ -30,7 +30,7 @@ module tiny16
     reg [15:0] pc = 0;
     reg start = 0;
 
-    wire halt, wfi_, reti, jmp, movrm, movmr, movrr, movrimm, mvh, add, sub, shl, shr, and_, or_, xor_;
+    wire halt, wfi_, reti, jmp, movrm, movmr, movrr, movrimm, mvl, add, sub, shl, shr, and_, or_, xor_;
     wire call_reg, call, br, loadpc, test, cmp;
     wire [15:0] value13_to_16, value9_to_16, value11_to_16;
     wire [2:0] opcode;
@@ -75,7 +75,7 @@ module tiny16
     // format |offset,9bit|3'h1|condition,4bit|
     assign br = opcode == 1;
     // format |data,9bit|3'h2|reg,2bit,data,2bit|
-    assign mvh = opcode == 2;
+    assign mvl = opcode == 2;
     // format |offset,9bit|3'h3|dst,2bit,src,2bit|
     assign movmr = opcode == 3;
     // format |offset,9bit|3'h4|dst,2bit,src,2bit|
@@ -224,7 +224,7 @@ module tiny16
                         loadpc: pc <= data_in;
                         movrm | movrimm: registers[dest_reg] <= data_in;
                         movrr: registers[dest_reg] <= registers[source_reg];
-                        mvh: registers[dest_reg] <= {value11, 5'h0};
+                        mvl: registers[dest_reg] <= value11_to_16;
                         alu_op: registers[dest_reg] <= acc;
                     endcase
                 end

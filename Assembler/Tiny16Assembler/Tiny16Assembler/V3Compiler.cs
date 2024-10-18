@@ -18,7 +18,7 @@ internal sealed class Tiny16V3Compiler : GenericCompiler
         {"reti", new OpCodeInstructionCreator(InstructionCodes.OpcodeForOpcode12Commands, InstructionCodes.Reti)},
         
         {"mv", new RegisterInstructionCreator(InstructionCodes.OpcodeForOpcode12Commands, InstructionCodes.Mv)},
-        {"lui", new ImmediateInstructionCreator(InstructionCodes.Lui)},
+        {"lli", new ImmediateInstructionCreator(InstructionCodes.Lli)},
         {"li", new LoadImmediateInstructionCreator()},
         {"la", new LoadAddressInstructionCreator()},
         

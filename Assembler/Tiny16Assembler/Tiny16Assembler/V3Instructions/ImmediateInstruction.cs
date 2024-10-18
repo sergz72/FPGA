@@ -15,7 +15,7 @@ internal sealed class ImmediateInstructionCreator(uint opCode) : InstructionCrea
         if (!compiler.GetNextToken(parameters, ref start).IsChar(','))
             throw new InstructionException("syntax error");
         var immediate = compiler.CalculateExpression(parameters, ref start);
-        InstructionsHelper.ValidateOffset11u(immediate);
+        InstructionsHelper.ValidateOffset11(immediate);
         var o = (uint)immediate;
         return new OpCodeInstruction(line, file, lineNo, o & 0x1FF, opCode, registerNumber, o >> 9);
     }

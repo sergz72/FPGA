@@ -17,8 +17,7 @@ internal sealed class LoadPCInstructionCreator : InstructionCreator
     {
         var start = 0;
         var registerNumber = InstructionsHelper.GetRegisterNumberWithOffset(compiler, parameters, ref start, out var offset);
-        if (offset is > 255 or < -256)
-            throw new InstructionException("ret offset is out of range.");
+        InstructionsHelper.ValidateOffset9(offset);
         var o = (uint)offset & 0x1FF;
         return new LoadPCInstruction(line, file, lineNo, registerNumber, o);
     }
