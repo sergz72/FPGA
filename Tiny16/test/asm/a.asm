@@ -1,15 +1,16 @@
 	j start
 	reti
 start:
-	lui SP, $FF80 >> 6
+	lli SP, $FF80
 	jal SP, init
 next:
 	wfi
-	inc A
+	xor A, W
 	sw A, 0(X)
 	j next
 
 init:
-	lui X, $8000 >> 6
-	lui A, 0
+	li X, $8000
+	lli A, 0
+	lli W, 1
 	loadpc -1(SP)
