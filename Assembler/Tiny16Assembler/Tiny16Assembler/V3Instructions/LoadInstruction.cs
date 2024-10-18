@@ -11,9 +11,9 @@ internal sealed class LoadStoreInstructionCreator(uint opCode) : InstructionCrea
             throw new InstructionException("register, register pointer are expected");
         var start = 2;
         var registerNumber2 = InstructionsHelper.GetRegisterNumberWithOffset(compiler, parameters, ref start, out var offset);
-        if (offset is > 127 or < -128)
+        if (offset is > 255 or < -256)
             throw new InstructionException("load/store offset is out of range");
-        var o = (uint)offset & 0xFF;
+        var o = (uint)offset & 0x1FF;
         if (opCode == InstructionCodes.Lw)
             return new OpCodeInstruction(line, file, lineNo, o, opCode, registerNumber, registerNumber2);
         return new OpCodeInstruction(line, file, lineNo, o, opCode, registerNumber2, registerNumber);

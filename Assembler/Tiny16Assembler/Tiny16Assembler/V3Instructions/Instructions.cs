@@ -33,6 +33,7 @@ internal static class InstructionCodes
     internal const uint Test = 11;
     internal const uint Cmp = 12;
     internal const uint JalReg = 13;
+    internal const uint Li = 14; // load immediate
 
     internal const uint Jmp = 0;
     internal const uint Br = 1;
@@ -41,21 +42,14 @@ internal static class InstructionCodes
     internal const uint Lw = 4;
     internal const uint Loadpc = 6;
     internal const uint Jal = 7;
-    
-    internal const uint Adi = 8;
-    internal const uint Andi = 9;
-    internal const uint Ori = 10;
-    internal const uint Xori = 11;
-    internal const uint Testi = 12;
-    internal const uint Cmpi = 13;
 }
 
-internal sealed class OpCodeInstruction(string line, string file, int lineNo, uint hiByte, uint opCode, uint parameter1, uint parameter2) :
+internal sealed class OpCodeInstruction(string line, string file, int lineNo, uint hiByte9, uint opCode, uint parameter1, uint parameter2) :
     Instruction(line, file, lineNo)
 {
     public override uint[] BuildCode(uint labelAddress, uint pc)
     {
-        return [(hiByte << 8) | (opCode << 4) | (parameter1 << 2) | parameter2];
+        return [(hiByte9 << 7) | (opCode << 4) | (parameter1 << 2) | parameter2];
     }
 }
 
@@ -85,15 +79,15 @@ internal static class InstructionsHelper
         return regNo.HasValue;
     }
     
-    internal static void ValidateOffset10(int offset)
+    internal static void ValidateOffset11(int offset)
     {
-        if (offset is > 511 or < -512)
+        if (offset is > 1023 or < -1024)
             throw new InstructionException($"invalid immediate or offset {offset}");
     }
 
-    internal static void ValidateOffset10u(int offset)
+    internal static void ValidateOffset11u(int offset)
     {
-        if (offset is > 1023 or < 0)
+        if (offset is > 2047 or < 0)
             throw new InstructionException($"invalid immediate or offset {offset}");
     }
     
@@ -124,7 +118,7 @@ internal static class InstructionsHelper
             default:
                 throw new InstructionException("number or name expected");
         }
-        ValidateOffset10(offset);
+        ValidateOffset11(offset);
         if (!compiler.GetNextToken(parameters, ref start).IsChar('('))
             throw new InstructionException("( expected");
         token = compiler.GetNextToken(parameters, ref start);

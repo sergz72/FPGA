@@ -113,7 +113,7 @@ module tiny16
     // format |9'hD|3'h5|dst,2bit,reg,2bit|
     assign call_reg = opcode12 == 12'h6D;
 
-    // format |9'hE|3'h5|dst,2bit,src,2bit|
+    // format |9'hE|3'h5|dst,2bit,XX|
     assign movrimm = opcode12 == 12'h75;
 
     // format |value,9bit|3'h6|XX|reg,2bit|

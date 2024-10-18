@@ -15,9 +15,9 @@ internal sealed class BrInstruction: Instruction
     public override uint[] BuildCode(uint labelAddress, uint pc)
     {
         var offset = (int)labelAddress - (int)pc;
-        if (offset is > 127 or < -128)
+        if (offset is > 255 or < -256)
             throw new InstructionException($"{File}:{LineNo}: br offset is out of range");
-        return [(InstructionCodes.Br << 4) | (((uint)offset & 0xFF) << 8) | _condition];
+        return [(InstructionCodes.Br << 4) | (((uint)offset & 0x1FF) << 7) | _condition];
     }
 }
 

@@ -12,10 +12,10 @@ internal sealed class JmpInstruction : Instruction
     public override uint[] BuildCode(uint labelAddress, uint pc)
     {
         var offset = (int)labelAddress - (int)pc;
-        if (offset is > 2047 or < -2048)
+        if (offset is > 4095 or < -4096)
             throw new InstructionException($"{File}:{LineNo}: jmp offset is out of range");
-        var o = (uint)offset & 0xFFF;
-        return [(InstructionCodes.Jmp << 4) | ((o & 0xFF) << 8) | (o >> 8)];
+        var o = (uint)offset & 0x1FFF;
+        return [(InstructionCodes.Jmp << 4) | ((o & 0x1FF) << 7) | (o >> 9)];
     }
 }
 
