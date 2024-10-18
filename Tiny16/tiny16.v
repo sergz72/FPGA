@@ -33,7 +33,7 @@ module tiny16
     reg start = 0;
 
     wire halt, wfi_, reti, jmp, movrm, movmr, movrr, movrimm, mvl, add, sub, shl, shr, and_, or_, xor_;
-    wire call_reg, call, br, loadpc, test, cmp, jmp16;
+    wire call_reg, call, br, loadpc, test, cmp, jmp16, swab;
     wire [15:0] value13_to_16, value9_to_16, value11_to_16;
     wire [2:0] opcode;
     wire [11:0] opcode12;
@@ -129,16 +129,19 @@ module tiny16
     // format |9'hF|3'h5|XXXX|
     assign jmp16 = opcode12 == 12'h7D;
 
-`ifdef MUL
     // format |9'h10|3'h5|dst,2bit,src,2bit|
-    assign mul = opcode12 == 12'h85;
+    assign swab = opcode12 == 12'h85;
+
+`ifdef MUL
+    // format |9'h11|3'h5|dst,2bit,src,2bit|
+    assign mul = opcode12 == 12'h8D;
 `endif
 
 `ifdef DIV
-    // format |9'h11|3'h5|dst,2bit,src,2bit|
-    assign div = opcode12 == 12'h8D;
     // format |9'h12|3'h5|dst,2bit,src,2bit|
-    assign rem = opcode12 == 12'h95;
+    assign div = opcode12 == 12'h95;
+    // format |9'h13|3'h5|dst,2bit,src,2bit|
+    assign rem = opcode12 == 12'h9D;
 `endif
 
     // format |value,9bit|3'h6|XX|reg,2bit|
@@ -269,6 +272,7 @@ module tiny16
                         loadpc | jmp16: pc <= data_in;
                         movrm | movrimm: registers[dest_reg] <= data_in;
                         movrr: registers[dest_reg] <= registers[source_reg];
+                        swab: registers[dest_reg] <= {registers[source_reg][7:0], registers[source_reg][15:8]};
                         mvl: registers[dest_reg] <= value11_to_16;
                         alu_op: registers[dest_reg] <= acc;
                     endcase

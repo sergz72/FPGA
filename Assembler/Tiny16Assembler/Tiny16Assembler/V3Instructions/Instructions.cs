@@ -35,9 +35,10 @@ internal static class InstructionCodes
     internal const uint JalReg = 13;
     internal const uint Li = 14; // load immediate
     internal const uint Jmp16 = 15;
-    internal const uint Mul = 16;
-    internal const uint Div = 17;
-    internal const uint Rem = 18;
+    internal const uint Swab = 16;
+    internal const uint Mul = 17;
+    internal const uint Div = 18;
+    internal const uint Rem = 19;
 
     internal const uint Jmp = 0;
     internal const uint Br = 1;
