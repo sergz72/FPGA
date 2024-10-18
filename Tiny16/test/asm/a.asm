@@ -1,7 +1,7 @@
 	j start
 	reti
 start:
-	lli SP, $FF80
+	lli SP, $FF00
 	jal SP, init
 next:
 	wfi

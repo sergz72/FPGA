@@ -1,14 +1,14 @@
 module tiny16
 (
     input wire clk,
-    input wire reset,
+    input wire nreset,
     output reg hlt = 0,
     output reg wfi = 0,
     output reg [15:0] address = 0,
     input wire [15:0] data_in,
     output reg [15:0] data_out,
-    output wire rd,
-    output wire wr,
+    output wire nrd,
+    output wire nwr,
     output reg [STAGE_WIDTH - 1:0] stage = 1,
     input wire interrupt,
     output reg in_interrupt = 0,
@@ -22,7 +22,7 @@ module tiny16
     localparam X  = 2;
     localparam SP = 3;
 
-    localparam NOP = 16'hFFFF;
+    localparam NOP = 16'hFF50;
 
     reg [15:0] current_instruction = NOP;
     reg [15:0] registers [0:3];
@@ -127,8 +127,8 @@ module tiny16
     assign clk2 = stage[1];
     assign clk4 = stage[3];
 
-    assign rd = !go | !(clk2 | ((load | movrimm) & clk4));
-    assign wr = !go | !(store & clk4);
+    assign nrd = !go | !(clk2 | ((load | movrimm) & clk4));
+    assign nwr = !go | !(store & clk4);
 
     assign go = start & !hlt;
 
@@ -142,21 +142,21 @@ module tiny16
     assign alu_op2 = registers[source_reg];
 
     always @(posedge clk) begin
-        if (!reset)
+        if (!nreset)
             start <= 0;
         else if (stage[STAGE_WIDTH - 1])
             start <= 1;
     end
 
     always @(negedge clk) begin
-        if (!reset)
+        if (!nreset)
             stage <= 1;
         else if (!wfi & next_stage)
             stage <= {stage[STAGE_WIDTH - 2:0], stage[STAGE_WIDTH - 1]};
     end
 
     always @(posedge clk) begin
-        if (!reset) begin
+        if (!nreset) begin
             pc <= 0;
             current_instruction <= NOP;
             address <= 0;

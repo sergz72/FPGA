@@ -2,7 +2,7 @@ module main_tb;
     wire nhlt, nwfi, led;
     reg clk;
 
-    main #(.ROM_BITS(8), .RESET_BIT(2), .TIMER_BIT(7), .COUNTER_BITS(8)) m(.clk(clk), .nhlt(nhlt), .nwfi(nwfi), .led(led));
+    main #(.RESET_BIT(2), .TIMER_BIT(7), .COUNTER_BITS(8)) m(.clk(clk), .nhlt(nhlt), .nwfi(nwfi), .led(led));
 
     always #1 clk <= ~clk;
     

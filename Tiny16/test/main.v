@@ -1,5 +1,5 @@
 module main
-#(parameter ROM_BITS = 8, RAM_BITS = 8, RESET_BIT = 3, TIMER_BIT = 23, COUNTER_BITS = 24)
+#(parameter ROM_BITS = 10, RAM_BITS = 10, RESET_BIT = 3, TIMER_BIT = 23, COUNTER_BITS = 24)
 (
     input wire clk,
     output wire nhlt,
@@ -29,7 +29,7 @@ module main
         $readmemh("asm/a.out", rom);
     end
 
-    tiny16 cpu(.clk(clk), .rd(nrd), .wr(nwr), .reset(nreset), .address(address), .data_in(data_out), .data_out(data_in), .stage(stage),
+    tiny16 cpu(.clk(clk), .nrd(nrd), .nwr(nwr), .nreset(nreset), .address(address), .data_in(data_out), .data_out(data_in), .stage(stage),
                .hlt(hlt), .interrupt(interrupt), .in_interrupt(in_interrupt), .wfi(wfi), .ready(1'b1));
 
     assign nhlt = !hlt;

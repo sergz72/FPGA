@@ -81,6 +81,8 @@ internal static class InstructionsHelper
     
     internal static void ValidateOffset11(int offset)
     {
+        if (offset is < 65536 and >= 65536 - 1024)
+            return;
         if (offset is > 1023 or < -1024)
             throw new InstructionException($"invalid immediate or offset {offset}");
     }
