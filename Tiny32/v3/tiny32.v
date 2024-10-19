@@ -46,11 +46,12 @@ module tiny32
     localparam ALU_OP_REM   = 13;
     localparam ALU_OP_REMU  = 14;
 
-    reg lb, lh, lw, lbu, lhu, alu_immediate, auipc, sb, sh, sw, alu_clk, lui, br, jalr, jal, reti, slt, sltu;
+    reg lb, lh, lw, lbu, lhu, alu_immediate, auipc, sb, sh, sw, alu_clk, alu_clk_no_br, lui, br, jalr, jal, reti, slt, sltu;
+    wire alu_clk_no_br_in;
     reg wfi_;
     wire [2:0] func3_in, func3;
     wire [6:0] op, func7_in;
-    wire op3, op35, op11, op19;
+    wire op3, op35, op11, op19, op99;
     reg load, store_;
     reg [3:0] store;
 
@@ -81,7 +82,7 @@ module tiny32
 
     wire [31:0] alu_op2;
     reg [3:0] alu_op;
-    wire [5:0] alu_op_id;
+    wire [6:0] alu_op_id;
     reg mulhu;
     reg [31:0] alu_out, alu_out2;
 
@@ -134,6 +135,9 @@ module tiny32
     assign op11 = op === 11;
     assign op19 = op === 19;
     assign op35 = op === 35;
+    assign op99 = op == 99;
+
+    assign alu_clk_no_br_in = op19 || op === 51;
 
     assign registers_wr = store_ | br | reti | hlt | wfi_;
 
@@ -150,7 +154,7 @@ module tiny32
     assign imm12i_sign_extended = {{20{imm12i[11]}}, imm12i};
     assign imm20u_shifted = {imm20u, 12'h0};
 
-    assign alu_op_id = {func3_in,op19,func7_in[5],func7_in[0]};
+    assign alu_op_id = {op99,func3_in,op19,func7_in[5],func7_in[0]};
 
     assign source_address = source1_reg_data + (current_instruction[6:0] == 3 ? imm12i_sign_extended : { {20{imm12s[11]}}, imm12s });
 
@@ -367,11 +371,12 @@ module tiny32
                         sh <= op35 && func3_in === 1;
                         sw <= op35 && func3_in === 2;
 
-                        alu_clk <= op19 || op === 51;
+                        alu_clk_no_br <= alu_clk_no_br_in;
+                        alu_clk <= alu_clk_no_br_in | op99;
 
                         lui <= op == 55;
 
-                        br <= op == 99;
+                        br <= op99;
 
                         jalr <= op == 103;
                         jal <= op == 111;
@@ -380,44 +385,41 @@ module tiny32
                         reti <= op11 && func3_in === 1;
                         hlt <= op11 && func3_in === 2;
 
-                        mulhu <= alu_op_id === 6'b011001;
-                        slt <= alu_clk && func3_in == 2;
-                        sltu <= alu_clk && func3_in == 3;
+                        mulhu <= alu_op_id === 7'b0011001;
+                        slt <= alu_clk_no_br_in && func3_in == 2;
+                        sltu <= alu_clk_no_br_in && func3_in == 3;
 
                         casez (alu_op_id)
-                            6'b000010: alu_op <= ALU_OP_SUB;
-                            6'b000001: alu_op <= ALU_OP_MUL;
+                            7'b00001??: alu_op <= ALU_OP_ADD;
+                            7'b0000000: alu_op <= ALU_OP_ADD;
+                            7'b0000001: alu_op <= ALU_OP_MUL;
 
-                            6'b0011??: alu_op <= ALU_OP_SLL;
-                            6'b001000: alu_op <= ALU_OP_SLL;
-                            6'b001001: alu_op <= ALU_OP_MUL;
+                            7'b00011??: alu_op <= ALU_OP_SLL;
+                            7'b0001000: alu_op <= ALU_OP_SLL;
+                            7'b0001001: alu_op <= ALU_OP_MUL;
 
-                            6'b0101??: alu_op <= ALU_OP_SUB;
-                            6'b010000: alu_op <= ALU_OP_SUB;
-                            6'b010001: alu_op <= ALU_OP_MULSU;
+                            7'b0010001: alu_op <= ALU_OP_MULSU;
 
-                            6'b0111??: alu_op <= ALU_OP_SUB;
-                            6'b011000: alu_op <= ALU_OP_SUB;
-                            6'b011001: alu_op <= ALU_OP_MULU;
+                            7'b0011001: alu_op <= ALU_OP_MULU;
 
-                            6'b1001??: alu_op <= ALU_OP_XOR;
-                            6'b100000: alu_op <= ALU_OP_XOR;
-                            6'b100001: alu_op <= ALU_OP_DIV;
+                            7'b01001??: alu_op <= ALU_OP_XOR;
+                            7'b0100000: alu_op <= ALU_OP_XOR;
+                            7'b0100001: alu_op <= ALU_OP_DIV;
 
-                            6'b1011??: alu_op <= ALU_OP_SRL;
-                            6'b101000: alu_op <= ALU_OP_SRL;
-                            6'b101010: alu_op <= ALU_OP_SRA;
-                            6'b101001: alu_op <= ALU_OP_DIVU;
+                            7'b01011??: alu_op <= ALU_OP_SRL;
+                            7'b0101000: alu_op <= ALU_OP_SRL;
+                            7'b0101010: alu_op <= ALU_OP_SRA;
+                            7'b0101001: alu_op <= ALU_OP_DIVU;
 
-                            6'b1101??: alu_op <= ALU_OP_OR;
-                            6'b110000: alu_op <= ALU_OP_OR;
-                            6'b110001: alu_op <= ALU_OP_REM;
+                            7'b01101??: alu_op <= ALU_OP_OR;
+                            7'b0110000: alu_op <= ALU_OP_OR;
+                            7'b0110001: alu_op <= ALU_OP_REM;
 
-                            6'b1111??: alu_op <= ALU_OP_AND;
-                            6'b111000: alu_op <= ALU_OP_AND;
-                            6'b111001: alu_op <= ALU_OP_REMU;
+                            7'b01111??: alu_op <= ALU_OP_AND;
+                            7'b0111000: alu_op <= ALU_OP_AND;
+                            7'b0111001: alu_op <= ALU_OP_REMU;
 
-                            default: alu_op <= ALU_OP_ADD;
+                            default: alu_op <= ALU_OP_SUB;
                         endcase
 
                         next_stage <= 1;
@@ -426,7 +428,7 @@ module tiny32
                         next_stage <= 0;
                 end
                 2: begin
-                    error <= (!lb & !lh &!lw & !lbu & !lhu & !alu_clk & !auipc & ! sb & !sh & !sw & !lui & !br & !jalr & !jal & !hlt & !wfi_ & !reti) |
+                    error <= (!lb & !lh &!lw & !lbu & !lhu & !alu_clk & !auipc & ! sb & !sh & !sw & !lui & !jalr & !jal & !hlt & !wfi_ & !reti) |
                             ((lh | lhu | sh) & source_address[0]) | ((lw | sw) && source_address[1:0] != 0);
                     case (1'b1)
                         sb: data_out <= data_out_byte(source_address[1:0]);
@@ -442,7 +444,7 @@ module tiny32
                 end
                 3: begin
                     case (1'b1)
-                        alu_clk: registers_data_wr <= mulhu ? alu_out2 : alu_out;
+                        alu_clk_no_br: registers_data_wr <= mulhu ? alu_out2 : alu_out;
                         lb: registers_data_wr <= data_load_byte_signed(source_address[1:0]);
                         lh: registers_data_wr <= source_address[1] ? {{16{data_in[31]}}, data_in[31:16]} : {{16{data_in[15]}}, data_in[15:0]};
                         lw: registers_data_wr <= data_in;
