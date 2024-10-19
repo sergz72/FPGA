@@ -55,12 +55,12 @@ module tiny32
     reg [3:0] store;
 
     reg [31:0] current_instruction;
-    wire [11:0] imm12i, imm12i_in, imm12s_in, imm12b;
+    wire [11:0] imm12i, imm12s, imm12b;
     wire [19:0] imm20u, imm20j;
-    reg [31:0] source_address;
+    wire [31:0] source_address;
     wire [4:0] source1_reg_in, source2_reg_in;
     wire [4:0] dest_reg;
-    wire [31:0] imm12i_sign_extended, imm12i_in_sign_extended, imm20u_shifted;
+    wire [31:0] imm12i_sign_extended, imm20u_shifted;
 
     reg start = 0;
     wire stop, main_clk, clk1, clk2, clk3, clk4;
@@ -119,14 +119,13 @@ module tiny32
     assign op = data_in[6:0];
     assign func3_in = data_in[14:12];
     assign func7_in = data_in[31:25];
-    assign imm12i_in = data_in[31:20];
-    assign imm12s_in = {data_in[31:25], data_in[11:7]};
     assign source1_reg_in = data_in[19:15];
     assign source2_reg_in = data_in[24:20];
 
     assign func3 = current_instruction[14:12];
     assign dest_reg = current_instruction[11:7];
     assign imm12i = current_instruction[31:20];
+    assign imm12s = {current_instruction[31:25], current_instruction[11:7]};
     assign imm12b = {current_instruction[31], current_instruction[7], current_instruction[30:25], current_instruction[11:8]};
     assign imm20u = current_instruction[31:12];
     assign imm20j = {current_instruction[31], current_instruction[19:12], current_instruction[20], current_instruction[30:21]};
@@ -149,10 +148,11 @@ module tiny32
     assign signed_lt = !z & ((source1_reg_data[31] & !alu_op2[31]) | ((source1_reg_data[31] == alu_op2[31]) & c));
 
     assign imm12i_sign_extended = {{20{imm12i[11]}}, imm12i};
-    assign imm12i_in_sign_extended = {{20{imm12i_in[11]}}, imm12i_in};
     assign imm20u_shifted = {imm20u, 12'h0};
 
     assign alu_op_id = {func3_in,op19,func7_in[5],func7_in[0]};
+
+    assign source_address = source1_reg_data + (current_instruction[6:0] == 3 ? imm12i_sign_extended : { {20{imm12s[11]}}, imm12s });
 
     function [3:0] interrupt_no_f(input [7:0] source);
         casez (source)
@@ -379,8 +379,6 @@ module tiny32
                         wfi_ <= op11 && func3_in === 0;
                         reti <= op11 && func3_in === 1;
                         hlt <= op11 && func3_in === 2;
-
-                        source_address <= source1_reg_data + (op3 ? imm12i_in_sign_extended : { {20{imm12s_in[11]}}, imm12s_in });
 
                         mulhu <= alu_op_id === 6'b011001;
                         slt <= alu_clk && func3_in == 2;
