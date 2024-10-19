@@ -47,7 +47,7 @@ module tiny32
     localparam ALU_OP_REMU  = 14;
 
     reg lb, lh, lw, lbu, lhu, alu_immediate, auipc, sb, sh, sw, alu_clk, alu_clk_no_br, lui, br, jalr, jal, reti, slt, sltu;
-    wire alu_clk_no_br_in;
+    wire alu_clk_no_br_in, alu_clk_no_br_slt_sltu;
     reg wfi_;
     wire [2:0] func3_in, func3;
     wire [6:0] op, func7_in;
@@ -138,6 +138,7 @@ module tiny32
     assign op99 = op == 99;
 
     assign alu_clk_no_br_in = op19 || op === 51;
+    assign alu_clk_no_br_slt_sltu = alu_clk_no_br & !slt & !sltu;
 
     assign registers_wr = store_ | br | reti | hlt | wfi_;
 
@@ -227,7 +228,7 @@ module tiny32
             case (alu_op)
                 ALU_OP_SLL: alu_out <= source1_reg_data << alu_op2[4:0];
                 ALU_OP_SRL: alu_out <= source1_reg_data >> alu_op2[4:0];
-                ALU_OP_SRA: alu_out <= $signed(source1_reg_data) >>> alu_op2;
+                ALU_OP_SRA: alu_out <= $signed(source1_reg_data) >>> alu_op2[4:0];
                 ALU_OP_AND: alu_out <= source1_reg_data & alu_op2;
                 ALU_OP_OR: alu_out <= source1_reg_data | alu_op2;
                 ALU_OP_XOR: alu_out <= source1_reg_data ^ alu_op2;
@@ -406,9 +407,8 @@ module tiny32
                             7'b0100000: alu_op <= ALU_OP_XOR;
                             7'b0100001: alu_op <= ALU_OP_DIV;
 
-                            7'b01011??: alu_op <= ALU_OP_SRL;
-                            7'b0101000: alu_op <= ALU_OP_SRL;
-                            7'b0101010: alu_op <= ALU_OP_SRA;
+                            7'b0101?00: alu_op <= ALU_OP_SRL;
+                            7'b0101?10: alu_op <= ALU_OP_SRA;
                             7'b0101001: alu_op <= ALU_OP_DIVU;
 
                             7'b01101??: alu_op <= ALU_OP_OR;
@@ -444,7 +444,7 @@ module tiny32
                 end
                 3: begin
                     case (1'b1)
-                        alu_clk_no_br: registers_data_wr <= mulhu ? alu_out2 : alu_out;
+                        alu_clk_no_br_slt_sltu: registers_data_wr <= mulhu ? alu_out2 : alu_out;
                         lb: registers_data_wr <= data_load_byte_signed(source_address[1:0]);
                         lh: registers_data_wr <= source_address[1] ? {{16{data_in[31]}}, data_in[31:16]} : {{16{data_in[15]}}, data_in[15:0]};
                         lw: registers_data_wr <= data_in;
