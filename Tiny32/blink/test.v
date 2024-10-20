@@ -21,7 +21,7 @@ module test;
     always #1 clk = ~clk;
 
     initial begin
-        $dumpfile("meter_tb.vcd");
+        $dumpfile("test.vcd");
         $dumpvars(0, test);
         $monitor("time=%t address=0x%x hlt=%d error=%d wfi=%d scl_io=%d sda_io=%d led=%d", $time, address, hlt, error, wfi, scl_io, sda_io, led);
         clk = 0;
@@ -30,7 +30,7 @@ module test;
         tra = 1;
         trb = 1;
         bak_button = 1;
-        #300000
+        #30000
         $finish;
     end
 endmodule

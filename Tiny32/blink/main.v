@@ -90,7 +90,7 @@ ROM_BITS = 10)
 `endif
 
     tiny32 cpu(.clk(cpu_clk), .nrd(nrd), .nwr(nwr), .wfi(wfi), .nreset(nreset), .address(address), .data_in(mem_rdata), .data_out(data_in), .stage(stage),
-                 .error(error), .hlt(hlt), .ready(1), .interrupt(irq), .interrupt_ack(interrupt_ack));
+                 .error(error), .hlt(hlt), .ready(1'b1), .interrupt(irq), .interrupt_ack(interrupt_ack));
 
     initial begin
         $readmemh("asm/code.hex", rom);
@@ -108,8 +108,9 @@ ROM_BITS = 10)
         timer <= timer + 1;
     end
 
-    always @(negedge timer[RESET_DELAY_BIT]) begin
-        nreset <= 1;
+    always @(posedge clk) begin
+        if (timer[RESET_DELAY_BIT])
+            nreset <= 1;
     end
 
     always @(negedge mem_clk) begin

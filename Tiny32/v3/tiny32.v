@@ -330,6 +330,7 @@ module tiny32
             in_interrupt <= 0;
             interrupt_ack <= 0;
             pc <= RESET_PC;
+            saved_pc2 <= RESET_PC;
             wfi <= 0;
             next_stage <= 1;
             hlt <= 0;
