@@ -143,7 +143,7 @@ ROM_BITS = 13)
 
     tiny32 #(.RESET_PC(32'h08000000), .ISR_ADDRESS(24'h080000))
         cpu(.clk(cpu_clk), .nrd(nrd), .nwr(nwr), .wfi(wfi), .nreset(nreset), .address(address), .data_in(mem_rdata), .data_out(data_in), .stage(stage),
-                 .error(error), .hlt(hlt), .ready(1), .interrupt(irq), .interrupt_ack(interrupt_ack));
+                 .error(error), .hlt(hlt), .ready(1'b1), .interrupt(irq), .interrupt_ack(interrupt_ack));
 
     uart_fifo #(.CLOCK_DIV(`UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(`UART_CLOCK_COUNTER_BITS))
         ufifo(.clk(clk), .tx(tx), .rx(rx), .data_in(data_in[7:0]), .data_out(uart_data_out), .nwr(uart_nwr), .nrd(uart_nrd), .nreset(nreset),
