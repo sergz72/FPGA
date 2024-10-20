@@ -10,6 +10,7 @@ public interface ICompiler
 {
     int CalculateExpression(List<Token> tokens, ref int start);
     string FindRegisterNumber(string registerName);
+    void AddConstant(string name, int value);
     int FindConstantValue(string name);
     uint? FindLabel(string name);
     void RaiseException(string errorMessage);
@@ -24,7 +25,7 @@ public class GenericCompiler: ICompiler
 
     protected readonly Dictionary<string, InstructionCreator> InstructionCreators;
     protected readonly Dictionary<string, uint> Labels = [];
-    protected readonly List<Instruction> Instructions = [];
+    protected readonly Dictionary<string, List<Instruction>> Instructions = [];
     protected readonly IParser Parser;
     protected readonly List<string> Sources;
     protected readonly string OutputFileName;
@@ -33,12 +34,13 @@ public class GenericCompiler: ICompiler
     protected readonly Dictionary<string, string> RegisterNames = [];
     protected readonly uint CodeSize;
     protected readonly uint PcSize;
+    protected readonly Dictionary<string, uint> Pc = [];
     protected string CurrentFileName = "";
     protected int CurrentLineNo;
-    protected uint Pc;
     protected bool Skip = false;
     protected bool AllowElse = false;
     protected ExpressionParser EParser;
+    protected string CurrentSegment;
 
     public GenericCompiler(List<string> sources, string outputFileName, OutputFormat outputFormat,
                             Dictionary<string, InstructionCreator> instructionCreators, IParser parser,
@@ -52,6 +54,7 @@ public class GenericCompiler: ICompiler
         CodeSize = codeSize;
         PcSize = pcSize;
         EParser = new ExpressionParser(256, this);
+        CurrentSegment = "code";
     }
 
     public GenericCompiler()
@@ -62,8 +65,9 @@ public class GenericCompiler: ICompiler
         InstructionCreators = [];
         Parser = new GenericParser();
         EParser = new ExpressionParser(256, this);
+        CurrentSegment = "code";
     }
-
+    
     public void RaiseException(string errorMessage) => throw new CompilerException(CurrentFileName, CurrentLineNo, errorMessage);
 
     public int FindConstantValue(string name)
@@ -97,7 +101,7 @@ public class GenericCompiler: ICompiler
     
     public void Compile()
     {
-        Pc = 0;
+        Pc.Clear();
         foreach (var source in Sources)
             Compile(source);
         var binary = CreateBinary();
@@ -133,14 +137,14 @@ public class GenericCompiler: ICompiler
         }
     }
 
-    protected List<BinaryItem> CreateBinary()
+    protected List<BinaryItem> CreateBinary(string segment)
     {
         var retries = 10000;
         uint pc = 0;
         while (retries > 0)
         {
             var again = false;
-            foreach (var instruction in Instructions)
+            foreach (var instruction in Instructions[segment])
             {
                 if (instruction.RequiredLabel != null)
                 {
@@ -219,11 +223,20 @@ public class GenericCompiler: ICompiler
                             case ".def":
                                 CompileDef(tokens[1..]);
                                 break;
+                            case ".segment":
+                                CompileSegment(tokens[1..]);
+                                break;
                             case ".include":
                                 CompileInclude(tokens[1..]);
                                 break;
                             case ".if":
                                 CompileIf(tokens[1..]);
+                                break;
+                            case "dw":
+                                var data = CompileData(tokens[1..]);
+                                Instructions.Add(new DataInstruction(line, fileName, CurrentLineNo, data));
+                                break;
+                            case "resw":
                                 break;
                             default:
                                 if (tokens.Count >= 2 && tokens[1].IsChar(':')) // label
@@ -236,14 +249,22 @@ public class GenericCompiler: ICompiler
                                 }
 
                                 var instruction = ParseInstruction(line, fileName, CurrentLineNo, tokens);
-                                Instructions.Add(instruction);
-                                Pc += instruction.Size;
+                                if (instruction != null)
+                                {
+                                    Instructions.Add(instruction);
+                                    Pc += instruction.Size;
+                                }
                                 break;
                         }
                     }
                     break;
             }
         }
+    }
+
+    private uint CompileData(List<Token> tokens)
+    {
+        return 0;
     }
 
     private void CompileInclude(List<Token> tokens)
@@ -277,17 +298,21 @@ public class GenericCompiler: ICompiler
     {
         Skip = false;
     }
+
+    public void AddConstant(string name, int value)
+    {
+        if (!Constants.TryAdd(name, value))
+            throw new CompilerException(CurrentFileName, CurrentLineNo, $"constant with name {name} already defined");
+    }
     
     protected void CompileEqu(List<Token> tokens)
     {
         if (tokens.Count < 2 || tokens[0].Type != TokenType.Name)
             throw new CompilerException(CurrentFileName, CurrentLineNo, "syntax error");
         var name = tokens[0].StringValue;
-        if (Constants.ContainsKey(name))
-            throw new CompilerException(CurrentFileName, CurrentLineNo, $"constant with name {name} already defined");
         var start = 1;
         var value = CalculateExpression(tokens, ref start);
-        Constants.Add(name, value);
+        AddConstant(name, value);
     }
 
     protected void CompileDef(List<Token> tokens)
@@ -300,8 +325,15 @@ public class GenericCompiler: ICompiler
         var rname = tokens[1].StringValue;
         RegisterNames.Add(name, rname);
     }
-    
-    protected Instruction ParseInstruction(string line, string file, int lineNo, List<Token> tokens)
+
+    protected void CompileSegment(List<Token> tokens)
+    {
+        if (tokens.Count != 1 || tokens[0].Type != TokenType.Name)
+            throw new CompilerException(CurrentFileName, CurrentLineNo, "segment name expected");
+        CurrentSegment = tokens[0].StringValue;
+    }
+
+    protected Instruction? ParseInstruction(string line, string file, int lineNo, List<Token> tokens)
     {
         if (tokens[0].Type != TokenType.Name)
             throw new CompilerException(CurrentFileName, CurrentLineNo, "instruction name expected");

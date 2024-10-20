@@ -21,7 +21,7 @@ public abstract class InstructionCreator
 {
     public static uint MaxRegNo { get; set;} = 255;
     
-    public abstract Instruction Create(ICompiler compiler, string line, string file, int lineNo, List<Token> parameters);
+    public abstract Instruction? Create(ICompiler compiler, string line, string file, int lineNo, List<Token> parameters);
     
     public static bool GetRegisterNumber(ICompiler compiler, string parameter, out uint regNo)
     {
@@ -41,5 +41,13 @@ public abstract class InstructionCreator
         if (start == parameters.Count)
             throw new InstructionException("unexpected end of line");
         return compiler.CalculateExpression(parameters, ref start);
+    }
+}
+
+internal class DataInstruction(string line, string file, int lineNo, uint data) : Instruction(line, file, lineNo)
+{
+    public override uint[] BuildCode(uint labelAddress, uint pc)
+    {
+        return [data];
     }
 }

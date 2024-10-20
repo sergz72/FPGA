@@ -12,6 +12,7 @@ internal sealed class Tiny16V3Compiler : GenericCompiler
     
     private static readonly Dictionary<string, InstructionCreator> Creators = new()
     {
+        {".var", new VarCreator()},
         {"nop", new OpCodeInstructionCreator(InstructionCodes.OpcodeForOpcode12Commands, InstructionCodes.Nop)},
         {"hlt", new OpCodeInstructionCreator(InstructionCodes.OpcodeForOpcode12Commands, InstructionCodes.Hlt)},
         {"wfi", new OpCodeInstructionCreator(InstructionCodes.OpcodeForOpcode12Commands, InstructionCodes.Wfi)},
