@@ -1,5 +1,3 @@
-.equ uart_rx_fifo_empty 2
-.equ uart_tx_fifo_full 1
 .equ cmd_buffer_size 100
 .equ led_address $F000
 .equ timer_address $C000
@@ -9,19 +7,26 @@
 .var cmd_buffer_p
 .var command_ready
 .var led_state
+.var timer_interrupt
 
 .segment code
 
 	j start
-	j isr
-uart_control_address:
-	dw $E000
+	j uart_isr
+	j timer_isr
 uart_data_address:
-	dw $D000
+	dw $E000
 cmd_buffer_address:
 	dw cmd_buffer
 
-isr:
+timer_isr:
+	sw A, -1(SP)
+	lli A, 1
+	sw A, timer_interrupt
+	lw A, -1(SP)
+	reti
+
+uart_isr:
 	sw A, -1(SP)
 	sw W, -2(SP)
 	sw X, -3(SP)
@@ -29,13 +34,6 @@ isr:
 ; check that command is processed
 	lw A, command_ready
 	and A, A
-	bnz isr_done
-
-	lw X, uart_control_address
-	lw A, 0(X)
-; check that uart rx fifo is not empty
-	lli W, uart_rx_fifo_empty
-	test A, W
 	bnz isr_done
 
 ; read symbol
@@ -46,7 +44,7 @@ isr:
 	lw W, cmd_buffer_p
 	la X, cmd_buffer_end
 	cmp W, X
-	bge isr_done
+	bge check_cr
 
 ; store symbol to the command buffer
 	sw A, 0(W)
@@ -60,6 +58,7 @@ isr:
 	lw X, uart_data_address
 	sw A, 0(X)
 
+check_cr:
 ; check that symbol is '\r'
 	lli W, '\r'
 	cmp A, W
@@ -86,7 +85,6 @@ start:
 	lli A, 0
 	sw A, command_ready
 
-	li X, led_address
 	sw  A, led_state
 
 next:
@@ -94,9 +92,17 @@ next:
 	li A, delay
 	li W, timer_address
 	sw A, 0(W)
+not_timer_interrupt:
 	wfi
+	lw A, timer_interrupt
+	and A, A
+	beq not_timer_interrupt
+	
+	clr A
+	sw A, timer_interrupt
 
 ; toggle led
+	li X, led_address
 	lw A, led_state
 	lli W, 1
 	xor A, W

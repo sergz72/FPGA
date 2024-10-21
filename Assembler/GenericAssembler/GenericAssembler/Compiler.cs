@@ -254,6 +254,11 @@ public class GenericCompiler: ICompiler
                                 Instructions[CurrentSection].Add(i);
                                 break;
                             case "resw":
+                                var start = 1;
+                                var value = CalculateExpression(tokens, ref start);
+                                if (value <= 0)
+                                    throw new CompilerException(fileName, CurrentLineNo, "invalid number of words");
+                                Pc[CurrentSection] += (uint)value;
                                 break;
                             default:
                                 if (tokens.Count >= 2 && tokens[1].IsChar(':')) // label
@@ -292,9 +297,7 @@ public class GenericCompiler: ICompiler
                 start++;
             }
             else if (tokens[start].Type == TokenType.Name && !Constants.ContainsKey(tokens[start].StringValue)) // label
-            {
                return new DataInstruction(line, fileName, CurrentLineNo, null, tokens[start].StringValue); 
-            }
             else // constant
             {
                 var value = CalculateExpression(tokens, ref start);

@@ -23,7 +23,8 @@ internal sealed class Tiny16V3Compiler : GenericCompiler
         {"li", new LoadImmediateInstructionCreator()},
         {"la", new LoadAddressInstructionCreator()},
         
-        {"clr", new RegisterInstructionCreator(InstructionCodes.OpcodeForOpcode12Commands, InstructionCodes.Xor)},
+        {"clr", new LLIInstructionCreator(0)},
+        {"ser", new LLIInstructionCreator(-1)},
         {"shr", new SingleRegisterInstructionCreator(InstructionCodes.OpcodeForOpcode12Commands, InstructionCodes.Shl, 0)},
         {"shl", new SingleRegisterInstructionCreator(InstructionCodes.OpcodeForOpcode12Commands, InstructionCodes.Shr, 0)},
 
