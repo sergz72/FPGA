@@ -341,7 +341,7 @@ module tiny32
         else if (start) begin
             case (stage)
                 0: begin
-                    error <= pc[1:0] != 0;
+                    error <= saved_pc2[1:0] != 0;
                     if (interrupt_no != 0 && !in_interrupt) begin
                         in_interrupt <= 1;
                         interrupt_ack <= interrupt_pending;
