@@ -20,7 +20,7 @@ module tiny32
     output reg hlt = 0,
     output reg error = 0,
     output reg wfi = 0,
-    output wire [31:0] address,
+    output reg [31:0] address,
     input wire [31:0] data_in,
     output reg [31:0] data_out,
     output wire nrd,
@@ -39,7 +39,7 @@ module tiny32
     localparam ALU_OP_OR    = 6;
     localparam ALU_OP_AND   = 7;
     localparam ALU_OP_MUL   = 8;
-    localparam ALU_OP_MULU  = 9;
+    localparam ALU_OP_MULS  = 9;
     localparam ALU_OP_MULSU = 10;
     localparam ALU_OP_DIV   = 11;
     localparam ALU_OP_DIVU  = 12;
@@ -51,14 +51,14 @@ module tiny32
     reg wfi_;
     wire [2:0] func3_in, func3;
     wire [6:0] op, func7_in;
-    wire op3, op35, op11, op19, op99;
+    wire op3, op35, op11, op19, op99, op51, slt_op;
     reg load, store_;
     reg [3:0] store;
 
     reg [31:0] current_instruction;
     wire [11:0] imm12i, imm12s, imm12b;
     wire [19:0] imm20u, imm20j;
-    wire [31:0] source_address;
+    wire [31:0] source_address, isr_address;
     wire [4:0] source1_reg_in, source2_reg_in;
     wire [4:0] dest_reg;
     wire [31:0] imm12i_sign_extended, imm20u_shifted;
@@ -136,14 +136,12 @@ module tiny32
     assign op19 = op === 19;
     assign op35 = op === 35;
     assign op99 = op == 99;
+    assign op51 = op === 51;
 
-    assign alu_clk_no_br_in = op19 || op === 51;
+    assign alu_clk_no_br_in = op19 || op51;
     assign alu_clk_no_br_slt_sltu = alu_clk_no_br & !slt & !sltu;
 
     assign registers_wr = store_ | br | reti | hlt | wfi_;
-
-    // stage 2,3
-    assign address = stage[1] & (load || store != 4'b1111) ? source_address : pc;
     
     assign interrupt_no = interrupt_no_f(interrupt_pending);
 
@@ -158,6 +156,10 @@ module tiny32
     assign alu_op_id = {op99,func3_in,op19,func7_in[5],func7_in[0]};
 
     assign source_address = source1_reg_data + (current_instruction[6:0] == 3 ? imm12i_sign_extended : { {20{imm12s[11]}}, imm12s });
+
+    assign isr_address = {ISR_ADDRESS, 2'b00, interrupt_no, 2'b00};
+
+    assign slt_op = op19 | (op51 & !func7_in[5] & !func7_in[0]);
 
     function [3:0] interrupt_no_f(input [7:0] source);
         casez (source)
@@ -235,8 +237,8 @@ module tiny32
                 ALU_OP_ADD: alu_out <= source1_reg_data + alu_op2;
                 ALU_OP_SUB: {c, alu_out} <= source1_reg_data - alu_op2;
 `ifndef NO_MUL
-                ALU_OP_MULU: {alu_out2, alu_out} <= source1_reg_data * alu_op2;
-                ALU_OP_MUL: {alu_out, alu_out2} <= $signed(source1_reg_data) * $signed(alu_op2);
+                ALU_OP_MUL: {alu_out2, alu_out} <= source1_reg_data * alu_op2;
+                ALU_OP_MULS: {alu_out, alu_out2} <= $signed(source1_reg_data) * $signed(alu_op2);
                 ALU_OP_MULSU: {dc1, dc2, alu_out, alu_out2} <= $signed({source1_reg_data[31], source1_reg_data}) * $signed({1'b0, alu_op2});
 `endif
 `ifndef NO_DIV
@@ -329,7 +331,7 @@ module tiny32
         if (!nreset) begin
             in_interrupt <= 0;
             interrupt_ack <= 0;
-            pc <= RESET_PC;
+            address <= RESET_PC;
             saved_pc2 <= RESET_PC;
             wfi <= 0;
             next_stage <= 1;
@@ -345,12 +347,14 @@ module tiny32
                         interrupt_ack <= interrupt_pending;
                         wfi <= 0;
                         saved_pc <= saved_pc2;
-                        pc <= {ISR_ADDRESS, 2'b00, interrupt_no, 2'b00};
+                        pc <= isr_address;
+                        address <= isr_address;
                         next_stage <= 1;
                     end
                     else begin
                         next_stage <= !wfi;
                         pc <= saved_pc2;
+                        address <= saved_pc2;
                     end
                 end
                 1: begin
@@ -388,8 +392,8 @@ module tiny32
                         hlt <= op11 && func3_in === 2;
 
                         mulhu <= alu_op_id === 7'b0011001;
-                        slt <= alu_clk_no_br_in && func3_in == 2;
-                        sltu <= alu_clk_no_br_in && func3_in == 3;
+                        slt <= func3_in == 2 && slt_op;
+                        sltu <= func3_in == 3 && slt_op;
 
                         casez (alu_op_id)
                             7'b00001??: alu_op <= ALU_OP_ADD;
@@ -398,11 +402,11 @@ module tiny32
 
                             7'b00011??: alu_op <= ALU_OP_SLL;
                             7'b0001000: alu_op <= ALU_OP_SLL;
-                            7'b0001001: alu_op <= ALU_OP_MUL;
+                            7'b0001001: alu_op <= ALU_OP_MULS;
 
                             7'b0010001: alu_op <= ALU_OP_MULSU;
 
-                            7'b0011001: alu_op <= ALU_OP_MULU;
+                            7'b0011001: alu_op <= ALU_OP_MUL;
 
                             7'b01001??: alu_op <= ALU_OP_XOR;
                             7'b0100000: alu_op <= ALU_OP_XOR;
@@ -442,6 +446,8 @@ module tiny32
                         sw: store <= 0;
                         default: store <= 4'b1111;
                     endcase
+                    if (load | store_)
+                        address <= source_address;
                 end
                 3: begin
                     case (1'b1)

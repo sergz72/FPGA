@@ -44,7 +44,7 @@ isr:
 
 ;check that we haven't reached end of the command buffer 
 	lw W, cmd_buffer_p
-	li X, cmd_buffer + cmd_buffer_size - 1
+	la X, cmd_buffer_end
 	cmp W, X
 	bge isr_done
 
@@ -61,12 +61,12 @@ isr:
 	sw A, 0(X)
 
 ; check that symbol is '\r'
-	li W, '\r'
+	lli W, '\r'
 	cmp A, W
 	bne isr_done
 
 ; echo '\n'
-	li A, '\n'
+	lli A, '\n'
 	sw A, 0(X)
 
 ; set command_ready
@@ -90,7 +90,7 @@ start:
 	sw  A, led_state
 
 next:
-// delay
+; delay
 	li A, delay
 	li W, timer_address
 	sw A, 0(W)
@@ -116,4 +116,6 @@ next:
 
 .segment bss
 cmd_buffer:
-	resw cmd_buffer_size
+	resw cmd_buffer_size - 1
+cmd_buffer_end:
+	resw 1

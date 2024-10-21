@@ -46,6 +46,7 @@ public class GenericParser: IParser
         Symbol,
         Char1,
         Char2,
+        Char3,
         String
     }
     
@@ -170,11 +171,30 @@ public class GenericParser: IParser
 
     protected bool ModeChar1Handler(char c)
     {
+        if (c == '\\')
+        {
+            Mode = ParserMode.Char3;
+            return false;
+        }
         IntValue = c;
         Mode = ParserMode.Char2;
         return false;
     }
 
+    protected bool ModeChar3Handler(char c)
+    {
+        IntValue = c switch
+        {
+            'n' => '\n',
+            'r' => '\r',
+            't' => '\t',
+            'b' => '\b',
+            _ => throw new ParserException("unknown special symbol")
+        };
+        Mode = ParserMode.Char2;
+        return false;
+    }
+    
     protected bool ModeChar2Handler(char c)
     {
         if (c != '\'')
@@ -296,6 +316,7 @@ public class GenericParser: IParser
                 ParserMode.Symbol => ModeSymbolHandler(c),
                 ParserMode.Char1 => ModeChar1Handler(c),
                 ParserMode.Char2 => ModeChar2Handler(c),
+                ParserMode.Char3 => ModeChar3Handler(c),
                 ParserMode.String => ModeStringHandler(c)
             };
             if (exit)

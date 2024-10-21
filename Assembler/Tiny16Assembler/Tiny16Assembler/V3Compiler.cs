@@ -5,8 +5,8 @@ namespace Tiny16Assembler;
 
 internal sealed class Tiny16V3Compiler : GenericCompiler
 {
-    internal Tiny16V3Compiler(List<string> sources, string outputFileName, OutputFormat outputFormat) :
-        base(sources, outputFileName, outputFormat, Creators, new GenericParser(), 4)
+    internal Tiny16V3Compiler(List<string> sources, OutputFormat outputFormat) :
+        base(sources, outputFormat, Creators, new GenericParser(), 4)
     {
     }
     

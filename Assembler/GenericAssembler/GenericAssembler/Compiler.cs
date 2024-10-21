@@ -21,51 +21,50 @@ public class GenericCompiler: ICompiler
 {
     protected record BinaryItem(uint[] Code, string Line);
     
-    protected sealed class CompilerException(string fileName, int lineNo, string message) : Exception($"Error in {fileName}:{lineNo}: {message}");
+    internal sealed class CompilerException(string fileName, int lineNo, string message) : Exception($"Error in {fileName}:{lineNo}: {message}");
 
     protected readonly Dictionary<string, InstructionCreator> InstructionCreators;
     protected readonly Dictionary<string, uint> Labels = [];
     protected readonly Dictionary<string, List<Instruction>> Instructions = [];
     protected readonly IParser Parser;
     protected readonly List<string> Sources;
-    protected readonly string OutputFileName;
     protected readonly OutputFormat OutputFileFormat;
     protected readonly Dictionary<string, int> Constants = [];
     protected readonly Dictionary<string, string> RegisterNames = [];
     protected readonly uint CodeSize;
     protected readonly uint PcSize;
     protected readonly Dictionary<string, uint> Pc = [];
+    protected readonly Dictionary<string, uint> StartAddress = [];
+    protected readonly Linker L;
     protected string CurrentFileName = "";
     protected int CurrentLineNo;
     protected bool Skip = false;
     protected bool AllowElse = false;
     protected ExpressionParser EParser;
-    protected string CurrentSegment;
+    protected string CurrentSection;
 
-    public GenericCompiler(List<string> sources, string outputFileName, OutputFormat outputFormat,
+    public GenericCompiler(List<string> sources, OutputFormat outputFormat,
                             Dictionary<string, InstructionCreator> instructionCreators, IParser parser,
                             uint codeSize = 8, uint pcSize = 4)
     {
-        Sources = sources;
-        OutputFileName = outputFileName;
+        Sources = sources.Where(s => !s.EndsWith(".ld")).ToList();
+        L = new Linker(sources.FirstOrDefault(s => s.EndsWith(".ld")));
         OutputFileFormat = outputFormat;
         InstructionCreators = instructionCreators;
         Parser = parser;
         CodeSize = codeSize;
         PcSize = pcSize;
         EParser = new ExpressionParser(256, this);
-        CurrentSegment = "code";
     }
 
     public GenericCompiler()
     {
         Sources = [];
-        OutputFileName = "";
+        L = new Linker(null);
         OutputFileFormat = OutputFormat.Hex;
         InstructionCreators = [];
         Parser = new GenericParser();
         EParser = new ExpressionParser(256, this);
-        CurrentSegment = "code";
     }
     
     public void RaiseException(string errorMessage) => throw new CompilerException(CurrentFileName, CurrentLineNo, errorMessage);
@@ -102,49 +101,58 @@ public class GenericCompiler: ICompiler
     public void Compile()
     {
         Pc.Clear();
+        Instructions.Clear();
+        SetSegment("code");
         foreach (var source in Sources)
             Compile(source);
-        var binary = CreateBinary();
-        using var output = new FileStream(OutputFileName, FileMode.Create);
-        switch (OutputFileFormat)
+        foreach (var instructions in Instructions)
         {
-            case OutputFormat.Hex:
+            if (instructions.Value.Count == 0)
+                continue;
+            var binary = CreateBinary(instructions.Key);
+            using var output = new FileStream(L.GetFileName(instructions.Key, OutputFileFormat), FileMode.Create);
+            switch (OutputFileFormat)
             {
-                using var writer = new StreamWriter(output);
-                var pc = 0;
-                foreach (var data in binary)
+                case OutputFormat.Hex:
                 {
-                    foreach (var code in data.Code)
+                    using var writer = new StreamWriter(output);
+                    var pc = 0;
+                    foreach (var data in binary)
                     {
-                        var codes = code.ToString("x" + CodeSize);
-                        var pcs = pc.ToString("x" + PcSize);
-                        writer.Write($"{codes} // {pcs} {data.Line}\n");
-                        pc++;
+                        foreach (var code in data.Code)
+                        {
+                            var codes = code.ToString("x" + CodeSize);
+                            var pcs = pc.ToString("x" + PcSize);
+                            writer.Write($"{codes} // {pcs} {data.Line}\n");
+                            pc++;
+                        }
                     }
+
+                    break;
                 }
-                break;
-            }
-            case OutputFormat.Bin:
-            {
-                using var writer = new BinaryWriter(output);
-                foreach (var data in binary)
+                case OutputFormat.Bin:
                 {
-                    foreach (var code in data.Code)
-                        writer.Write(code);
+                    using var writer = new BinaryWriter(output);
+                    foreach (var data in binary)
+                    {
+                        foreach (var code in data.Code)
+                            writer.Write(code);
+                    }
+
+                    break;
                 }
-                break;
             }
         }
     }
 
-    protected List<BinaryItem> CreateBinary(string segment)
+    protected List<BinaryItem> CreateBinary(string section)
     {
         var retries = 10000;
-        uint pc = 0;
+        uint pc = StartAddress[section];
         while (retries > 0)
         {
             var again = false;
-            foreach (var instruction in Instructions[segment])
+            foreach (var instruction in Instructions[section])
             {
                 if (instruction.RequiredLabel != null)
                 {
@@ -167,8 +175,8 @@ public class GenericCompiler: ICompiler
             throw new CompilerException("CreateBinary", 0, "Instructions size update was unsuccessful.");
 
         var bytes = new List<BinaryItem>();
-        pc = 0;
-        foreach (var instruction in Instructions)
+        pc = StartAddress[section];
+        foreach (var instruction in Instructions[section])
         {
                 var labelAddress = instruction.RequiredLabel != null ? Labels[instruction.RequiredLabel] : 0;
                 var code = instruction.BuildCode(labelAddress, pc);
@@ -215,6 +223,7 @@ public class GenericCompiler: ICompiler
                 default:
                     if (!Skip)
                     {
+                        Instruction i;
                         switch (tokens[0].StringValue)
                         {
                             case ".equ":
@@ -233,15 +242,23 @@ public class GenericCompiler: ICompiler
                                 CompileIf(tokens[1..]);
                                 break;
                             case "dw":
-                                var data = CompileData(tokens[1..]);
-                                Instructions.Add(new DataInstruction(line, fileName, CurrentLineNo, data));
+                                i = CompileData(line, fileName, 2, tokens[1..]);
+                                Instructions[CurrentSection].Add(i);
+                                break;
+                            case "db":
+                                i = CompileData(line, fileName, 1, tokens[1..]);
+                                Instructions[CurrentSection].Add(i);
+                                break;
+                            case "dd":
+                                i = CompileData(line, fileName, 4, tokens[1..]);
+                                Instructions[CurrentSection].Add(i);
                                 break;
                             case "resw":
                                 break;
                             default:
                                 if (tokens.Count >= 2 && tokens[1].IsChar(':')) // label
                                 {
-                                    if (!Labels.TryAdd(tokens[0].StringValue, Pc))
+                                    if (!Labels.TryAdd(tokens[0].StringValue, Pc[CurrentSection]))
                                         throw new CompilerException(fileName, CurrentLineNo, "duplicate label");
                                     if (tokens.Count == 2)
                                         continue;
@@ -251,8 +268,8 @@ public class GenericCompiler: ICompiler
                                 var instruction = ParseInstruction(line, fileName, CurrentLineNo, tokens);
                                 if (instruction != null)
                                 {
-                                    Instructions.Add(instruction);
-                                    Pc += instruction.Size;
+                                    Instructions[CurrentSection].Add(instruction);
+                                    Pc[CurrentSection] += instruction.Size;
                                 }
                                 break;
                         }
@@ -262,9 +279,29 @@ public class GenericCompiler: ICompiler
         }
     }
 
-    private uint CompileData(List<Token> tokens)
+    private Instruction CompileData(string line, string fileName, int size, List<Token> tokens)
     {
-        return 0;
+        var start = 0;
+        List<uint> result = [];
+        while (start < tokens.Count)
+        {
+            if (tokens[start].Type == TokenType.String)
+            {
+                foreach (var c in tokens[start].StringValue)
+                    result.Add(c);
+                start++;
+            }
+            else if (tokens[start].Type == TokenType.Name && !Constants.ContainsKey(tokens[start].StringValue)) // label
+            {
+               return new DataInstruction(line, fileName, CurrentLineNo, null, tokens[start].StringValue); 
+            }
+            else // constant
+            {
+                var value = CalculateExpression(tokens, ref start);
+                result.Add((uint)value);
+            }
+        }
+        return new DataInstruction(line, fileName, CurrentLineNo, result);
     }
 
     private void CompileInclude(List<Token> tokens)
@@ -326,11 +363,20 @@ public class GenericCompiler: ICompiler
         RegisterNames.Add(name, rname);
     }
 
+    protected void SetSegment(string segmentName)
+    {
+        var (name, address) = L.GetSectionNameAndAddress(segmentName);
+        CurrentSection = name;
+        Instructions.TryAdd(CurrentSection, []);
+        Pc.TryAdd(CurrentSection, address);
+        StartAddress[CurrentSection] = address;
+    }
+
     protected void CompileSegment(List<Token> tokens)
     {
         if (tokens.Count != 1 || tokens[0].Type != TokenType.Name)
             throw new CompilerException(CurrentFileName, CurrentLineNo, "segment name expected");
-        CurrentSegment = tokens[0].StringValue;
+        SetSegment(tokens[0].StringValue);
     }
 
     protected Instruction? ParseInstruction(string line, string file, int lineNo, List<Token> tokens)

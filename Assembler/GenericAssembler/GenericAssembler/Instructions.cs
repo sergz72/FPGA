@@ -44,10 +44,17 @@ public abstract class InstructionCreator
     }
 }
 
-internal class DataInstruction(string line, string file, int lineNo, uint data) : Instruction(line, file, lineNo)
+internal class DataInstruction : Instruction
 {
+    private List<uint>? _data;
+    internal DataInstruction(string line, string file, int lineNo, List<uint>? data, string? labelName = null) :
+        base(line, file, lineNo)
+    {
+        RequiredLabel = labelName;
+        _data = data;
+    }
     public override uint[] BuildCode(uint labelAddress, uint pc)
     {
-        return [data];
+        return _data != null ? _data.ToArray() : [labelAddress];
     }
 }

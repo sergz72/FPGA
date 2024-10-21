@@ -5,9 +5,9 @@ namespace Tiny16Assembler;
 
 internal sealed class Tiny16V2Compiler: GenericCompiler
 {
-    internal Tiny16V2Compiler(List<string> sources, string outputFileName, OutputFormat outputFormat, bool noDiv32,
+    internal Tiny16V2Compiler(List<string> sources, OutputFormat outputFormat, bool noDiv32,
         			bool noRem32, bool noMul, bool noDiv16, bool noRem16):
-        base(sources, outputFileName, outputFormat, Creators, new GenericParser())
+        base(sources, outputFormat, Creators, new GenericParser())
     {
         if (!noDiv32)
             Creators.Add("div32", new AluInstructionCreator(AluOperations.Div3216));

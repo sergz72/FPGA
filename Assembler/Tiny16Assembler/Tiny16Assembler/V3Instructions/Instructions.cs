@@ -126,8 +126,10 @@ internal static class InstructionsHelper
                 throw new InstructionException("number or name expected");
         }
         ValidateOffset9(offset);
-        if (!compiler.GetNextToken(parameters, ref start).IsChar('('))
+        if (start >= parameters.Count)
             return 0;
+        if (!parameters[start++].IsChar('('))
+            throw new InstructionException("( expected");
         token = compiler.GetNextToken(parameters, ref start);
         if (token is { Type: TokenType.Number, IntValue: 0 })
             return 0;

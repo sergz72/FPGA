@@ -2,8 +2,6 @@
 using Tiny16Assembler;
 
 List<string> sources = [];
-var outputFileName = "a.out";
-var outputFileNameExpected = false;
 var outputFormat = OutputFormat.Hex;
 var noDiv32 = true;
 var noRem32 = true;
@@ -15,12 +13,7 @@ var archExpected = false;
 
 foreach (var arg in args)
 {
-    if (outputFileNameExpected)
-    {
-        outputFileName = arg;
-        outputFileNameExpected = false;
-    }
-    else if (archExpected)
+    if (archExpected)
     {
         arch = arg;
         archExpected = false;
@@ -31,9 +24,6 @@ foreach (var arg in args)
         {
             switch (arg)
             {
-                case "-o":
-                    outputFileNameExpected = true;
-                    break;
                 case "-x":
                     outputFormat = OutputFormat.Hex;
                     break;
@@ -68,14 +58,14 @@ foreach (var arg in args)
     }
 }
 
-if (sources.Count == 0 || outputFileNameExpected)
+if (sources.Count == 0)
     Usage();
 else
 {
     GenericCompiler compiler = arch switch
     {
-        "v2" => new Tiny16V2Compiler(sources, outputFileName, outputFormat, noDiv32, noRem32, noMul, noDiv16, noRem16),
-        "v3" => new Tiny16V3Compiler(sources, outputFileName, outputFormat),
+        "v2" => new Tiny16V2Compiler(sources, outputFormat, noDiv32, noRem32, noMul, noDiv16, noRem16),
+        "v3" => new Tiny16V3Compiler(sources, outputFormat),
         _ => throw new Exception($"Unknown architecture {arch}")
     };
     try
