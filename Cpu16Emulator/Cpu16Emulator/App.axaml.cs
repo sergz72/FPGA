@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Cpu16EmulatorCommon;
@@ -31,16 +32,32 @@ public partial class App : Application
                 {
                     var stream = File.OpenRead(desktop.Args[0]);
                     var config = JsonSerializer.Deserialize<Configuration>(stream);
-                    if (config == null || config.CpuSpeed == 0)
+                    if (config == null || config.CpuSpeed == 0 || config.Cpu == "")
                         throw new Exception("incorrect configuration file");
-                    var ioDevices = LoadIODevices(config.IODevices);
                     var code = File.ReadAllLines(desktop.Args[1]);
-                    var cpu = new Cpu16Lite(code, config.CpuSpeed * 1000);
-                    cpu.Reset();
-                    var cpuView = new CPU16View
+                    Cpu cpu;
+                    ICpuView cpuView;
+                    switch (config.Cpu)
                     {
-                        Cpu = cpu
-                    };
+                        case "Cpu16Lite":
+                            cpu = new Cpu16Lite(code, config.CpuSpeed * 1000);
+                            cpuView = new CPU16View
+                            {
+                                Cpu = (Cpu16Lite)cpu
+                            };
+                            break;
+                        case "Tiny16v4":
+                            cpu = new Tiny16v4(code, config.CpuSpeed * 1000);
+                            cpuView = new Tiny16v4View
+                            {
+                                Cpu = (Tiny16v4)cpu
+                            };
+                            break;
+                        default:
+                            throw new Exception("invalid cpu");
+                    }
+                    var ioDevices = LoadIODevices(config.IODevices);
+                    cpu.Reset();
                     desktop.MainWindow = new MainWindow(cpu, ioDevices, config.LogFile, cpuView);
                 }
                 catch (Exception e)
@@ -73,6 +90,7 @@ public partial class App : Application
 
 public class Configuration
 {
+    public string Cpu { get; set; }
     public int CpuSpeed { get; set; }
     public string LogFile { get; set; }
     public IODeviceFile[] IODevices { get; set; }

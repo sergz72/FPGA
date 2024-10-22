@@ -1,4 +1,5 @@
 {
+  "Cpu": "Cpu16Lite",
   "CpuSpeed": 100,
   "LogFile": "vf_meter.log",
   "IODevices": [
