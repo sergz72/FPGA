@@ -1,6 +1,7 @@
 `include "tiny16.vh"
 
 module tiny16
+#(parameter INTERRUPT_BITS = 2)
 (
     input wire clk,
     input wire nreset,
@@ -12,11 +13,12 @@ module tiny16
     output wire nrd,
     output wire nwr,
     output reg [STAGE_WIDTH - 1:0] stage = 1,
-    input wire interrupt,
+    input wire [INTERRUPT_BITS - 1:0] interrupt,
     output reg in_interrupt = 0,
     input wire ready
 );
     localparam STAGE_WIDTH = 4;
+    localparam INTERRUPT_BITS_TO_16 = 16 - INTERRUPT_BITS;
 
     // register names
     localparam A  = 0;
@@ -31,6 +33,8 @@ module tiny16
     reg [15:0] acc, saved_acc, saved_pc, saved_pc2;
     reg [15:0] pc = 0;
     reg start = 0;
+
+    wire [15:0] isr_address;
 
     wire halt, wfi_, reti, jmp, movrm, movmr, movrr, movrimm, mvl, add, sub, shl, shr, and_, or_, xor_;
     wire call_reg, call, br, loadpc, test, cmp, jmp16, swab;
@@ -79,6 +83,8 @@ module tiny16
 
     assign condition_temp = condition & {c, z, n};
     assign condition_pass = (condition_temp[0] | condition_temp[1] | condition_temp[2]) ^ condition_neg;
+
+    assign isr_address = {{INTERRUPT_BITS_TO_16{1'b0}}, interrupt};
 
     // format |offset,9bit|3'h0|offset,4bit|
     assign jmp = opcode == 0;
@@ -207,14 +213,14 @@ module tiny16
         else if (go) begin
             case (stage)
                 1: begin
-                    if (interrupt & !in_interrupt) begin
+                    if (interrupt != 0 && !in_interrupt) begin
                         in_interrupt <= 1;
                         wfi <= 0;
                         saved_pc <= pc;
                         saved_c <= c;
                         saved_acc <= acc;
-                        pc <= 1;
-                        address <= 1;
+                        pc <= isr_address;
+                        address <= isr_address;
                     end
                     else begin
                         address <= pc;

@@ -29,8 +29,8 @@ module main
         $readmemh("asm/a.out", rom);
     end
 
-    tiny16 cpu(.clk(clk), .nrd(nrd), .nwr(nwr), .nreset(nreset), .address(address), .data_in(data_out), .data_out(data_in), .stage(stage),
-               .hlt(hlt), .interrupt(interrupt), .in_interrupt(in_interrupt), .wfi(wfi), .ready(1'b1));
+    tiny16 #(.INTERRUPT_BITS(1)) cpu(.clk(clk), .nrd(nrd), .nwr(nwr), .nreset(nreset), .address(address), .data_in(data_out), .data_out(data_in), .stage(stage),
+                                     .hlt(hlt), .interrupt(interrupt), .in_interrupt(in_interrupt), .wfi(wfi), .ready(1'b1));
 
     assign nhlt = !hlt;
     assign nwfi = !wfi;
