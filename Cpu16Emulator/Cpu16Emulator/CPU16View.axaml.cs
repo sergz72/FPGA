@@ -3,7 +3,7 @@ using Avalonia.Media;
 
 namespace Cpu16Emulator;
 
-public partial class CPUView : UserControl
+public partial class CPU16View : UserControl, ICpuView
 {
     internal class Register(Cpu16Lite cpu, byte index)
     {
@@ -27,7 +27,7 @@ public partial class CPUView : UserControl
         }
     }
 
-    public CPUView()
+    public CPU16View()
     {
         InitializeComponent();
 
@@ -66,7 +66,7 @@ public partial class CPUView : UserControl
         UpdateContent(LbC, _cpu.C, markChangesAsBold);
         UpdateContent(LbZ, _cpu.Z, markChangesAsBold);
         UpdateContent(LbN, _cpu.N, markChangesAsBold);
-        UpdateContent(LbInterrupt, _cpu.Interrupt, markChangesAsBold);
+        UpdateContent(LbInterrupt, _cpu.Interrupt, markChangesAsBold, "X8");
         LbTicks.Content = _cpu.Ticks.ToString();
         var idx = 0;
         for (var row = 1; row < 17; row++)
@@ -76,6 +76,19 @@ public partial class CPUView : UserControl
         }
     }
 
+    private static void UpdateContent(Label l, uint v, bool markChangesAsBold, string format)
+    {
+        var text = v.ToString(format);
+        if (text != l.Content?.ToString())
+        {
+            l.Content = text;
+            if (markChangesAsBold)
+                l.FontWeight = FontWeight.Bold;
+        }
+        else
+            l.FontWeight = FontWeight.Normal;
+    }
+    
     private static void UpdateContent(Label l, ushort v, bool markChangesAsBold, string format)
     {
         var text = v.ToString(format);

@@ -196,7 +196,7 @@ public class IODeviceI2CSlave: IIODevice
         return true;
     }
 
-    public bool? TicksUpdate(int cpuSped, int ticks)
+    public uint? TicksUpdate(int cpuSped, int ticks)
     {
         return null;
     }

@@ -3,8 +3,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
-             x:Class="Cpu16Emulator.CPUView">
-    <Grid ColumnDefinitions="30,45,30,30,30,30,30,20,40,20,20,20,20,20,20,20,70,20,50,*" RowDefinitions="Auto,Auto,Auto">
+             x:Class="Cpu16Emulator.CPU16View">
+    <Grid ColumnDefinitions="30,45,30,30,30,30,30,20,40,20,20,20,20,20,20,20,70,70,50,*" RowDefinitions="Auto,Auto,Auto">
         <Label Content="Registers" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="16"/>
         <Grid Name="GRegisters" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="16"
               ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"

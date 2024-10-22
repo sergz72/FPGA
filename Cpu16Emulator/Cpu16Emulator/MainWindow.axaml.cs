@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.IO;
 using Avalonia;
 using Avalonia.Controls;
@@ -10,13 +9,14 @@ namespace Cpu16Emulator;
 
 public partial class MainWindow : Window, ILogger
 {
-    private readonly Cpu16Lite _cpu;
+    private readonly Cpu _cpu;
     private readonly IODevice[] _devices;
     private readonly StreamWriter? _logFile;
+    private readonly ICpuView _cpuView;
 
     private Point _mousePosition;
     
-    public MainWindow(Cpu16Lite cpu, IODevice[] devices, string logFile)
+    public MainWindow(Cpu cpu, IODevice[] devices, string logFile, ICpuView cpuView)
     {
         InitializeComponent();
 
@@ -24,11 +24,13 @@ public partial class MainWindow : Window, ILogger
             
         _cpu = cpu;
         _devices = devices;
+        _cpuView = cpuView;
 
         LbCode.Lines = _cpu.Code;
         LbCode.Breakpoints = _cpu.Breakpoints;
 
-        CpuView.Cpu = cpu;
+        CpuView.Children.Add((Control)cpuView);
+        
         cpu.IoReadEventHandler = IoRead;
         cpu.IoWriteEventHandler = IoWrite;
         cpu.TicksEventHandler = TicksUpdate;
@@ -46,8 +48,8 @@ public partial class MainWindow : Window, ILogger
         foreach (var d in _devices)
             d.Device.IoRead(e);
         Info($"IO read, address = {e.Address:X4}, data = {e.Data:X4}");
-        if (e.Interrupt != null)
-            _cpu.Interrupt = (bool)e.Interrupt;
+        if (e.InterruptClearMask != null)
+            _cpu.Interrupt &= (uint)e.InterruptClearMask;
     }
 
     private void IoWrite(object? sender, IoEvent e)
@@ -55,8 +57,8 @@ public partial class MainWindow : Window, ILogger
         Info($"IO write, address = {e.Address:X4}, data = {e.Data:X4}");
         foreach (var d in _devices)
             d.Device.IoWrite(e);
-        if (e.Interrupt != null)
-            _cpu.Interrupt = (bool)e.Interrupt;
+        if (e.InterruptClearMask != null)
+            _cpu.Interrupt &= (uint)e.InterruptClearMask;
     }
 
     private void TicksUpdate(object? sender, int ticks)
@@ -65,7 +67,7 @@ public partial class MainWindow : Window, ILogger
         {
             var i = d.Device.TicksUpdate(_cpu.Speed, ticks);
             if (i != null)
-                _cpu.Interrupt = (bool)i;
+                _cpu.Interrupt |= (uint)i;
         }
     }
 
@@ -88,7 +90,7 @@ public partial class MainWindow : Window, ILogger
 
     private void ViewsUpdate()
     {
-        CpuView.Update();
+        _cpuView.Update();
         LbCode.Update(_cpu.Pc);
     }
 

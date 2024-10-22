@@ -125,7 +125,7 @@ public class LcdHD44780: IIODevice
         }
     }
 
-    public bool? TicksUpdate(int cpuSped, int ticks)
+    public uint? TicksUpdate(int cpuSped, int ticks)
     {
         return null;
     }

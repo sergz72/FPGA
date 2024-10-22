@@ -7,7 +7,8 @@
         x:Class="Cpu16Emulator.MainWindow"
         Height="1000"
         KeyDown="InputElement_OnKeyDown"
-        Title="Cpu16 emulator">
+        Title="Cpu16 emulator"
+        MinWidth="1300" MinHeight="1000">
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
@@ -38,7 +39,7 @@
         </DockPanel>
         <DockPanel>
             <StackPanel Orientation="Vertical" DockPanel.Dock="Top">
-                <cpu16Emulator:CPUView Name="CpuView"/>
+                <StackPanel Name="CpuView"/>
                 <StackPanel Name="SpIODevices" Orientation="Horizontal"/>
             </StackPanel>
             <ListBox Name="LbLog" DockPanel.Dock="Bottom">

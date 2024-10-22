@@ -40,7 +40,7 @@ public class IODeviceFrequencyCounter: IIODevice
             _logger?.Error("Frequency counter io write");
     }
 
-    public bool? TicksUpdate(int cpuSpeed, int ticks)
+    public uint? TicksUpdate(int cpuSpeed, int ticks)
     {
         if ((ticks % cpuSpeed) == 0)
             _interrupt = 0x8000;

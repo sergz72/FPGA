@@ -1,39 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using Avalonia.Media;
-using Cpu16EmulatorCommon;
+﻿using Cpu16EmulatorCommon;
 
 namespace Cpu16Emulator;
 
-internal sealed class Cpu16Exception(string message): Exception(message)
-{}
-
-public sealed class CodeLine
-{
-    public readonly uint Pc;
-    public readonly uint Instruction;
-    public readonly string SourceCode;
-    
-    internal CodeLine(string line, uint pc)
-    {
-        var parts = line.Split("//");
-        if (parts.Length != 2 || !uint.TryParse(parts[0], NumberStyles.HexNumber, null, out Instruction)
-                              || parts[1][0] != ' ' || !char.IsAsciiHexDigit(parts[1][1]) || !char.IsAsciiHexDigit(parts[1][2]) ||
-                              !char.IsAsciiHexDigit(parts[1][3]) || !char.IsAsciiHexDigit(parts[1][4]) || parts[1][5] != ' ')
-            throw new Cpu16Exception($"invalid code line: {line}");
-        SourceCode = parts[1][6..].Replace("\t", "");
-        Pc = pc;
-    }
-
-    public override string ToString()
-    {
-        return Pc.ToString("X4") + " " + SourceCode;
-    }
-}
-
-public sealed class Cpu16Lite
+public sealed class Cpu16Lite(string[] code, int speed): Cpu(code, speed, 256)
 {
     private const int ALU_OP_TEST = 0;
     private const int ALU_OP_NEG = 1;
@@ -53,86 +22,32 @@ public sealed class Cpu16Lite
     private const int ALU_OP_SHLC = 15;
     private const int ALU_OP_SHRC = 16;
 
-    public readonly CodeLine[] Code;
-    
-    public readonly HashSet<ushort> Breakpoints = [];
-
-    public ushort Pc { get; private set; }
-    public ushort Sp { get; private set; }
     public ushort Rp { get; private set; }
 
     public ushort AluOut { get; private set; }
-
-    public readonly ushort[] Registers;
-    public bool Hlt { get; private set; }
-    public bool Error { get; private set; }
     
     public bool C { get; private set; }
     public bool Z { get; private set; }
     public bool N { get; private set; }
-
-    public readonly int Speed;
-    public int Ticks { get; private set; }
     
-    private bool _inInterrupt;
-    
-    public bool Interrupt { get; set; }
-
-    public EventHandler<IoEvent>? IoWriteEventHandler;
-    public EventHandler<IoEvent>? IoReadEventHandler;
-    public EventHandler<int>? TicksEventHandler;
-    
-    public Cpu16Lite(string[] code, int stackSize, int speed)
+    protected override ushort? IsCall(uint instruction)
     {
-        Code = code.Select((c, i) => new CodeLine(c, (ushort)i)).ToArray();
-        Registers = new ushort[256];
-        var r = new Random();
-        for (var i = 0; i < Registers.Length; i++)
-            Registers[i] = (ushort)r.Next(0xFFFF);
-        Speed = speed;
-        Reset();
-    }
-
-    public void StepOver()
-    {
-        if (Hlt | Error)
-            return;
-
-        var instruction = Code[Pc].Instruction;
         var opType = (instruction >> 4) & 0x0F;
-        if (opType is 2 or 3) // call
-        {
-
-            var nextPc = Pc + 1;
-            do
-            {
-                Step();
-            } while (Pc != nextPc && !Hlt);
-        }
-        else
-            Step();
+        return opType is 2 or 3 ? (ushort)(Pc + 1) : null;
     }
-
-    public void Run()
+    
+    public override void Step()
     {
-        while (!Error & (Hlt | (!Hlt & !Breakpoints.Contains(Pc))))
-            Step();
-    }
-    public void Step()
-    {
-        Ticks++;
-        if (TicksEventHandler == null)
-            throw new Cpu16Exception("null TicksEventHandler");
-        TicksEventHandler(this, Ticks);
+        base.Step();
         
         if (Error)
             return;
 
         var instruction = Code[Pc].Instruction;
 
-        if (Interrupt && !_inInterrupt)
+        if (Interrupt != 0 && !InInterrupt)
         {
-            _inInterrupt = true;
+            InInterrupt = true;
             Hlt = false;
             instruction = 0x00010020; // call 1
             Pc--;
@@ -190,7 +105,7 @@ public sealed class Cpu16Lite
                         else
                         {
                             Ret();
-                            _inInterrupt = false;
+                            InInterrupt = false;
                         }
                         break;
                     case 0x08: // inc rp
@@ -296,7 +211,7 @@ public sealed class Cpu16Lite
                 {
                     case 0: //in io->register
                         if (IoReadEventHandler == null)
-                            throw new Cpu16Exception("null IoReadEventHandler");
+                            throw new CpuException("null IoReadEventHandler");
                         ev = new IoEvent { Address = ioAddress };
                         IoReadEventHandler(this, ev);
                         Registers[regNo1] = ev.Data;
@@ -304,7 +219,7 @@ public sealed class Cpu16Lite
                         break;
                     case 1: //in io->@rp
                         if (IoReadEventHandler == null)
-                            throw new Cpu16Exception("null IoReadEventHandler");
+                            throw new CpuException("null IoReadEventHandler");
                         ev = new IoEvent { Address = ioAddress };
                         IoReadEventHandler(this, ev);
                         Registers[Rp] = ev.Data;
@@ -312,7 +227,7 @@ public sealed class Cpu16Lite
                         break;
                     case 2: //in io->@rp++
                         if (IoReadEventHandler == null)
-                            throw new Cpu16Exception("null IoReadEventHandler");
+                            throw new CpuException("null IoReadEventHandler");
                         ev = new IoEvent { Address = ioAddress };
                         IoReadEventHandler(this, ev);
                         Registers[Rp] = ev.Data;
@@ -321,7 +236,7 @@ public sealed class Cpu16Lite
                         break;
                     case 3: //in io->@--rp
                         if (IoReadEventHandler == null)
-                            throw new Cpu16Exception("null IoReadEventHandler");
+                            throw new CpuException("null IoReadEventHandler");
                         ev = new IoEvent { Address = ioAddress };
                         IoReadEventHandler(this, ev);
                         DecRp();
@@ -330,21 +245,21 @@ public sealed class Cpu16Lite
                         break;
                     case 4: //out register->io
                         if (IoWriteEventHandler == null)
-                            throw new Cpu16Exception("null IoWriteEventHandler");
+                            throw new CpuException("null IoWriteEventHandler");
                         ev = new IoEvent { Address = ioAddress, Data = Registers[regNo1] };
                         IoWriteEventHandler(this, ev);
                         Pc = (ushort)(Pc + 1);
                         break;
                     case 5: //out @rp->io
                         if (IoWriteEventHandler == null)
-                            throw new Cpu16Exception("null IoWriteEventHandler");
+                            throw new CpuException("null IoWriteEventHandler");
                         ev = new IoEvent { Address = ioAddress, Data = Registers[Rp] };
                         IoWriteEventHandler(this, ev);
                         Pc = (ushort)(Pc + 1);
                         break;
                     case 6: //out @rp++->io
                         if (IoWriteEventHandler == null)
-                            throw new Cpu16Exception("null IoWriteEventHandler");
+                            throw new CpuException("null IoWriteEventHandler");
                         ev = new IoEvent { Address = ioAddress, Data = Registers[Rp] };
                         IoWriteEventHandler(this, ev);
                         IncRp();
@@ -352,7 +267,7 @@ public sealed class Cpu16Lite
                         break;
                     case 7: //out @--rp->io
                         if (IoWriteEventHandler == null)
-                            throw new Cpu16Exception("null IoWriteEventHandler");
+                            throw new CpuException("null IoWriteEventHandler");
                         DecRp();
                         ev = new IoEvent { Address = ioAddress, Data = Registers[Rp] };
                         IoWriteEventHandler(this, ev);
@@ -371,9 +286,7 @@ public sealed class Cpu16Lite
 
     private void AluOperation(uint opId, uint regNo1, ushort op2, ushort op3)
     {
-        var op1 = Registers[regNo1];
         int v;
-        uint uv;
         bool savedc;
         switch (opId)
         {
@@ -522,15 +435,9 @@ public sealed class Cpu16Lite
             Rp--;
     }
     
-    public void Stop()
+    public override void Reset()
     {
-        
-    }
-
-    public void Reset()
-    {
-        Ticks = 0;
-        Pc = Sp = Rp = 0;
-        Hlt = Error = Interrupt = _inInterrupt = false;
+        base.Reset();
+        Rp = 0;
     }
 }

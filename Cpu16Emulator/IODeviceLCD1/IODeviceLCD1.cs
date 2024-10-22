@@ -59,7 +59,7 @@ public class IODeviceLCD1: IIODevice
             _lcdDriver?.Write(ev.Address, (byte)ev.Data);
     }
 
-    public bool? TicksUpdate(int cpuSped, int ticks)
+    public uint? TicksUpdate(int cpuSped, int ticks)
     {
         return null;
     }

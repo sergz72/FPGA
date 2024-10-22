@@ -71,7 +71,7 @@ public sealed class IODeviceMemory: IIODevice
         }
     }
 
-    public bool? TicksUpdate(int cpuSped, int ticks)
+    public uint? TicksUpdate(int cpuSped, int ticks)
     {
         return null;
     }

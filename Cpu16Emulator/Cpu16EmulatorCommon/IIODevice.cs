@@ -16,7 +16,7 @@ public interface IIODevice
     Control? Init(string parameters, ILogger logger);
     void IoRead(IoEvent ev);
     void IoWrite(IoEvent ev);
-    bool? TicksUpdate(int cpuSped, int ticks);
+    uint? TicksUpdate(int cpuSped, int ticks);
 }
 
 public static class IODeviceParametersParser
@@ -61,8 +61,7 @@ public sealed class IoEvent
 {
     public ushort Address;
     public ushort Data;
-    public bool? Interrupt;
+    public uint? InterruptClearMask;
 }
 
-public class IODeviceException(string message): Exception(message)
-{}
+public class IODeviceException(string message): Exception(message);
