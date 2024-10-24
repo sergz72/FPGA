@@ -24,9 +24,9 @@ module uart_fifo
         urx(.clk(clk), .rx(rx), .data(rx_data), .interrupt(interrupt), .interrupt_clear(interrupt_clear), .nreset(nreset));
 
     fifo #(.WIDTH(8), .SIZE_BITS(RX_FIFO_BITS))
-        rx_fifo(.nrst(nreset), .nrd(nrd), .nwr(rx_fifo_wr), .data_out(data_out), .data_in(rx_data), .full(rx_fifo_full), .empty(empty));
+        rx_fifo(.nrst(nreset), .clk(clk), .nrd(nrd), .nwr(rx_fifo_wr), .data_out(data_out), .data_in(rx_data), .full(rx_fifo_full), .empty(empty));
     fifo #(.WIDTH(8), .SIZE_BITS(TX_FIFO_BITS))
-        tx_fifo(.nrst(nreset), .nwr(nwr), .nrd(!send_next), .data_in(data_in), .data_out(tx_data), .full(full), .empty(tx_fifo_empty));
+        tx_fifo(.nrst(nreset), .clk(clk), .nwr(nwr), .nrd(!send_next), .data_in(data_in), .data_out(tx_data), .full(full), .empty(tx_fifo_empty));
 
     always @(negedge clk) begin
         if (!nreset) begin

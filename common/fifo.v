@@ -1,6 +1,7 @@
 module fifo 
 #(parameter SIZE_BITS=7, WIDTH=8)
 (
+    input wire clk,
     input wire nrst,
     input wire nwr,
     input wire nrd,
@@ -11,8 +12,12 @@ module fifo
 );
     reg [SIZE_BITS-1:0] w_ptr, r_ptr;
     reg [WIDTH-1:0] data [0:(1<<SIZE_BITS) - 1];
+    wire rclk, wclk;
 
-    always@(negedge nrd) begin
+    assign rclk = (nrst | clk) & nrd;
+    assign wclk = (nrst | clk) & nwr;
+
+    always@(negedge rclk) begin
         if(!nrst)
             r_ptr <= 0;
         else if (!empty) begin
@@ -21,7 +26,7 @@ module fifo
         end
     end
 
-    always@(negedge nwr) begin
+    always@(negedge wclk) begin
         if(!nrst)
             w_ptr <= 0;
         else if (!full) begin
