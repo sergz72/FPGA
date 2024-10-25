@@ -78,6 +78,7 @@ ROM_BITS = 13)
     wire cpu_clk;
     wire rom_selected, rodata_selected, ram_selected, ports_selected, uart_data_selected, uart_control_selected, timer_selected, time_selected;
     reg ram_rsp_ready, ports_rsp_ready, uart_control_rsp_ready, rodata_rsp_ready, uart_data_rsp_ready, time_rsp_ready, timer_rsp_ready;
+    reg uart_data_rsp_sel, time_rsp_sel, timer_rsp_sel;
     wire [31-MEMORY_SELECTOR_START_BIT:0] memory_selector;
     reg [31-MEMORY_SELECTOR_START_BIT:0] memory_selectorf;
 
@@ -118,11 +119,11 @@ ROM_BITS = 13)
     
     assign mem_rdata = mem_rdata_f(memory_selectorf);
 
-    assign uart_nrd = !(dBus_cmd_valid & uart_data_rsp_ready & !wr);
-    assign uart_nwr = !(dBus_cmd_valid & uart_data_rsp_ready & wr);
+    assign uart_nrd = !(dBus_cmd_valid & uart_data_rsp_sel & !wr);
+    assign uart_nwr = !(dBus_cmd_valid & uart_data_rsp_sel & wr);
 
-    assign time_nrd = !(dBus_cmd_valid & time_rsp_ready & !wr);
-    assign timer_nwr = !(dBus_cmd_valid & timer_rsp_ready & wr);
+    assign time_nrd = !(dBus_cmd_valid & time_rsp_sel & !wr);
+    assign timer_nwr = !(dBus_cmd_valid & timer_rsp_sel & wr);
 
     assign iBusError = iBus_cmd_valid & !rom_selected;
     assign dBusDeviceSelected = rodata_selected | ram_selected | ports_selected | uart_control_selected | uart_data_selected | timer_selected | time_selected;
@@ -239,10 +240,12 @@ ROM_BITS = 13)
 
     always @(negedge cpu_clk) begin
         if (!nreset) begin
-            uart_data_rsp_ready <= 0;
             timer_interrupt_clear <= 0;
         end
         else begin
+            uart_data_rsp_sel <= uart_data_selected;
+            time_rsp_sel <= time_selected;
+            timer_rsp_sel <= timer_selected;
             if (dBus_cmd_valid) begin
                 ports_rsp_ready <= ports_selected;
                 uart_control_rsp_ready <= uart_control_selected;
