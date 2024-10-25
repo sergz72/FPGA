@@ -15,7 +15,7 @@ module timer
         if (!nreset) begin
             counter <= 0;
             interrupt <= 0;
-            done <= 0;
+            done <= 1;
         end
         else if (!nwr) begin
             counter <= value;

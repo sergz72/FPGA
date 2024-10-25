@@ -1,5 +1,8 @@
+TIMER_ADDRESS = 0xE0000000
+TIME_ADDRESS = 0xD8000000
+
 .section .reset_vec
-.globl _start, _wfi
+.globl _start, _wfi, delay, delay_start, gettime
 _start:
 	la sp, _sp
 	j start
@@ -16,6 +19,22 @@ _wfi:
 	wfi
 	ret
 
+delay_start:
+	lui t0, TIMER_ADDRESS >> 12
+	sw a0, 0(t0)
+	ret
+
+delay:
+	lui t0, TIMER_ADDRESS >> 12
+	sw a0, 0(t0)
+	wfi
+	ret
+
+gettime:
+	lui t0, TIME_ADDRESS >> 12
+	lw a0, 0(t0)
+	ret
+
 start:
 	// clearing bss...
 	la a0, _bss_start
@@ -26,11 +45,12 @@ next:
 	addi a0, a0, 4
 	j next
 done:
-	// enable interrupts
-	csrsi mstatus, 8
-	// enable timer interrupt
-	li t1, 0x80
+	// enable timer and external interrupts
+	li t1, 0x880 
 	csrw mie, t1
+	// enable interrupts
+	li t1, 0x1808
+	csrw mstatus, t1
 
 	call main
 	j .

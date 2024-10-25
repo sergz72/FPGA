@@ -1,3 +1,5 @@
+`include "main.vh"
+
 `timescale 1 ns / 1 ps
 
 module test;
@@ -22,14 +24,14 @@ module test;
     wire interrupt;
     reg interrupt_clear, nreset;
 
-    main #(.TIMER_BITS(10), .RESET_DELAY_BIT(5), .CPU_CLOCK_BIT(1), .UART_CLOCK_DIV(8), .UART_CLOCK_COUNTER_BITS(4), .I2C_PORTS(I2C_PORTS))
+    main #(.I2C_PORTS(I2C_PORTS))
          m(.clk(clk), .nerror(nerror), .rom_addr(rom_addr), .scl0_io(scl0_io), .sda0_io(sda0_io),
            .con_button(con_button), .psh_button(psh_button), .tra(tra), .trb(trb), .bak_button(bak_button),
            .led(led), .nwfi(nwfi), .scl_io(scl_io), .sda_io(sda_io), .tx(tx), .rx(rx));
 
-    uart1tx #(.CLOCK_DIV(8), .CLOCK_COUNTER_BITS(4))
+    uart1tx #(.CLOCK_DIV(`UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(`UART_CLOCK_COUNTER_BITS))
         utx(.clk(clk), .tx(rx), .data(tx_data), .send(send), .busy(busy), .nreset(nreset));
-    uart1rx #(.CLOCK_DIV(8), .CLOCK_COUNTER_BITS(4))
+    uart1rx #(.CLOCK_DIV(`UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(`UART_CLOCK_COUNTER_BITS))
         urx(.clk(clk), .rx(tx), .data(data_out), .interrupt(interrupt), .interrupt_clear(interrupt_clear), .nreset(nreset));
 
     pullup(scl0_io);
@@ -70,7 +72,7 @@ module test;
         interrupt_clear = 1;
         #5
         interrupt_clear = 0;
-        #5
+        #500000
         $finish;
     end
 endmodule
