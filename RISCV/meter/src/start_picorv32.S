@@ -1,14 +1,19 @@
 #include "custom_ops_picorv32.S"
 
+TIMER_ADDRESS = 0xE0000000
+TIME_ADDRESS = 0xD8000000
+
 .section .reset_vec
-.globl _start, _wfi, getq
+.globl _start, _wfi, getq, delay, delay_start, gettime
 _start:
 	picorv32_maskirq_insn(zero, zero)
 	j start
 	j .
 	j .
+
 /*ISR address*/
-isr:    picorv32_retirq_insn()
+isr:
+  picorv32_retirq_insn()
 
 _wfi:
 	picorv32_waitirq_insn(zero)
@@ -16,6 +21,22 @@ _wfi:
 getq:
 	picorv32_getq_insn(a1, q1)
 	ret
+
+delay_start:
+  lui t0, TIMER_ADDRESS >> 12
+  sw a0, 0(t0)
+  ret
+
+delay:
+  lui t0, TIMER_ADDRESS >> 12
+  sw a0, 0(t0)
+  picorv32_waitirq_insn(zero)
+  ret
+
+gettime:
+  lui t0, TIME_ADDRESS >> 12
+  lw a0, 0(t0)
+  ret
 
 start:
 	// clearing bss...
