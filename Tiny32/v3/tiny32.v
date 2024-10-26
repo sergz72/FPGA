@@ -64,7 +64,7 @@ module tiny32
     wire [31:0] imm12i_sign_extended, imm20u_shifted;
 
     reg start = 0;
-    wire stop, main_clk, clk1, clk2, clk3, clk4;
+    wire stop, clk1, clk2, clk3, clk4;
     reg next_stage = 1;
     reg next_stage_alu = 1;
 
@@ -105,7 +105,6 @@ module tiny32
 `endif
 
     assign stop = hlt | error;
-    assign main_clk = stop | clk;
     assign nogo = stop | !start;
     assign go = !stop & start;
 
@@ -223,10 +222,10 @@ module tiny32
         endcase
     endfunction
 
-    always @(posedge main_clk) begin
+    always @(posedge clk) begin
         if (!nreset)
             next_stage_alu <= 1;
-        else if (clk3 & alu_clk) begin
+        else if (start & clk3 & alu_clk) begin
             case (alu_op)
                 ALU_OP_SLL: alu_out <= source1_reg_data << alu_op2[4:0];
                 ALU_OP_SRL: alu_out <= source1_reg_data >> alu_op2[4:0];
@@ -313,12 +312,12 @@ module tiny32
         end
     end
 
-    always @(negedge main_clk) begin
+    always @(negedge clk) begin
         if (!nreset) begin
             start <= 0;
             interrupt_pending <= 0;
         end
-        else begin
+        else if (!stop) begin
             interrupt_pending <= interrupt;
             if (stage == 3)
                 start <= 1;
@@ -327,7 +326,7 @@ module tiny32
         end
     end
 
-    always @(posedge main_clk) begin
+    always @(posedge clk) begin
         if (!nreset) begin
             in_interrupt <= 0;
             interrupt_ack <= 0;
@@ -485,10 +484,10 @@ module tiny32
         end
     end
 
-    always @(posedge main_clk) begin
-        if (clk1 & !registers_wr)
+    always @(posedge clk) begin
+        if (start & clk1 & !registers_wr)
             registers[dest_reg] <= registers_data_wr;
-        else if (clk2) begin
+        else if (start & clk2) begin
             source1_reg_data <= source1_reg_in == 0 ? 0 : registers[source1_reg_in];
             source2_reg_data <= source2_reg_in == 0 ? 0 : registers[source2_reg_in];
         end

@@ -45,10 +45,8 @@ ROM_BITS = 13)
     reg nreset = 0;
 
     reg [`CPU_TIMER_BITS - 1:0] cpu_timer = 0;
-    reg [`MHZ_TIMER_BITS - 1:0] mhz_timer = 0;
     wire timer_interrupt;
     wire [31:0] time_value;
-    wire mhz_clock;
 
 `ifndef NO_INOUT_PINS
     reg scl0 = 1;
@@ -115,8 +113,6 @@ ROM_BITS = 13)
     assign timer_nwr = !timer_selected | (nwr === 4'b1111);
 
     assign mem_clk = nrd & (nwr === 4'b1111);
-
-    assign mhz_clock = mhz_timer[`MHZ_TIMER_BITS - 1];
     
 `ifndef NO_INOUT_PINS
     assign scl0_io = scl0 ? 1'bz : 0;
@@ -149,9 +145,11 @@ ROM_BITS = 13)
         ufifo(.clk(clk), .tx(tx), .rx(rx), .data_in(data_in[7:0]), .data_out(uart_data_out), .nwr(uart_nwr), .nrd(uart_nrd), .nreset(nreset),
                 .full(uart_tx_fifo_full), .empty(uart_rx_fifo_empty));
 
-    timer t(.clk(mhz_clock), .nreset(nreset), .nwr(timer_nwr), .value(data_in), .interrupt(timer_interrupt), .interrupt_clear(interrupt_ack[0]));
+    timer #(.MHZ_TIMER_BITS(`MHZ_TIMER_BITS), .MHZ_TIMER_VALUE(`MHZ_TIMER_VALUE))
+        t(.clk(clk), .nreset(nreset), .nwr(timer_nwr), .value(data_in), .interrupt(timer_interrupt), .interrupt_clear(interrupt_ack[0]));
 
-    time_counter tc(.clk(mhz_clock), .nreset(nreset), .nrd(time_nrd), .value(time_value));
+    time_counter #(.MHZ_TIMER_BITS(`MHZ_TIMER_BITS), .MHZ_TIMER_VALUE(`MHZ_TIMER_VALUE))
+        tc(.clk(clk), .nreset(nreset), .nrd(time_nrd), .value(time_value));
 
     // todo i2c_others, spi
 
@@ -167,15 +165,6 @@ ROM_BITS = 13)
         if (cpu_timer[`CPU_TIMER_BITS -1])
             nreset <= 1;
         cpu_timer <= cpu_timer + 1;
-    end
-
-    always @(posedge clk) begin
-        if (!nreset)
-            mhz_timer <= 0;
-        else if (mhz_timer == `MHZ_TIMER_VALUE)
-            mhz_timer <= 0;
-        else
-            mhz_timer <= mhz_timer + 1;
     end
 
     always @(negedge mem_clk) begin

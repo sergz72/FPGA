@@ -4,26 +4,15 @@
 
 module main
 #(parameter
-// 115200 at 27MHz
-UART_CLOCK_DIV = 234,
-// 115200 at 10MHz
-//UART_CLOCK_DIV = 87,
-UART_CLOCK_COUNTER_BITS = 8,
 I2C_PORTS = 1,
-// 6.75 interrupts/sec
-TIMER_BITS = 22,
-// about 20 ms delay
-RESET_DELAY_BIT = 19,
-// div = 64
-CPU_CLOCK_BIT = 5,
 // 2k 32 bit words RAM
 RAM_BITS = 11,
 // 8k 32 bit words ROM
 ROM_BITS = 13)
 (
     input wire clk,
-    output wire trap,
-    output wire mem_invalid,
+    output wire ntrap,
+    output wire nmem_invalid,
 `ifdef MEMORY_DEBUG
     output wire [31:0] mem_la_addr,
 `endif
@@ -55,10 +44,14 @@ ROM_BITS = 13)
     localparam RAM_END = RAM_START + (4<<RAM_BITS);
     localparam MEMORY_SELECTOR_START_BIT = 27;
 
-    reg reset = 0;
+    reg nreset = 0;
 
-    reg [TIMER_BITS - 1:0] timer = 0;
-    reg interrupt = 0;
+    reg [`CPU_TIMER_BITS - 1:0] cpu_timer = 0;
+    wire timer_interrupt, timer_interrupt_clear;
+    wire [31:0] time_value;
+    wire mhz_clock;
+
+    wire trap;
 
 `ifndef NO_INOUT_PINS
     reg scl0 = 1;
@@ -89,13 +82,9 @@ ROM_BITS = 13)
 	wire trace_valid;
 	wire [35:0] trace_data;
     wire cpu_clk;
-    wire rom_selected, ram_selected, ports_selected, uart_data_selected, uart_control_selected;
-    reg rom_ready = 0;
-    reg ram_ready = 0;
+    wire rom_selected, ram_selected, ports_selected, uart_data_selected, uart_control_selected, time_selected, timer_selected;
     reg wr = 0;
     reg rd = 0;
-    reg uart_data_ready = 0;
-    reg uart_control_ready = 0;
     wire [RAM_BITS - 1:0] ram_address;
     reg [31-MEMORY_SELECTOR_START_BIT:0] memory_selector;
 
@@ -103,18 +92,28 @@ ROM_BITS = 13)
     wire uart_nrd, uart_nwr;
     wire [7:0] uart_data_out;
 
+    wire time_nrd, timer_nwr;
+
     reg [31:0] rom [0:(1<<ROM_BITS)-1];
     reg [7:0] ram1 [0:(1<<RAM_BITS)-1];
     reg [7:0] ram2 [0:(1<<RAM_BITS)-1];
     reg [7:0] ram3 [0:(1<<RAM_BITS)-1];
     reg [7:0] ram4 [0:(1<<RAM_BITS)-1];
 
-    assign irq = {28'h0, interrupt, 3'h0};
+    assign ntrap = ~trap;
 
-    assign cpu_clk = timer[CPU_CLOCK_BIT];
-    assign mem_invalid = mem_valid & !mem_ready;
+    assign irq = {28'h0, timer_interrupt, 3'h0};
+
+    assign cpu_clk = cpu_timer[`CPU_CLOCK_BIT];
+
+    assign nmem_invalid = !mem_valid | mem_ready;
+
     assign rom_selected = memory_selector === 1;
     assign ram_selected = memory_selector === 2;
+
+    assign time_selected = memory_selector === 5'h1B;
+    assign timer_selected = memory_selector === 5'h1C;
+
     assign uart_data_selected = memory_selector === 5'h1D;
     assign uart_control_selected = memory_selector === 5'h1E;
     assign ports_selected = memory_selector === 5'h1F;
@@ -123,6 +122,10 @@ ROM_BITS = 13)
     assign uart_nrd = !(mem_valid & uart_data_selected & rd);
     assign uart_nwr = !(mem_valid & uart_data_selected & wr);
 
+    assign time_nrd = !(mem_valid & time_selected & rd);
+    assign timer_nwr = !(mem_valid & timer_selected & wr);
+    assign timer_interrupt_clear = eoi[3];
+    
     assign ram_address = mem_la_addr[RAM_BITS + 1:2];
 
 `ifndef NO_INOUT_PINS
@@ -141,8 +144,9 @@ ROM_BITS = 13)
         case (source)
             1: mem_rdata_f = rom_rdata;
             2: mem_rdata_f = ram_rdata;
-            29: mem_rdata_f = {24'h0, uart_data_out};
-            30: mem_rdata_f = {30'h0, uart_rx_fifo_empty, uart_tx_fifo_full};
+            5'h1B: mem_rdata_f = time_value;
+            5'h1D: mem_rdata_f = {24'h0, uart_data_out};
+            5'h1E: mem_rdata_f = {30'h0, uart_rx_fifo_empty, uart_tx_fifo_full};
             default: mem_rdata_f = ports_rdata;
         endcase
     endfunction
@@ -162,13 +166,13 @@ ROM_BITS = 13)
                .PROGADDR_IRQ(32'h0800_0010),
                .PROGADDR_RESET(32'h0800_0000),
                .BARREL_SHIFTER(1),
-               .ENABLE_IRQ_TIMER(1),
-               .ENABLE_COUNTERS(1),
+               .ENABLE_IRQ_TIMER(0),
+               .ENABLE_COUNTERS(0),
                .ENABLE_COUNTERS64(0),
                .LATCHED_IRQ(0)
         )
         cpu(.clk(cpu_clk),
-                .resetn(reset),
+                .resetn(nreset),
                 .trap(trap),
                 .irq(irq),
                 .eoi(eoi),
@@ -196,26 +200,26 @@ ROM_BITS = 13)
                 .trace_data(trace_data)
         );
 
-    uart_fifo #(.CLOCK_DIV(UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(UART_CLOCK_COUNTER_BITS))
-        ufifo(.clk(clk), .tx(tx), .rx(rx), .data_in(mem_la_wdata[7:0]), .data_out(uart_data_out), .nwr(uart_nwr), .nrd(uart_nrd), .nreset(reset),
+    uart_fifo #(.CLOCK_DIV(`UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(`UART_CLOCK_COUNTER_BITS))
+        ufifo(.clk(clk), .tx(tx), .rx(rx), .data_in(mem_la_wdata[7:0]), .data_out(uart_data_out), .nwr(uart_nwr), .nrd(uart_nrd), .nreset(nreset),
                 .full(uart_tx_fifo_full), .empty(uart_rx_fifo_empty));
+
+    timer 
+        t(.clk(clk), .nreset(nreset), .nwr(timer_nwr), .value(mem_la_wdata), .interrupt(timer_interrupt), .interrupt_clear(timer_interrupt_clear),
+            .mhz_clock(mhz_clock));
+
+    time_counter tc(.clk(mhz_clock), .nreset(nreset), .nrd(time_nrd), .value(time_value));
 
     // todo i2c_others, spi
 
     always @(posedge clk) begin
-        if (timer == {TIMER_BITS{1'b1}})
-            interrupt <= 1;
-        else if (eoi[3])
-            interrupt <= 0;
-        timer <= timer + 1;
-    end
-
-    always @(negedge timer[RESET_DELAY_BIT]) begin
-        reset <= 1;
+        if (cpu_timer[`CPU_TIMER_BITS -1])
+            nreset <= 1;
+        cpu_timer <= cpu_timer + 1;
     end
 
     always @(negedge cpu_clk) begin
-        if (!reset) begin
+        if (!nreset) begin
             wr <= 0;
             rd <= 0;
         end
@@ -228,7 +232,7 @@ ROM_BITS = 13)
     end
 
     always @(posedge mem_valid) begin
-        mem_ready <= rom_selected | ram_selected | ports_selected | uart_control_selected | uart_data_selected;
+        mem_ready <= rom_selected | ram_selected | ports_selected | uart_control_selected | uart_data_selected | time_selected | timer_selected;
     end
 
     always @(posedge mem_valid) begin
