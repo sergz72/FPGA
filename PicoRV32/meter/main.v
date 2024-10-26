@@ -49,7 +49,6 @@ ROM_BITS = 13)
     reg [`CPU_TIMER_BITS - 1:0] cpu_timer = 0;
     wire timer_interrupt, timer_interrupt_clear;
     wire [31:0] time_value;
-    wire mhz_clock;
 
     wire trap;
 
@@ -204,11 +203,11 @@ ROM_BITS = 13)
         ufifo(.clk(clk), .tx(tx), .rx(rx), .data_in(mem_la_wdata[7:0]), .data_out(uart_data_out), .nwr(uart_nwr), .nrd(uart_nrd), .nreset(nreset),
                 .full(uart_tx_fifo_full), .empty(uart_rx_fifo_empty));
 
-    timer 
-        t(.clk(clk), .nreset(nreset), .nwr(timer_nwr), .value(mem_la_wdata), .interrupt(timer_interrupt), .interrupt_clear(timer_interrupt_clear),
-            .mhz_clock(mhz_clock));
+    timer #(.MHZ_TIMER_BITS(`MHZ_TIMER_BITS), .MHZ_TIMER_VALUE(`MHZ_TIMER_VALUE))
+        t(.clk(clk), .nreset(nreset), .nwr(timer_nwr), .value(mem_la_wdata), .interrupt(timer_interrupt), .interrupt_clear(timer_interrupt_clear));
 
-    time_counter tc(.clk(mhz_clock), .nreset(nreset), .nrd(time_nrd), .value(time_value));
+    time_counter #(.MHZ_TIMER_BITS(`MHZ_TIMER_BITS), .MHZ_TIMER_VALUE(`MHZ_TIMER_VALUE))
+        tc(.clk(clk), .nreset(nreset), .nrd(time_nrd), .value(time_value));
 
     // todo i2c_others, spi
 
