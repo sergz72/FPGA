@@ -105,17 +105,17 @@ ROM_BITS = 13)
     assign nerror = !error;
     assign nwfi = !wfi;
     
-    assign rom_selected = rom_addr[31:MEMORY_SELECTOR_START_BIT] === 1;
-    assign rodata_selected = memory_selector === 1;
-    assign ram_selected = memory_selector === 2;
+    assign rom_selected = rom_addr[31:MEMORY_SELECTOR_START_BIT] == 1;
+    assign rodata_selected = memory_selector == 1;
+    assign ram_selected = memory_selector == 2;
 
 
-    assign time_selected = memory_selector === 5'h1B;
-    assign timer_selected = memory_selector === 5'h1C;
+    assign time_selected = memory_selector == 5'h1B;
+    assign timer_selected = memory_selector == 5'h1C;
 
-    assign uart_data_selected = memory_selector === 5'h1D;
-    assign uart_control_selected = memory_selector === 5'h1E;
-    assign ports_selected = memory_selector === 5'h1F;
+    assign uart_data_selected = memory_selector == 5'h1D;
+    assign uart_control_selected = memory_selector == 5'h1E;
+    assign ports_selected = memory_selector == 5'h1F;
     
     assign mem_rdata = mem_rdata_f(memory_selectorf);
 

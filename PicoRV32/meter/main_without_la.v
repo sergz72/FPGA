@@ -112,11 +112,11 @@ ROM_BITS = 13)
 
     assign cpu_clk = timer[CPU_CLOCK_BIT];
     assign mem_invalid = mem_valid & !mem_ready;
-    assign rom_selected = mem_valid & memory_selector === 1;
-    assign ram_selected = mem_valid & memory_selector === 2;
-    assign uart_data_selected = mem_valid & memory_selector === 5'h1D;
-    assign uart_control_selected = mem_valid & memory_selector === 5'h1E;
-    assign ports_selected = mem_valid & memory_selector === 5'h1F;
+    assign rom_selected = mem_valid & memory_selector == 1;
+    assign ram_selected = mem_valid & memory_selector == 2;
+    assign uart_data_selected = mem_valid & memory_selector == 5'h1D;
+    assign uart_control_selected = mem_valid & memory_selector == 5'h1E;
+    assign ports_selected = mem_valid & memory_selector == 5'h1F;
     assign mem_rdata = mem_rdata_f(memory_selector);
 
     assign ram_address = mem_addr[RAM_BITS + 1:2];

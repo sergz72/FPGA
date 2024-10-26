@@ -36,7 +36,7 @@ module tiny32_tb;
 
     always #1 clk <= ~clk;
     
-    assign mem_clk = nrd & (nwr === 4'b1111);
+    assign mem_clk = nrd & (nwr == 4'b1111);
     assign ram_address = address[RAM_BITS + 1:2];
     assign rom_address = address[ROM_BITS + 1:2];
     assign rom_selected = address[31:30] == 0;

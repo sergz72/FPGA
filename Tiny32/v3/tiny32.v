@@ -130,12 +130,12 @@ module tiny32
     assign imm20u = current_instruction[31:12];
     assign imm20j = {current_instruction[31], current_instruction[19:12], current_instruction[20], current_instruction[30:21]};
 
-    assign op3 = op === 3;
-    assign op11 = op === 11;
-    assign op19 = op === 19;
-    assign op35 = op === 35;
+    assign op3 = op == 3;
+    assign op11 = op == 11;
+    assign op19 = op == 19;
+    assign op35 = op == 35;
     assign op99 = op == 99;
-    assign op51 = op === 51;
+    assign op51 = op == 51;
 
     assign alu_clk_no_br_in = op19 || op51;
     assign alu_clk_no_br_slt_sltu = alu_clk_no_br & !slt & !sltu;
@@ -361,20 +361,20 @@ module tiny32
                         current_instruction <= data_in;
 
                         load <= op3;
-                        lb <= op3 && func3_in === 0;
-                        lh <= op3 && func3_in === 1;
-                        lw <= op3 && func3_in === 2;
-                        lbu <= op3 && func3_in === 4;
-                        lhu <= op3 && func3_in === 5;
+                        lb <= op3 && func3_in == 0;
+                        lh <= op3 && func3_in == 1;
+                        lw <= op3 && func3_in == 2;
+                        lbu <= op3 && func3_in == 4;
+                        lhu <= op3 && func3_in == 5;
 
                         alu_immediate <= op19;
 
                         auipc <= op == 23;
 
                         store_ <= op35;
-                        sb <= op35 && func3_in === 0;
-                        sh <= op35 && func3_in === 1;
-                        sw <= op35 && func3_in === 2;
+                        sb <= op35 && func3_in == 0;
+                        sh <= op35 && func3_in == 1;
+                        sw <= op35 && func3_in == 2;
 
                         alu_clk_no_br <= alu_clk_no_br_in;
                         alu_clk <= alu_clk_no_br_in | op99;
@@ -386,11 +386,11 @@ module tiny32
                         jalr <= op == 103;
                         jal <= op == 111;
 
-                        wfi_ <= op11 && func3_in === 0;
-                        reti <= op11 && func3_in === 1;
-                        hlt <= op11 && func3_in === 2;
+                        wfi_ <= op11 && func3_in == 0;
+                        reti <= op11 && func3_in == 1;
+                        hlt <= op11 && func3_in == 2;
 
-                        mulhu <= alu_op_id === 7'b0011001;
+                        mulhu <= alu_op_id == 7'b0011001;
                         slt <= func3_in == 2 && slt_op;
                         sltu <= func3_in == 3 && slt_op;
 

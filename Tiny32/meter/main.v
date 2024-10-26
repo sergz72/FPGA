@@ -95,24 +95,24 @@ ROM_BITS = 13)
     assign memory_selector = address[31:MEMORY_SELECTOR_START_BIT];
 
     assign cpu_clk = cpu_timer[`CPU_CLOCK_BIT];
-    assign rom_selected = memory_selector === 1;
-    assign ram_selected = memory_selector === 2;
-    assign time_selected = memory_selector === 5'h1B;
-    assign timer_selected = memory_selector === 5'h1C;
-    assign uart_data_selected = memory_selector === 5'h1D;
-    //assign uart_control_selected = memory_selector === 5'h1E;
-    assign ports_selected = memory_selector === 5'h1F;
+    assign rom_selected = memory_selector == 1;
+    assign ram_selected = memory_selector == 2;
+    assign time_selected = memory_selector == 5'h1B;
+    assign timer_selected = memory_selector == 5'h1C;
+    assign uart_data_selected = memory_selector == 5'h1D;
+    //assign uart_control_selected = memory_selector == 5'h1E;
+    assign ports_selected = memory_selector == 5'h1F;
     assign mem_rdata = mem_rdata_f(memory_selector);
 
     assign ram_address = address[RAM_BITS + 1:2];
     assign rom_address = address[ROM_BITS + 1:2];
 
-    assign uart_nwr = !uart_data_selected | (nwr === 4'b1111);
+    assign uart_nwr = !uart_data_selected | (nwr == 4'b1111);
     assign uart_nrd = !uart_data_selected | nrd;
     assign time_nrd = !time_selected | nrd;
-    assign timer_nwr = !timer_selected | (nwr === 4'b1111);
+    assign timer_nwr = !timer_selected | (nwr == 4'b1111);
 
-    assign mem_clk = nrd & (nwr === 4'b1111);
+    assign mem_clk = nrd & (nwr == 4'b1111);
     
 `ifndef NO_INOUT_PINS
     assign scl0_io = scl0 ? 1'bz : 0;

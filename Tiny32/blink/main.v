@@ -74,15 +74,15 @@ ROM_BITS = 10)
     assign irq = {7'h0, timer_interrupt};
 
     assign cpu_clk = timer[CPU_CLOCK_BIT];
-    assign rom_selected = address[31:MEMORY_SELECTOR_START_BIT] === 0;
-    assign ram_selected = address[31:MEMORY_SELECTOR_START_BIT] === 1;
-    assign ports_selected = address[31:MEMORY_SELECTOR_START_BIT] === 3;
+    assign rom_selected = address[31:MEMORY_SELECTOR_START_BIT] == 0;
+    assign ram_selected = address[31:MEMORY_SELECTOR_START_BIT] == 1;
+    assign ports_selected = address[31:MEMORY_SELECTOR_START_BIT] == 3;
     assign mem_rdata = rom_selected ? rom_rdata : (ram_selected ? ram_rdata : ports_rdata);
 
     assign ram_address = address[RAM_BITS + 1:2];
     assign rom_address = address[ROM_BITS + 1:2];
 
-    assign mem_clk = nrd & (nwr === 4'b1111);
+    assign mem_clk = nrd & (nwr == 4'b1111);
 
 `ifndef NO_INOUT_PINS
     assign scl_io = scl ? 1'bz : 0;
