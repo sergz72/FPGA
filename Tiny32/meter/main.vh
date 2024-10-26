@@ -3,6 +3,6 @@
 `define UART_CLOCK_DIV 17
 `define UART_CLOCK_COUNTER_BITS 5
 `define CPU_TIMER_BITS 11
-`define CPU_CLOCK_BIT 1
+`define CPU_CLOCK_BIT 3
 `define MHZ_TIMER_BITS 1
 `define MHZ_TIMER_VALUE 1

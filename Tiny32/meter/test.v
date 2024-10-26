@@ -53,9 +53,15 @@ module test;
         send = 0;
         interrupt_clear = 0;
         nreset = 0;
-        #10000
+        #3000
         nreset = 1;
         tx_data = 8'h5A;
+        #5
+        send = 1;
+        #5
+        send = 0;
+        #1000
+        tx_data = 8'h33;
         #5
         send = 1;
         #5
