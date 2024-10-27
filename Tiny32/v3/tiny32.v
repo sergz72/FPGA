@@ -17,7 +17,7 @@ module tiny32
 (
     input wire clk,
     input wire nreset,
-    output wire hlt,
+    output reg hlt = 0,
     output reg error = 0,
     output reg wfi = 0,
     output reg [31:0] address,
@@ -30,8 +30,6 @@ module tiny32
     output reg [7:0] interrupt_ack = 0,
     output reg [1:0] stage = 0
 );
-    localparam NOP = 32'h13;
-
     localparam ALU_OP_ADD   = 0;
     localparam ALU_OP_SLL   = 1;
     localparam ALU_OP_SUB   = 2;
@@ -48,16 +46,16 @@ module tiny32
     localparam ALU_OP_REM   = 13;
     localparam ALU_OP_REMU  = 14;
 
-    wire lb, lh, lw, lbu, lhu, alu_immediate, auipc, sb, sh, sw, alu_clk, alu_clk_no_br, lui, br, jalr, jal, reti, slt, sltu;
-    wire alu_clk_no_br_slt_sltu;
-    wire wfi_;
-    wire [2:0] func3;
-    wire [6:0] op, func7;
+    reg lb, lh, lw, lbu, lhu, alu_immediate, auipc, sb, sh, sw, alu_clk, alu_clk_no_br, lui, br, jalr, jal, reti, slt, sltu;
+    wire alu_clk_no_br_in, alu_clk_no_br_slt_sltu;
+    reg wfi_;
+    wire [2:0] func3_in, func3;
+    wire [6:0] op, func7_in;
     wire op3, op35, op11, op19, op99, op51, slt_op;
-    wire load, store_;
+    reg load, store_;
     reg [3:0] store;
 
-    reg [31:0] current_instruction = NOP;
+    reg [31:0] current_instruction;
     wire [11:0] imm12i, imm12s, imm12b;
     wire [19:0] imm20u, imm20j;
     wire [31:0] source_address, isr_address;
@@ -83,9 +81,9 @@ module tiny32
     reg [31:0] source1_reg_data, source2_reg_data;
 
     wire [31:0] alu_op2;
-    wire [3:0] alu_op;
+    reg [3:0] alu_op;
     wire [6:0] alu_op_id;
-    wire mulhu;
+    reg mulhu;
     reg [31:0] alu_out, alu_out2;
 
     wire z;
@@ -118,12 +116,13 @@ module tiny32
     assign nrd = nogo | !(clk2 | (load & clk4));
     assign nwr = go & clk4 ? store : 4'b1111;
 
-    assign op = current_instruction[6:0];
-    assign func3 = current_instruction[14:12];
-    assign func7 = current_instruction[31:25];
+    assign op = data_in[6:0];
+    assign func3_in = data_in[14:12];
+    assign func7_in = data_in[31:25];
     assign source1_reg_in = data_in[19:15];
     assign source2_reg_in = data_in[24:20];
 
+    assign func3 = current_instruction[14:12];
     assign dest_reg = current_instruction[11:7];
     assign imm12i = current_instruction[31:20];
     assign imm12s = {current_instruction[31:25], current_instruction[11:7]};
@@ -138,7 +137,7 @@ module tiny32
     assign op99 = op == 99;
     assign op51 = op == 51;
 
-    assign alu_clk_no_br = op19 || op51;
+    assign alu_clk_no_br_in = op19 || op51;
     assign alu_clk_no_br_slt_sltu = alu_clk_no_br & !slt & !sltu;
 
     assign registers_wr = store_ | br | reti | hlt | wfi_;
@@ -153,83 +152,13 @@ module tiny32
     assign imm12i_sign_extended = {{20{imm12i[11]}}, imm12i};
     assign imm20u_shifted = {imm20u, 12'h0};
 
-    assign alu_op_id = {op99,func3,op19,func7[5],func7[0]};
+    assign alu_op_id = {op99,func3_in,op19,func7_in[5],func7_in[0]};
 
     assign source_address = source1_reg_data + (current_instruction[6:0] == 3 ? imm12i_sign_extended : { {20{imm12s[11]}}, imm12s });
 
     assign isr_address = {ISR_ADDRESS, 2'b00, interrupt_no, 2'b00};
 
-    assign slt_op = op19 | (op51 & !func7[5] & !func7[0]);
-
-    assign load = op3;
-    assign lb = op3 && func3 == 0;
-    assign lh = op3 && func3 == 1;
-    assign lw = op3 && func3 == 2;
-    assign lbu = op3 && func3 == 4;
-    assign lhu = op3 && func3 == 5;
-
-    assign alu_immediate = op19;
-
-    assign auipc = op == 23;
-
-    assign store_ = op35;
-    assign sb = op35 && func3 == 0;
-    assign sh = op35 && func3 == 1;
-    assign sw = op35 && func3 == 2;
-
-    assign alu_clk = alu_clk_no_br | op99;
-
-    assign lui = op == 55;
-
-    assign br = op99;
-
-    assign jalr = op == 103;
-    assign jal = op == 111;
-
-    assign wfi_ = op11 && func3 == 0;
-    assign reti = op11 && func3 == 1;
-    assign hlt = op11 && func3 == 2;
-
-    assign mulhu = alu_op_id == 7'b0011001;
-    assign slt = func3 == 2 && slt_op;
-    assign sltu = func3 == 3 && slt_op;
-
-    assign alu_op = alu_op_f(alu_op_id);
-
-    function [3:0] alu_op_f(input [6:0] source);
-        casez (source)
-            7'b00001??: alu_op_f = ALU_OP_ADD;
-            7'b0000000: alu_op_f = ALU_OP_ADD;
-            7'b0000001: alu_op_f = ALU_OP_MUL;
-
-            7'b00011??: alu_op_f = ALU_OP_SLL;
-            7'b0001000: alu_op_f = ALU_OP_SLL;
-            7'b0001001: alu_op_f = ALU_OP_MULS;
-
-            7'b0010001: alu_op_f = ALU_OP_MULSU;
-
-            7'b0011001: alu_op_f = ALU_OP_MUL;
-
-            7'b01001??: alu_op_f = ALU_OP_XOR;
-            7'b0100000: alu_op_f = ALU_OP_XOR;
-            7'b0100001: alu_op_f = ALU_OP_DIV;
-
-            7'b0101?00: alu_op_f = ALU_OP_SRL;
-            7'b0101?10: alu_op_f = ALU_OP_SRA;
-            7'b0101001: alu_op_f = ALU_OP_DIVU;
-
-            7'b01101??: alu_op_f = ALU_OP_OR;
-            7'b0110000: alu_op_f = ALU_OP_OR;
-            7'b0110001: alu_op_f = ALU_OP_REM;
-
-            7'b01111??: alu_op_f = ALU_OP_AND;
-            7'b0111000: alu_op_f = ALU_OP_AND;
-            7'b0111001: alu_op_f = ALU_OP_REMU;
-
-            default: alu_op_f = ALU_OP_SUB;
-        endcase
-    endfunction
-
+    assign slt_op = op19 | (op51 & !func7_in[5] & !func7_in[0]);
 
     function [3:0] interrupt_no_f(input [7:0] source);
         casez (source)
@@ -399,13 +328,13 @@ module tiny32
 
     always @(posedge clk) begin
         if (!nreset) begin
-            current_instruction <= NOP;
             in_interrupt <= 0;
             interrupt_ack <= 0;
             address <= RESET_PC;
             saved_pc2 <= RESET_PC;
             wfi <= 0;
             next_stage <= 1;
+            hlt <= 0;
             error <= 0;
         end
         else if (start) begin
@@ -429,8 +358,75 @@ module tiny32
                 end
                 1: begin
                     if (ready) begin
-                        next_stage <= 1;
                         current_instruction <= data_in;
+
+                        load <= op3;
+                        lb <= op3 && func3_in == 0;
+                        lh <= op3 && func3_in == 1;
+                        lw <= op3 && func3_in == 2;
+                        lbu <= op3 && func3_in == 4;
+                        lhu <= op3 && func3_in == 5;
+
+                        alu_immediate <= op19;
+
+                        auipc <= op == 23;
+
+                        store_ <= op35;
+                        sb <= op35 && func3_in == 0;
+                        sh <= op35 && func3_in == 1;
+                        sw <= op35 && func3_in == 2;
+
+                        alu_clk_no_br <= alu_clk_no_br_in;
+                        alu_clk <= alu_clk_no_br_in | op99;
+
+                        lui <= op == 55;
+
+                        br <= op99;
+
+                        jalr <= op == 103;
+                        jal <= op == 111;
+
+                        wfi_ <= op11 && func3_in == 0;
+                        reti <= op11 && func3_in == 1;
+                        hlt <= op11 && func3_in == 2;
+
+                        mulhu <= alu_op_id == 7'b0011001;
+                        slt <= func3_in == 2 && slt_op;
+                        sltu <= func3_in == 3 && slt_op;
+
+                        casez (alu_op_id)
+                            7'b00001??: alu_op <= ALU_OP_ADD;
+                            7'b0000000: alu_op <= ALU_OP_ADD;
+                            7'b0000001: alu_op <= ALU_OP_MUL;
+
+                            7'b00011??: alu_op <= ALU_OP_SLL;
+                            7'b0001000: alu_op <= ALU_OP_SLL;
+                            7'b0001001: alu_op <= ALU_OP_MULS;
+
+                            7'b0010001: alu_op <= ALU_OP_MULSU;
+
+                            7'b0011001: alu_op <= ALU_OP_MUL;
+
+                            7'b01001??: alu_op <= ALU_OP_XOR;
+                            7'b0100000: alu_op <= ALU_OP_XOR;
+                            7'b0100001: alu_op <= ALU_OP_DIV;
+
+                            7'b0101?00: alu_op <= ALU_OP_SRL;
+                            7'b0101?10: alu_op <= ALU_OP_SRA;
+                            7'b0101001: alu_op <= ALU_OP_DIVU;
+
+                            7'b01101??: alu_op <= ALU_OP_OR;
+                            7'b0110000: alu_op <= ALU_OP_OR;
+                            7'b0110001: alu_op <= ALU_OP_REM;
+
+                            7'b01111??: alu_op <= ALU_OP_AND;
+                            7'b0111000: alu_op <= ALU_OP_AND;
+                            7'b0111001: alu_op <= ALU_OP_REMU;
+
+                            default: alu_op <= ALU_OP_SUB;
+                        endcase
+
+                        next_stage <= 1;
                     end
                     else
                         next_stage <= 0;
