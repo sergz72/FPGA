@@ -69,7 +69,7 @@ module forth_cpu
     assign alu_op = current_instruction[7:4] == 4'hF;
 
     assign jmp_address = {pc_data, immediate};
-    assign interrupt_no = interrupt[1] ? 2 : (interrupt[0] ? 1 : 0);
+    assign interrupt_no = interrupt[1] ? 2'b10 : {1'b0, interrupt[0]};
     assign interrupt_address = {{WIDTH-4{1'b0}}, interrupt_no, 2'b00};
 
     assign eq = data_stack_value2 == data_stack_value1;
