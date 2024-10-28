@@ -20,25 +20,26 @@ module timer
             done <= 1;
         end
         else begin
-            if (mhz_timer == MHZ_TIMER_VALUE) begin
-                mhz_timer <= 0;
-                if (counter != 0)
-                    counter <= counter - 1;
-            end
-            else
-                mhz_timer <= mhz_timer + 1;
-
             if (!nwr) begin
                 counter <= value;
+                mhz_timer <= 0;
                 interrupt <= 0;
                 done <= 0;
             end
-            else if (interrupt_clear)
-                interrupt <= 0;
-            else if (counter == 0 && !done) begin
+            else if (counter != 0) begin
+                if (mhz_timer == MHZ_TIMER_VALUE) begin
+                    mhz_timer <= 0;
+                    counter <= counter - 1;
+                end
+                else
+                    mhz_timer <= mhz_timer + 1;
+            end
+            else if (!done) begin
                 interrupt <= 1;
                 done <= 1;
             end
+            else if (interrupt_clear)
+                interrupt <= 0;
         end
     end
 
