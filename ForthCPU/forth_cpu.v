@@ -203,7 +203,7 @@ module forth_cpu
                 end
                 STATE_FETCH2: begin
                     call_stack_nwr <= 1;
-                    if (jmp | call)
+                    if (jmp | call | br | br0)
                         pc <= jmp_address;
                     else begin
                         pc <= pc + 1;
@@ -227,6 +227,7 @@ module forth_cpu
                 STATE_FETCH_ROM: begin
                     immediate <= address_data;
                     state <= STATE_FETCH_ROM2;
+                    address <= address + 1;
                 end
                 STATE_FETCH_ROM2: begin
                     data_stack_nwr <= 0;
