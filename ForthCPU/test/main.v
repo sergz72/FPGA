@@ -65,7 +65,8 @@ module main
                     ram_rdata <= ram[ram_address];
                 end
                 ports_selected: begin
-                    led <= mem_data_in[0];
+                    if (!mem_nwr)
+                        led <= mem_data_in[0];
                 end
             endcase
         end
