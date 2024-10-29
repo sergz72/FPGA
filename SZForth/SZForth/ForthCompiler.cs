@@ -2,18 +2,30 @@
 
 internal sealed class ForthCompiler
 {
+    private enum ConditionType
+    {
+        If,
+        Else,
+        Begin,
+        While
+    }
+
+    private record Condition(ConditionType Type, JmpInstruction? I, int Pc);
+    
     private readonly List<Token> _tokens;
     private readonly Stack<int> _dataStack;
     private readonly int _bits;
     private readonly Dictionary<string, int> _constantsAndVariables;
     private readonly Dictionary<string, List<Instruction>> _words;
-    private readonly Dictionary<string, uint> _wordAddresses;
+    private readonly Dictionary<string, int> _wordAddresses;
     private readonly ParsedConfiguration _config;
+    private readonly Stack<Condition> _conditionStack;
     private List<Instruction> _currentWordInstructions, _dataInstructions, _roDataInstructions;
     private string _currentWord;
-    private uint _nextVariableAddress;
-    private uint _nextRoDataAddress;
+    private int _nextVariableAddress;
+    private int _nextRoDataAddress;
     private bool _compileMode;
+    private int _wordPc;
     
     internal ForthCompiler(ParsedConfiguration config, List<string> sources, int bits)
     {
@@ -23,17 +35,18 @@ internal sealed class ForthCompiler
         _bits = bits;
         _constantsAndVariables = new Dictionary<string, int>();
         _words = new Dictionary<string, List<Instruction>>();
-        _wordAddresses = new Dictionary<string, uint>();
+        _wordAddresses = new Dictionary<string, int>();
         _currentWordInstructions = [];
         _dataInstructions = [];
         _roDataInstructions = [];
+        _conditionStack = new Stack<Condition>();
         _currentWord = "";
     }
     
     internal CompilerResult Compile()
     {
-        _nextVariableAddress = _config.Data.Address;
-        _nextRoDataAddress = _config.RoData.Address;
+        _nextVariableAddress = (int)_config.Data.Address;
+        _nextRoDataAddress = (int)_config.RoData.Address;
         _dataInstructions = [];
         _roDataInstructions = [];
         _wordAddresses.Clear();
@@ -46,9 +59,18 @@ internal sealed class ForthCompiler
             {
                 var token = _tokens[start++];
                 var i = Compile(token);
-                _currentWordInstructions.Add(i);
+                if (i != null)
+                {
+                    _wordPc += i.Size;
+                    _currentWordInstructions.Add(i);
+                }
+
                 if (!_compileMode)
+                {
+                    if (_conditionStack.Count != 0)
+                        throw new CompilerException($"{_currentWord}: Condition stack is not empty");
                     _words.Add(_currentWord, _currentWordInstructions);
+                }
             }
             else
                 Interpret(ref start);
@@ -66,7 +88,7 @@ internal sealed class ForthCompiler
 
     private void LinkInstructionList(List<Instruction> instructions)
     {
-        uint pc = 0;
+        int pc = 0;
         foreach (var instruction in instructions)
         {
             var address = instruction.RequiredLabel != null ? GetLabelAddress(instruction.RequiredLabel) : 0;
@@ -78,7 +100,7 @@ internal sealed class ForthCompiler
     private List<Instruction> BuildCodeInstructions()
     {
         var result = new List<Instruction>();
-        uint pc = 0;
+        int pc = 0;
 
         if (_config.Code.IsrHandlers.Length != 0)
         {
@@ -100,7 +122,7 @@ internal sealed class ForthCompiler
             _wordAddresses.Add(word, pc);
             var ins = BuildCodeInstructions(pc, _words[word]);
             result.AddRange(ins);
-            pc += (uint)ins.Count;
+            pc += ins.Count;
         }
 
         foreach (var word in _words.Keys.Where(NotLastIsrHandler))
@@ -108,7 +130,7 @@ internal sealed class ForthCompiler
             _wordAddresses.Add(word, pc);
             var ins = BuildCodeInstructions(pc, _words[word]);
             result.AddRange(ins);
-            pc += (uint)ins.Count;
+            pc += ins.Count;
         }
 
         return result;
@@ -121,7 +143,7 @@ internal sealed class ForthCompiler
         return true;
     }
 
-    private List<Instruction> BuildCodeInstructions(uint pc, List<Instruction> wordInstructions)
+    private List<Instruction> BuildCodeInstructions(int pc, List<Instruction> wordInstructions)
     {
         return wordInstructions;
     }
@@ -201,10 +223,11 @@ internal sealed class ForthCompiler
         _compileMode = true;
         _currentWordInstructions = [];
         _currentWord = name.Word;
+        _wordPc = 0;
         start++;
     }
 
-    private Instruction Compile(Token token)
+    private Instruction? Compile(Token token)
     {
         switch (token.Type)
         {
@@ -215,8 +238,10 @@ internal sealed class ForthCompiler
         }
     }
     
-    private Instruction CompileWord(Token token)
+    private Instruction? CompileWord(Token token)
     {
+        JmpInstruction i;
+        Condition? c;
         switch (token.Word)
         {
             case ";":
@@ -249,22 +274,69 @@ internal sealed class ForthCompiler
             case ">=":
                 return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Ge, token.Word);
             case "if0":
-                return new JmpInstruction(InstructionCodes.Br, _bits, token.Word);
+                i = new JmpInstruction(InstructionCodes.Br, _bits, token.Word);
+                _conditionStack.Push(new Condition(ConditionType.If, i, _wordPc));
+                return i;
             case "if":
-                return new JmpInstruction(InstructionCodes.Br0, _bits, token.Word);
+                i = new JmpInstruction(InstructionCodes.Br0, _bits, token.Word);
+                _conditionStack.Push(new Condition(ConditionType.If, i, _wordPc));
+                return i;
             case "then":
-                throw new NotImplementedException();
+                if (!_conditionStack.TryPop(out c) || (c.Type != ConditionType.If && c.Type != ConditionType.Else))
+                    throw new CompilerException("unexpected then", token);
+                c.I!.Offset = _wordPc - c.Pc;
+                break;
             case "else":
-                throw new NotImplementedException();
+                if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.If)
+                    throw new CompilerException("unexpected else", token);
+                i = new JmpInstruction(InstructionCodes.Jmp, _bits, token.Word);
+                c.I!.Offset = _wordPc + i.Size - c.Pc;
+                _conditionStack.Push(new Condition(ConditionType.Else, i, _wordPc));
+                return i;
             case "begin":
-                throw new NotImplementedException();
+                _conditionStack.Push(new Condition(ConditionType.Begin, null, _wordPc));
+                break;
             case "while":
-                throw new NotImplementedException();
+                if (!_conditionStack.TryPeek(out c) || c.Type != ConditionType.Begin)
+                    throw new CompilerException("unexpected while", token);
+                i = new JmpInstruction(InstructionCodes.Br0, _bits, token.Word);
+                _conditionStack.Push(new Condition(ConditionType.While, i, _wordPc));
+                return i;
+            case "while0":
+                i = new JmpInstruction(InstructionCodes.Br, _bits, token.Word);
+                _conditionStack.Push(new Condition(ConditionType.While, i, _wordPc));
+                return i;
             case "again":
-                throw new NotImplementedException();
+                if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Begin)
+                    throw new CompilerException("unexpected again", token);
+                i = new JmpInstruction(InstructionCodes.Jmp, _bits, token.Word);
+                i.Offset = c.Pc - _wordPc;
+                return i;
+            case "repeat":
+                if (!_conditionStack.TryPop(out var w) || w.Type != ConditionType.While)
+                    throw new CompilerException("unexpected repeat", token);
+                if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Begin)
+                    throw new CompilerException("while without begin", token);
+                i = new JmpInstruction(InstructionCodes.Jmp, _bits, token.Word);
+                i.Offset = c.Pc - _wordPc;
+                w.I!.Offset = _wordPc + i.Size - w.Pc;
+                return i;
+            case "until":
+                if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Begin)
+                    throw new CompilerException("unexpected until", token);
+                i = new JmpInstruction(InstructionCodes.Br, _bits, token.Word);
+                i.Offset = c.Pc - _wordPc;
+                return i;
+            case "until0":
+                if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Begin)
+                    throw new CompilerException("unexpected until0", token);
+                i = new JmpInstruction(InstructionCodes.Br0, _bits, token.Word);
+                i.Offset = c.Pc - _wordPc;
+                return i;
             default:
                 return CompileCall(token.Word);
         }
+        return null;
     }
 
     private Instruction CompileCall(string word)
@@ -296,7 +368,7 @@ internal sealed class ForthCompiler
             throw new CompilerException("constant or variable {name} already defined", t);
         start++;
         var v = GetNumber(start++);
-        _nextVariableAddress += (uint)v;
+        _nextVariableAddress += v;
     }
     
     private void InterpretConstantDefinition(ref int start)
@@ -334,12 +406,12 @@ internal sealed class ForthCompiler
             throw new CompilerException("unexpected end of file");
     }
 
-    private uint GetLabelAddress(string? requiredLabel)
+    private int GetLabelAddress(string? requiredLabel)
     {
         if (requiredLabel == null)
             return 0;
         if (_constantsAndVariables.TryGetValue(requiredLabel, out var address))
-            return (uint)address;
+            return address;
         if (_wordAddresses.TryGetValue(requiredLabel, out var wordAddress))
             return wordAddress;
         throw new CompilerException($"{requiredLabel} not found");

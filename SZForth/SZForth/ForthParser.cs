@@ -87,7 +87,7 @@ public sealed class ForthParser(IEnumerable<ParserFile> sources)
             var (t, _) = ParseWord(sb.ToString());
             if (t != null) result.Add(t);
         }
-        if (_mode != ParserMode.Word)
+        if (_mode != ParserMode.Word && _mode != ParserMode.Comment)
             throw CreateException("unexpected end of line");
         return result;
     }

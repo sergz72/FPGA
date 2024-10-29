@@ -12,4 +12,3 @@ begin:
 )
 
 : main 0 begin dup PORT ! 1 + again ;
-

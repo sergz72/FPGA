@@ -40,9 +40,9 @@ internal abstract class Instruction(string comment)
 
     internal uint[]? Code;
     
-    internal uint Size { get; init; } = 1;
+    internal int Size { get; init; } = 1;
     
-    internal abstract void BuildCode(uint labelAddress, uint pc);
+    internal abstract void BuildCode(int labelAddress, int pc);
 
     internal IEnumerable<string> BuildCodeLines(string codeFormat)
     {
@@ -64,7 +64,7 @@ internal sealed class PushDataInstruction: Instruction
         _value = (uint)value;
     }
     
-    internal override void BuildCode(uint labelAddress, uint pc)
+    internal override void BuildCode(int labelAddress, int pc)
     {
         Code = [(uint)InstructionCodes.Push, (uint)(_value & ((1 << (_bits / 2)) - 1)), _value >> (_bits / 2)];
     }
@@ -72,7 +72,7 @@ internal sealed class PushDataInstruction: Instruction
 
 internal sealed class DataInstruction(string name, int value): Instruction($"{name} = {value}")
 {
-    internal override void BuildCode(uint labelAddress, uint pc)
+    internal override void BuildCode(int labelAddress, int pc)
     {
         Code = [(uint)value];
     }
@@ -91,15 +91,15 @@ internal sealed class LabelInstruction: Instruction
         _opCode = opCode;
     }
     
-    internal override void BuildCode(uint labelAddress, uint pc)
+    internal override void BuildCode(int labelAddress, int pc)
     {
-        Code = [(uint)_opCode, (uint)(labelAddress & ((1 << (_bits / 2)) - 1)), labelAddress >> (_bits / 2)];
+        Code = [(uint)_opCode, (uint)(labelAddress & ((1 << (_bits / 2)) - 1)), (uint)labelAddress >> (_bits / 2)];
     }
 }
 
 internal sealed class OpcodeInstruction(uint opCode, string name) : Instruction(name)
 {
-    internal override void BuildCode(uint labelAddress, uint pc)
+    internal override void BuildCode(int labelAddress, int pc)
     {
         Code = [opCode];
     }
@@ -110,7 +110,7 @@ internal sealed class JmpInstruction: Instruction
     private readonly int _bits;
     private readonly InstructionCodes _opCode;
     
-    internal uint Address { get; set; }
+    internal int Offset { get; set; }
 
     internal JmpInstruction(InstructionCodes opCode, int bits, string jmpTo) : base($"jmp {jmpTo}")
     {
@@ -119,9 +119,10 @@ internal sealed class JmpInstruction: Instruction
         _opCode = opCode;
     }
     
-    internal override void BuildCode(uint labelAddress, uint pc)
+    internal override void BuildCode(int labelAddress, int pc)
     {
-        Code = [(uint)_opCode, (uint)(Address & ((1 << (_bits / 2)) - 1)), Address >> (_bits / 2)];
+        pc += Offset;
+        Code = [(uint)_opCode, (uint)(pc & ((1 << (_bits / 2)) - 1)), (uint)pc >> (_bits / 2)];
     }
 }
 
