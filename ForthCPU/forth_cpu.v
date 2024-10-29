@@ -175,7 +175,7 @@ module forth_cpu
                             state <= STATE_FETCH;
                         end
                         drop: begin
-                            call_stack_pointer <= call_stack_pointer + 1;
+                            data_stack_pointer <= data_stack_pointer + 1;
                             state <= STATE_FETCH;
                         end
                         alu_op: begin
