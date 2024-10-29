@@ -24,6 +24,8 @@ internal enum AluOperations
     And,
     Or,
     Xor,
+    Eq,
+    Ne,
     Gt,
     Ge,
     Le,
@@ -57,7 +59,7 @@ internal sealed class PushDataInstruction: Instruction
 {
     private uint _value;
     private int _bits;
-    internal PushDataInstruction(int value, int bits) : base($"push {value}")
+    internal PushDataInstruction(string name, int value, int bits) : base($"push {name} {value} {value:X}")
     {
         Size = 3;
         _bits = bits;
@@ -83,7 +85,7 @@ internal sealed class LabelInstruction: Instruction
     private readonly int _bits;
     private readonly InstructionCodes _opCode;
 
-    internal LabelInstruction(InstructionCodes opCode, string label, int bits) : base($"push {label}")
+    internal LabelInstruction(InstructionCodes opCode, string name, string label, int bits) : base($"{name} {label}")
     {
         RequiredLabel = label;
         Size = 3;
@@ -112,7 +114,7 @@ internal sealed class JmpInstruction: Instruction
     
     internal int Offset { get; set; }
 
-    internal JmpInstruction(InstructionCodes opCode, int bits, string jmpTo) : base($"jmp {jmpTo}")
+    internal JmpInstruction(InstructionCodes opCode, string name, int bits, string jmpTo) : base($"{name} {jmpTo}")
     {
         Size = 3;
         _bits = bits;

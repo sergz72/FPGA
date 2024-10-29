@@ -80,10 +80,12 @@ module forth_cpu
             1: alu = data_stack_value2 & data_stack_value1;
             2: alu = data_stack_value2 | data_stack_value1;
             3: alu = data_stack_value2 ^ data_stack_value1;
-            4: alu = {{WIDTH-1{1'b0}}, gt};
-            5: alu = {{WIDTH-1{1'b0}}, eq | gt};
-            6: alu = {{WIDTH-1{1'b0}}, !gt};
-            7: alu = {{WIDTH-1{1'b0}}, !eq & !gt};
+            4: alu = {{WIDTH-1{1'b0}}, eq};
+            5: alu = {{WIDTH-1{1'b0}}, !eq};
+            6: alu = {{WIDTH-1{1'b0}}, gt};
+            7: alu = {{WIDTH-1{1'b0}}, eq | gt};
+            8: alu = {{WIDTH-1{1'b0}}, !gt};
+            9: alu = {{WIDTH-1{1'b0}}, !eq & !gt};
             default: alu = data_stack_value2 - data_stack_value1;
         endcase
     endfunction

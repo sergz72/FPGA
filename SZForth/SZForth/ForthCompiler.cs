@@ -104,14 +104,14 @@ internal sealed class ForthCompiler
 
         if (_config.Code.IsrHandlers.Length != 0)
         {
-            var ins = new LabelInstruction(InstructionCodes.Jmp, _config.Code.EntryPoint, _bits);
+            var ins = new LabelInstruction(InstructionCodes.Jmp, "jmp", _config.Code.EntryPoint, _bits);
             result.Add(ins);
             pc += ins.Size;
         }
 
         for (var i = 0; i < _config.Code.IsrHandlers.Length - 1; i++)
         {
-            var ins = new LabelInstruction(InstructionCodes.Jmp, _config.Code.IsrHandlers[i], _bits);
+            var ins = new LabelInstruction(InstructionCodes.Jmp, "jmp", _config.Code.IsrHandlers[i], _bits);
             result.Add(ins);
             pc += ins.Size;
         }
@@ -232,7 +232,7 @@ internal sealed class ForthCompiler
         switch (token.Type)
         {
             case TokenType.Number:
-                return new PushDataInstruction((int)token.IntValue!, _bits);
+                return new PushDataInstruction("", (int)token.IntValue!, _bits);
             default:
                 return CompileWord(token);
         }
@@ -265,6 +265,10 @@ internal sealed class ForthCompiler
                 return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Mul, token.Word);
             case "/":
                 return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Div, token.Word);
+            case "=":
+                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Eq, token.Word);
+            case "!=":
+                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Ne, token.Word);
             case "<":
                 return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Lt, token.Word);
             case "<=":
@@ -273,12 +277,22 @@ internal sealed class ForthCompiler
                 return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Gt, token.Word);
             case ">=":
                 return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Ge, token.Word);
+            case "and":
+                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.And, token.Word);
+            case "or":
+                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Or, token.Word);
+            case "xor":
+                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Xor, token.Word);
+            case "wfi":
+                return new OpcodeInstruction((uint)InstructionCodes.Wfi, token.Word);
+            case "hlt":
+                return new OpcodeInstruction((uint)InstructionCodes.Hlt, token.Word);
             case "if0":
-                i = new JmpInstruction(InstructionCodes.Br, _bits, token.Word);
+                i = new JmpInstruction(InstructionCodes.Br, "br", _bits, token.Word);
                 _conditionStack.Push(new Condition(ConditionType.If, i, _wordPc));
                 return i;
             case "if":
-                i = new JmpInstruction(InstructionCodes.Br0, _bits, token.Word);
+                i = new JmpInstruction(InstructionCodes.Br0, "br0", _bits, token.Word);
                 _conditionStack.Push(new Condition(ConditionType.If, i, _wordPc));
                 return i;
             case "then":
@@ -289,7 +303,7 @@ internal sealed class ForthCompiler
             case "else":
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.If)
                     throw new CompilerException("unexpected else", token);
-                i = new JmpInstruction(InstructionCodes.Jmp, _bits, token.Word);
+                i = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, token.Word);
                 c.I!.Offset = _wordPc + i.Size - c.Pc;
                 _conditionStack.Push(new Condition(ConditionType.Else, i, _wordPc));
                 return i;
@@ -299,17 +313,17 @@ internal sealed class ForthCompiler
             case "while":
                 if (!_conditionStack.TryPeek(out c) || c.Type != ConditionType.Begin)
                     throw new CompilerException("unexpected while", token);
-                i = new JmpInstruction(InstructionCodes.Br0, _bits, token.Word);
+                i = new JmpInstruction(InstructionCodes.Br0, "br0", _bits, token.Word);
                 _conditionStack.Push(new Condition(ConditionType.While, i, _wordPc));
                 return i;
             case "while0":
-                i = new JmpInstruction(InstructionCodes.Br, _bits, token.Word);
+                i = new JmpInstruction(InstructionCodes.Br, "br", _bits, token.Word);
                 _conditionStack.Push(new Condition(ConditionType.While, i, _wordPc));
                 return i;
             case "again":
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Begin)
                     throw new CompilerException("unexpected again", token);
-                i = new JmpInstruction(InstructionCodes.Jmp, _bits, token.Word);
+                i = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, token.Word);
                 i.Offset = c.Pc - _wordPc;
                 return i;
             case "repeat":
@@ -317,23 +331,25 @@ internal sealed class ForthCompiler
                     throw new CompilerException("unexpected repeat", token);
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Begin)
                     throw new CompilerException("while without begin", token);
-                i = new JmpInstruction(InstructionCodes.Jmp, _bits, token.Word);
+                i = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, token.Word);
                 i.Offset = c.Pc - _wordPc;
                 w.I!.Offset = _wordPc + i.Size - w.Pc;
                 return i;
             case "until":
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Begin)
                     throw new CompilerException("unexpected until", token);
-                i = new JmpInstruction(InstructionCodes.Br, _bits, token.Word);
+                i = new JmpInstruction(InstructionCodes.Br, "br", _bits, token.Word);
                 i.Offset = c.Pc - _wordPc;
                 return i;
             case "until0":
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Begin)
                     throw new CompilerException("unexpected until0", token);
-                i = new JmpInstruction(InstructionCodes.Br0, _bits, token.Word);
+                i = new JmpInstruction(InstructionCodes.Br0, "br0", _bits, token.Word);
                 i.Offset = c.Pc - _wordPc;
                 return i;
             default:
+                if (_constantsAndVariables.TryGetValue(token.Word, out var value))
+                    return new PushDataInstruction(token.Word, value, _bits);
                 return CompileCall(token.Word);
         }
         return null;
@@ -341,7 +357,7 @@ internal sealed class ForthCompiler
 
     private Instruction CompileCall(string word)
     {
-        return new LabelInstruction(InstructionCodes.Call, word, _bits);
+        return new LabelInstruction(InstructionCodes.Call, "call", word, _bits);
     }
 
     private void CheckWordExists(string name)

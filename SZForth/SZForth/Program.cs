@@ -91,7 +91,7 @@ return 0;
 
 void BuildOutputFiles(ParsedConfiguration config, CompilerResult result)
 {
-    var format = bits == 16 ? "X4" : "X8";
+    var format = bits == 16 ? "X2" : "X4";
     BuildOutputFile(config.Code.FileName, result.CodeInstructions, format);
     BuildOutputFile(config.Data.FileName, result.DataInstructions, format);
     BuildOutputFile(config.RoData.FileName, result.RoDataInstructions, format);

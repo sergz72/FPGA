@@ -91,7 +91,7 @@ public sealed class ForthParser(IEnumerable<ParserFile> sources)
             throw CreateException("unexpected end of line");
         return result;
     }
-
+    
     private (Token?, bool) ParseWord(string word)
     {
         return _mode switch
@@ -137,11 +137,33 @@ public sealed class ForthParser(IEnumerable<ParserFile> sources)
             _stringTokenWord = word;
             return null;
         }
+
+        if (word.StartsWith('\''))
+           return new Token(TokenType.Number, word, BuildChar(word), null, 
+                            _currentFile, _currentLine, _currentPosition);
+        
         if (int.TryParse(word, _numberStyles, NumberFormatInfo.InvariantInfo, out var value))
             return new Token(TokenType.Number, word, value, null, _currentFile, _currentLine, _currentPosition);
         return new Token(TokenType.Word, word, 0, null, _currentFile, _currentLine, _currentPosition);
     }
 
+    private int BuildChar(string s)
+    {
+        if (s.Length < 3 || s.Length > 4 || !s.EndsWith('\'') || (s.Length == 4 && s[1] != '\\'))
+            throw CreateException("invalid character");
+        var c = s[1..^1];
+        if (c.Length == 1)
+            return c[0];
+        switch (c[1])
+        {
+            case 'r': return '\r';
+            case 'n': return '\n';
+            case 't': return '\t';
+            case 'b': return '\b';
+            default: throw CreateException("invalid escape sequence");
+        }
+    }
+    
     private ParserException CreateException(string message) => new(message, _currentFile, _currentLine, _currentPosition);
 }
 

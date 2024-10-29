@@ -28,9 +28,9 @@ command MAX_COMMAND_LENGTH + constant COMMAND_END
   then
 ;
 
-: blink led_state @ dup PORT ! 1+ led_state ! ;
+: blink led_state @ dup PORT ! 1 + led_state ! ;
 
-: uart_out begin UART @ hex 100 & until UART ! ;
+: uart_out begin UART @ hex 100 and until UART ! ;
 
 : uart_echo begin command_read_p command_p != while
     command_read_p @ dup @ uart_out
