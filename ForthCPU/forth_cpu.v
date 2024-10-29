@@ -44,7 +44,7 @@ module forth_cpu
 
     reg start = 0;
 
-    wire push, dup, set, alu_op, jmp, get, call, ret, br, br0, reti;
+    wire push, dup, set, alu_op, jmp, get, call, ret, br, br0, reti, drop;
     wire eq, gt, z;
     
     initial begin
