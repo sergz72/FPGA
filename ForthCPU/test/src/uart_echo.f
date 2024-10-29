@@ -2,15 +2,16 @@ hex FFFF constant PORT
 hex EFFF constant UART
 decimal 128 constant MAX_COMMAND_LENGTH
 
-variable led_state
-variable timer_interrupt
+0 ivariable led_state
+0 ivariable timer_interrupt
+0 ivariable command_ready
 variable command_p
 variable command_read_p
-variable command MAX_COMMAND_LENGTH
-variable command_ready
+array command MAX_COMMAND_LENGTH
+
 command MAX_COMMAND_LENGTH + constant COMMAND_END
 
-: isr1 1 timer_interrupt! ;
+: isr1 1 timer_interrupt ! ;
 
 : isr2
   UART @
@@ -38,11 +39,8 @@ command MAX_COMMAND_LENGTH + constant COMMAND_END
 ;
 
 : main 
-  0 led_state !
   command command_p !
   command command_read_p !
-  0 command_ready !
-  0 timer_interrupt !
   begin
     wfi blink
     timer_interrupt @ if

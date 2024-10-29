@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SZForth", "SZForth\SZForth.csproj", "{C5F41780-1DC1-4A96-A4FA-B01FCE2EF742}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SZForthTests", "SZForthTests\SZForthTests.csproj", "{988452FE-895D-4A40-A0EE-E9D5CFC3BE46}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C5F41780-1DC1-4A96-A4FA-B01FCE2EF742}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5F41780-1DC1-4A96-A4FA-B01FCE2EF742}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5F41780-1DC1-4A96-A4FA-B01FCE2EF742}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5F41780-1DC1-4A96-A4FA-B01FCE2EF742}.Release|Any CPU.Build.0 = Release|Any CPU
+		{988452FE-895D-4A40-A0EE-E9D5CFC3BE46}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{988452FE-895D-4A40-A0EE-E9D5CFC3BE46}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{988452FE-895D-4A40-A0EE-E9D5CFC3BE46}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{988452FE-895D-4A40-A0EE-E9D5CFC3BE46}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
