@@ -47,12 +47,13 @@ command MAX_COMMAND_LENGTH + constant COMMAND_END
       0 timer_interrupt !
       blink
       uart_echo
-    then
-    command_ready @ if
-      '\n' uart_out
-      command command_p !
-      command command_read_p !
-      0 command_ready !
+
+      command_ready @ if
+        '\n' uart_out
+        command command_p !
+        command command_read_p !
+        0 command_ready !
+      then
     then
   again
 ;
