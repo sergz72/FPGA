@@ -1,6 +1,7 @@
 variable address
 variable length
-'a' 'A' - constant aA
+'A' 10 - constant A10
+'a' 10 - constant a10
 
 : err 'E' uart_out '\r' uart_out '\n' uart_out ;
 : ok 'K' uart_out '\r' uart_out '\n' uart_out ;
@@ -17,12 +18,16 @@ variable length
   then
 ;
 
-: is_hex dup '0' '9' between if0
+: is_hex dup '0' '9' between if
+  '0' -
+  else
     dup
-    'A' 'Z' between if0
+    'A' 'F' between if
+      A10 -
+    else
       dup
-      'A' 'Z' between if
-        aA -
+      'a' 'f' between if
+        a10 -
       else
         drop -1
       then
