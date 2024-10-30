@@ -1,15 +1,211 @@
-00 // 0000 push 0
-00 // 0001
+03 // 0000 jmp main
+8A // 0001
 00 // 0002
-01 // 0003 dup
-00 // 0004 push PORT
-FF // 0005
-FF // 0006
-02 // 0007 set
-00 // 0008 push 1
-01 // 0009
-00 // 000A
-F0 // 000B +
-03 // 000C jmp 3
-03 // 000D
+07 // 0003 hlt
+03 // 0004 jmp isr1
+43 // 0005
+00 // 0006
+07 // 0007 hlt
+00 // 0008 push UART 53247 CFFF ; isr2
+FF // 0009
+CF // 000A
+04 // 000B get
+00 // 000C push command_ready 2 2
+02 // 000D
 00 // 000E
+04 // 000F get
+09 // 0010 br isr2_l1
+41 // 0011
+00 // 0012
+00 // 0013 push command_p 3 3
+03 // 0014
+00 // 0015
+04 // 0016 get
+00 // 0017 push COMMAND_END 133 85
+85 // 0018
+00 // 0019
+F9 // 001A <
+0A // 001B br0 isr2_l2
+30 // 001C
+00 // 001D
+01 // 001E dup
+00 // 001F push command_p 3 3
+03 // 0020
+00 // 0021
+04 // 0022 get
+02 // 0023 set
+00 // 0024 push command_p 3 3
+03 // 0025
+00 // 0026
+04 // 0027 get
+00 // 0028 push  1 1
+01 // 0029
+00 // 002A
+F0 // 002B +
+00 // 002C push command_p 3 3
+03 // 002D
+00 // 002E
+02 // 002F set
+00 // 0030 push  13 D ; isr2_l2
+0D // 0031
+00 // 0032
+F4 // 0033 =
+0A // 0034 br0 isr2_l3
+3E // 0035
+00 // 0036
+00 // 0037 push  1 1
+01 // 0038
+00 // 0039
+00 // 003A push command_ready 2 2
+02 // 003B
+00 // 003C
+02 // 003D set
+03 // 003E jmp isr2_l4 ; isr2_l3
+42 // 003F
+00 // 0040
+0C // 0041 drop ; isr2_l1
+0B // 0042 reti ; isr2_l4
+00 // 0043 push  1 1 ; isr1
+01 // 0044
+00 // 0045
+00 // 0046 push timer_interrupt 1 1
+01 // 0047
+00 // 0048
+02 // 0049 set
+0B // 004A reti
+00 // 004B push led_state 0 0 ; blink
+00 // 004C
+00 // 004D
+04 // 004E get
+01 // 004F dup
+00 // 0050 push PORT 65535 FFFF
+FF // 0051
+FF // 0052
+02 // 0053 set
+00 // 0054 push  1 1
+01 // 0055
+00 // 0056
+F0 // 0057 +
+00 // 0058 push led_state 0 0
+00 // 0059
+00 // 005A
+02 // 005B set
+06 // 005C ret
+00 // 005D push PORT 65535 FFFF ; uart_out_l1 ; uart_out
+FF // 005E
+FF // 005F
+04 // 0060 get
+09 // 0061 br uart_out_l1
+5D // 0062
+00 // 0063
+00 // 0064 push UART 53247 CFFF
+FF // 0065
+CF // 0066
+02 // 0067 set
+06 // 0068 ret
+00 // 0069 push command_read_p 4 4 ; uart_echo_l1 ; uart_echo
+04 // 006A
+00 // 006B
+04 // 006C get
+00 // 006D push command_p 3 3
+03 // 006E
+00 // 006F
+04 // 0070 get
+F5 // 0071 !=
+0A // 0072 br0 uart_echo_l2
+89 // 0073
+00 // 0074
+00 // 0075 push command_read_p 4 4
+04 // 0076
+00 // 0077
+04 // 0078 get
+01 // 0079 dup
+04 // 007A get
+05 // 007B call uart_out
+5D // 007C
+00 // 007D
+00 // 007E push  1 1
+01 // 007F
+00 // 0080
+F0 // 0081 +
+00 // 0082 push command_read_p 4 4
+04 // 0083
+00 // 0084
+02 // 0085 set
+03 // 0086 jmp uart_echo_l1
+69 // 0087
+00 // 0088
+06 // 0089 ret ; uart_echo_l2
+00 // 008A push command 5 5 ; main
+05 // 008B
+00 // 008C
+00 // 008D push command_p 3 3
+03 // 008E
+00 // 008F
+02 // 0090 set
+00 // 0091 push command 5 5
+05 // 0092
+00 // 0093
+00 // 0094 push command_read_p 4 4
+04 // 0095
+00 // 0096
+02 // 0097 set
+08 // 0098 wfi ; main_l1
+00 // 0099 push timer_interrupt 1 1
+01 // 009A
+00 // 009B
+04 // 009C get
+0A // 009D br0 main_l2
+AD // 009E
+00 // 009F
+00 // 00A0 push  0 0
+00 // 00A1
+00 // 00A2
+00 // 00A3 push timer_interrupt 1 1
+01 // 00A4
+00 // 00A5
+02 // 00A6 set
+05 // 00A7 call blink
+4B // 00A8
+00 // 00A9
+05 // 00AA call uart_echo
+69 // 00AB
+00 // 00AC
+00 // 00AD push command_ready 2 2 ; main_l2
+02 // 00AE
+00 // 00AF
+04 // 00B0 get
+0A // 00B1 br0 main_l3
+CF // 00B2
+00 // 00B3
+00 // 00B4 push  10 A
+0A // 00B5
+00 // 00B6
+05 // 00B7 call uart_out
+5D // 00B8
+00 // 00B9
+00 // 00BA push command 5 5
+05 // 00BB
+00 // 00BC
+00 // 00BD push command_p 3 3
+03 // 00BE
+00 // 00BF
+02 // 00C0 set
+00 // 00C1 push command 5 5
+05 // 00C2
+00 // 00C3
+00 // 00C4 push command_read_p 4 4
+04 // 00C5
+00 // 00C6
+02 // 00C7 set
+00 // 00C8 push  0 0
+00 // 00C9
+00 // 00CA
+00 // 00CB push command_ready 2 2
+02 // 00CC
+00 // 00CD
+02 // 00CE set
+03 // 00CF jmp main_l1 ; main_l3
+98 // 00D0
+00 // 00D1
+06 // 00D2 ret

@@ -7,10 +7,12 @@ internal sealed class ForthCompiler
         If,
         Else,
         Begin,
-        While
+        While,
+        Case,
+        Of
     }
 
-    private record Condition(ConditionType Type, JmpInstruction? I, int Pc);
+    private record Condition(ConditionType Type, List<JmpInstruction> I, int Pc, string Label = "");
     
     private readonly List<Token> _tokens;
     private readonly Stack<int> _dataStack;
@@ -26,6 +28,8 @@ internal sealed class ForthCompiler
     private int _nextRoDataAddress;
     private bool _compileMode;
     private int _wordPc;
+    private int _currentLabelNumber;
+    private string _nextLabel;
     
     internal ForthCompiler(ParsedConfiguration config, List<string> sources, int bits)
     {
@@ -41,6 +45,7 @@ internal sealed class ForthCompiler
         _roDataInstructions = [];
         _conditionStack = new Stack<Condition>();
         _currentWord = "";
+        _nextLabel = "";
     }
     
     internal CompilerResult Compile()
@@ -69,6 +74,7 @@ internal sealed class ForthCompiler
                 {
                     if (_conditionStack.Count != 0)
                         throw new CompilerException($"{_currentWord}: Condition stack is not empty");
+                    _currentWordInstructions[0].Labels.Add(_currentWord);
                     _words.Add(_currentWord, _currentWordInstructions);
                 }
             }
@@ -104,14 +110,20 @@ internal sealed class ForthCompiler
 
         if (_config.Code.IsrHandlers.Length != 0)
         {
-            var ins = new LabelInstruction(InstructionCodes.Jmp, "jmp", _config.Code.EntryPoint, _bits);
+            Instruction ins = new LabelInstruction(InstructionCodes.Jmp, "jmp", _config.Code.EntryPoint, _bits);
+            result.Add(ins);
+            pc += ins.Size;
+            ins = new OpcodeInstruction((uint)InstructionCodes.Hlt, "hlt");
             result.Add(ins);
             pc += ins.Size;
         }
 
         for (var i = 0; i < _config.Code.IsrHandlers.Length - 1; i++)
         {
-            var ins = new LabelInstruction(InstructionCodes.Jmp, "jmp", _config.Code.IsrHandlers[i], _bits);
+            Instruction ins = new LabelInstruction(InstructionCodes.Jmp, "jmp", _config.Code.IsrHandlers[i], _bits);
+            result.Add(ins);
+            pc += ins.Size;
+            ins = new OpcodeInstruction((uint)InstructionCodes.Hlt, "hlt");
             result.Add(ins);
             pc += ins.Size;
         }
@@ -120,17 +132,17 @@ internal sealed class ForthCompiler
         {
             var word = _config.Code.IsrHandlers[^1];
             _wordAddresses.Add(word, pc);
-            var ins = BuildCodeInstructions(pc, _words[word]);
+            var ins = _words[word];
             result.AddRange(ins);
-            pc += ins.Count;
+            pc += ins.Select(i => i.Size).Sum();
         }
 
         foreach (var word in _words.Keys.Where(NotLastIsrHandler))
         {
             _wordAddresses.Add(word, pc);
-            var ins = BuildCodeInstructions(pc, _words[word]);
+            var ins = _words[word];
             result.AddRange(ins);
-            pc += ins.Count;
+            pc += ins.Select(i => i.Size).Sum();
         }
 
         return result;
@@ -142,12 +154,7 @@ internal sealed class ForthCompiler
             return word != _config.Code.IsrHandlers[^1];
         return true;
     }
-
-    private List<Instruction> BuildCodeInstructions(int pc, List<Instruction> wordInstructions)
-    {
-        return wordInstructions;
-    }
-
+    
     private void Interpret(ref int start)
     {
         var token = _tokens[start];
@@ -224,6 +231,8 @@ internal sealed class ForthCompiler
         _currentWordInstructions = [];
         _currentWord = name.Word;
         _wordPc = 0;
+        _currentLabelNumber = 0;
+        _nextLabel = "";
         start++;
     }
 
@@ -232,127 +241,215 @@ internal sealed class ForthCompiler
         switch (token.Type)
         {
             case TokenType.Number:
-                return new PushDataInstruction("", (int)token.IntValue!, _bits);
+                var i = new PushDataInstruction("", (int)token.IntValue!, _bits);
+                if (_nextLabel != "")
+                {
+                    i.Labels.Add(_nextLabel);
+                    _nextLabel = "";
+                }
+                return i;
             default:
                 return CompileWord(token);
         }
     }
+
+    private string BuildLabelName()
+    {
+        _currentLabelNumber++;
+        return $"{_currentWord}_l{_currentLabelNumber}";
+    }
     
     private Instruction? CompileWord(Token token)
     {
-        JmpInstruction i;
+        JmpInstruction j;
+        Instruction? i = null;
         Condition? c;
         switch (token.Word)
         {
             case ";":
                 _compileMode = false;
-                return _config.Code.IsrHandlers.Contains(_currentWord) ?
+                i = _config.Code.IsrHandlers.Contains(_currentWord) ?
                     new OpcodeInstruction((uint)InstructionCodes.Reti, "reti") :
                     new OpcodeInstruction((uint)InstructionCodes.Ret, "ret");
+                break;
             case "dup":
-                return new OpcodeInstruction((uint)InstructionCodes.Dup, token.Word);
+                i = new OpcodeInstruction((uint)InstructionCodes.Dup, token.Word);
+                break;
             case "drop":
-                return new OpcodeInstruction((uint)InstructionCodes.Drop, token.Word);
+                i = new OpcodeInstruction((uint)InstructionCodes.Drop, token.Word);
+                break;
+            case "swap":
+                i = new OpcodeInstruction((uint)InstructionCodes.Swap, token.Word);
+                break;
+            case "rot":
+                i = new OpcodeInstruction((uint)InstructionCodes.Rot, token.Word);
+                break;
             case "@":
-                return new OpcodeInstruction((uint)InstructionCodes.Get, "get");
+                i = new OpcodeInstruction((uint)InstructionCodes.Get, "get");
+                break;
             case "!":
-                return new OpcodeInstruction((uint)InstructionCodes.Set, "set");
+                i = new OpcodeInstruction((uint)InstructionCodes.Set, "set");
+                break;
             case "+":
-                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Add, token.Word);
+                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Add, token.Word);
+                break;
             case "-":
-                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Sub, token.Word);
+                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Sub, token.Word);
+                break;
             case "*":
-                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Mul, token.Word);
+                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Mul, token.Word);
+                break;
             case "/":
-                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Div, token.Word);
+                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Div, token.Word);
+                break;
             case "=":
-                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Eq, token.Word);
+                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Eq, token.Word);
+                break;
             case "!=":
-                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Ne, token.Word);
+                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Ne, token.Word);
+                break;
             case "<":
-                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Lt, token.Word);
+                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Lt, token.Word);
+                break;
             case "<=":
-                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Le, token.Word);
+                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Le, token.Word);
+                break;
             case ">":
-                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Gt, token.Word);
+                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Gt, token.Word);
+                break;
             case ">=":
-                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Ge, token.Word);
+                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Ge, token.Word);
+                break;
             case "and":
-                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.And, token.Word);
+                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.And, token.Word);
+                break;
             case "or":
-                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Or, token.Word);
+                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Or, token.Word);
+                break;
             case "xor":
-                return new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Xor, token.Word);
+                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Xor, token.Word);
+                break;
             case "wfi":
-                return new OpcodeInstruction((uint)InstructionCodes.Wfi, token.Word);
+                i = new OpcodeInstruction((uint)InstructionCodes.Wfi, token.Word);
+                break;
             case "hlt":
-                return new OpcodeInstruction((uint)InstructionCodes.Hlt, token.Word);
+                i = new OpcodeInstruction((uint)InstructionCodes.Hlt, token.Word);
+                break;
             case "if0":
-                i = new JmpInstruction(InstructionCodes.Br, "br", _bits, token.Word);
-                _conditionStack.Push(new Condition(ConditionType.If, i, _wordPc));
-                return i;
+                j = new JmpInstruction(InstructionCodes.Br, "br", _bits, BuildLabelName());
+                _conditionStack.Push(new Condition(ConditionType.If, [j], _wordPc));
+                i = j;
+                break;
             case "if":
-                i = new JmpInstruction(InstructionCodes.Br0, "br0", _bits, token.Word);
-                _conditionStack.Push(new Condition(ConditionType.If, i, _wordPc));
-                return i;
+                j = new JmpInstruction(InstructionCodes.Br0, "br0", _bits, BuildLabelName());
+                _conditionStack.Push(new Condition(ConditionType.If, [j], _wordPc));
+                i = j;
+                break;
             case "then":
                 if (!_conditionStack.TryPop(out c) || (c.Type != ConditionType.If && c.Type != ConditionType.Else))
                     throw new CompilerException("unexpected then", token);
-                c.I!.Offset = _wordPc - c.Pc;
+                c.I[0].Offset = _wordPc - c.Pc;
+                _nextLabel = c.I[0].JmpTo;
                 break;
             case "else":
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.If)
                     throw new CompilerException("unexpected else", token);
-                i = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, token.Word);
-                c.I!.Offset = _wordPc + i.Size - c.Pc;
-                _conditionStack.Push(new Condition(ConditionType.Else, i, _wordPc));
-                return i;
+                j = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, BuildLabelName());
+                if (_nextLabel != "")
+                    j.Labels.Add(_nextLabel);
+                c.I[0].Offset = _wordPc + j.Size - c.Pc;
+                _conditionStack.Push(new Condition(ConditionType.Else, [j], _wordPc));
+                _nextLabel = c.I[0].JmpTo;
+                return j;
             case "begin":
-                _conditionStack.Push(new Condition(ConditionType.Begin, null, _wordPc));
+                _nextLabel = BuildLabelName();
+                _conditionStack.Push(new Condition(ConditionType.Begin, [], _wordPc, _nextLabel));
+                break;
+            case "case":
+                _conditionStack.Push(new Condition(ConditionType.Case, [], _wordPc, BuildLabelName()));
+                i = new OpcodeInstruction((uint)InstructionCodes.Dup, token.Word);
+                break;
+            case "of":
+                if (!_conditionStack.TryPeek(out c) || c.Type != ConditionType.Case)
+                    throw new CompilerException("unexpected of", token);
+                _conditionStack.Push(new Condition(ConditionType.Of, [], _wordPc));
+                i = new OfInstruction(_bits, BuildLabelName());
+                break;
+            case "endof":
+                if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Of)
+                    throw new CompilerException("unexpected endof", token);
+                if (!_conditionStack.TryPeek(out var cs) || cs.Type != ConditionType.Case)
+                    throw new CompilerException("endof without case", token);
+                j = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, cs.Label);
+                cs.I.Add(j);
+                i = j;
+                break;
+            case "endcase":
+                if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Case)
+                    throw new CompilerException("unexpected endcase", token);
                 break;
             case "while":
                 if (!_conditionStack.TryPeek(out c) || c.Type != ConditionType.Begin)
                     throw new CompilerException("unexpected while", token);
-                i = new JmpInstruction(InstructionCodes.Br0, "br0", _bits, token.Word);
-                _conditionStack.Push(new Condition(ConditionType.While, i, _wordPc));
-                return i;
+                j = new JmpInstruction(InstructionCodes.Br0, "br0", _bits, BuildLabelName());
+                _conditionStack.Push(new Condition(ConditionType.While, [j], _wordPc));
+                i = j;
+                break;
             case "while0":
-                i = new JmpInstruction(InstructionCodes.Br, "br", _bits, token.Word);
-                _conditionStack.Push(new Condition(ConditionType.While, i, _wordPc));
-                return i;
+                if (!_conditionStack.TryPeek(out c) || c.Type != ConditionType.Begin)
+                    throw new CompilerException("unexpected while0", token);
+                j = new JmpInstruction(InstructionCodes.Br, "br", _bits, BuildLabelName());
+                _conditionStack.Push(new Condition(ConditionType.While, [j], _wordPc));
+                i = j;
+                break;
             case "again":
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Begin)
                     throw new CompilerException("unexpected again", token);
-                i = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, token.Word);
-                i.Offset = c.Pc - _wordPc;
-                return i;
+                j = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, c.Label);
+                j.Offset = c.Pc - _wordPc;
+                i = j;
+                break;
             case "repeat":
                 if (!_conditionStack.TryPop(out var w) || w.Type != ConditionType.While)
                     throw new CompilerException("unexpected repeat", token);
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Begin)
                     throw new CompilerException("while without begin", token);
-                i = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, token.Word);
-                i.Offset = c.Pc - _wordPc;
-                w.I!.Offset = _wordPc + i.Size - w.Pc;
-                return i;
+                j = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, c.Label);
+                if (_nextLabel != "")
+                    j.Labels.Add(_nextLabel);
+                j.Offset = c.Pc - _wordPc;
+                w.I[0].Offset = _wordPc + j.Size - w.Pc;
+                _nextLabel = w.I[0].JmpTo;
+                return j;
             case "until":
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Begin)
                     throw new CompilerException("unexpected until", token);
-                i = new JmpInstruction(InstructionCodes.Br, "br", _bits, token.Word);
-                i.Offset = c.Pc - _wordPc;
-                return i;
+                j = new JmpInstruction(InstructionCodes.Br, "br", _bits, c.Label);
+                j.Offset = c.Pc - _wordPc;
+                i = j;
+                break;
             case "until0":
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Begin)
                     throw new CompilerException("unexpected until0", token);
-                i = new JmpInstruction(InstructionCodes.Br0, "br0", _bits, token.Word);
-                i.Offset = c.Pc - _wordPc;
-                return i;
+                j = new JmpInstruction(InstructionCodes.Br0, "br0", _bits, c.Label);
+                j.Offset = c.Pc - _wordPc;
+                i = j;
+                break;
             default:
                 if (_constantsAndVariables.TryGetValue(token.Word, out var value))
-                    return new PushDataInstruction(token.Word, value, _bits);
-                return CompileCall(token.Word);
+                    i = new PushDataInstruction(token.Word, value, _bits);
+                else
+                    i = CompileCall(token.Word);
+                break;
         }
-        return null;
+
+        if (i != null && _nextLabel != "")
+        {
+            i.Labels.Add(_nextLabel);
+            _nextLabel = "";
+        }
+
+        return i;
     }
 
     private Instruction CompileCall(string word)
@@ -369,7 +466,7 @@ internal sealed class ForthCompiler
     {
         var t = GetName(start);
         CheckWordExists(t.Word);
-        if (!_constantsAndVariables.TryAdd(t.Word, (int)_nextVariableAddress++))
+        if (!_constantsAndVariables.TryAdd(t.Word, _nextVariableAddress++))
             throw new CompilerException("constant or variable {name} already defined", t);
         if (init)
             _dataInstructions.Add(new DataInstruction(t.Word, _dataStack.Pop()));
@@ -380,7 +477,7 @@ internal sealed class ForthCompiler
     {
         var t = GetName(start);
         CheckWordExists(t.Word);
-        if (!_constantsAndVariables.TryAdd(t.Word, (int)_nextVariableAddress))
+        if (!_constantsAndVariables.TryAdd(t.Word, _nextVariableAddress))
             throw new CompilerException("constant or variable {name} already defined", t);
         start++;
         var v = GetNumber(start++);

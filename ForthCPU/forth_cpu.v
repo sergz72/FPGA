@@ -15,13 +15,16 @@ module forth_cpu
     input wire [1:0] interrupt,
     output reg [1:0] interrupt_ack = 0
 );
-    localparam STATE_WIDTH      = 3;
+    localparam STATE_WIDTH      = 4;
     localparam STATE_FETCH      = 0;
     localparam STATE_DECODE     = 1;
     localparam STATE_FETCH2     = 2;
     localparam STATE_WAITREADY  = 3;
     localparam STATE_WFI        = 4;
     localparam STATE_INTERRUPT  = 5;
+    localparam STATE_PUSH_TEMP  = 6;
+    localparam STATE_SAVE_TEMP  = 7;
+    localparam STATE_PUSH_TEMP2 = 8;
 
     reg [WIDTH - 1:0] data_stack[0:(1<<DATA_STACK_BITS)-1];
     reg [WIDTH - 1:0] data_stack_wr_data, data_stack_value1, data_stack_value2;
@@ -38,13 +41,13 @@ module forth_cpu
     reg [WIDTH/2 - 1:0] rom[0:(1<<ROM_BITS)-1];
     reg [WIDTH/2 - 1:0] immediate, pc_data, current_instruction = 0, address_data;
     wire [WIDTH - 1:0] jmp_address, interrupt_address;
-    reg [WIDTH - 1:0] pc = 0, saved_pc;
+    reg [WIDTH - 1:0] pc = 0, saved_pc, temp, temp2;
     reg [WIDTH - 1:0] address = 0;
     wire [1:0] interrupt_no;
 
     reg start = 0;
 
-    wire push, dup, set, alu_op, jmp, get, call, ret, br, br0, reti, drop;
+    wire push, dup, set, alu_op, jmp, get, call, ret, br, br0, reti, drop, swap, rot;
     wire eq, gt, z;
     
     initial begin
@@ -64,6 +67,8 @@ module forth_cpu
     assign br0 = current_instruction == 10;
     assign reti = current_instruction == 11;
     assign drop = current_instruction == 12;
+    assign swap = current_instruction == 13;
+    assign rot = current_instruction == 14;
     assign alu_op = current_instruction[7:4] == 4'hF;
 
     assign jmp_address = {pc_data, immediate};
@@ -131,7 +136,7 @@ module forth_cpu
             case (state)
                 STATE_FETCH: begin
                     data_stack_nwr <= 1;
-                    if (interrupt_no != 0) begin
+                    if (interrupt_no != 0 & interrupt_ack == 0) begin
                         saved_pc <= pc;
                         address <= interrupt_address;
                         interrupt_ack <= interrupt_no;
@@ -164,6 +169,8 @@ module forth_cpu
                                 pc <= pc + 2;
                                 state <= STATE_FETCH;
                             end
+                            if (br | br0)
+                                data_stack_pointer <= data_stack_pointer + 1;
                             if (call) begin
                                 call_stack_nwr <= 0;
                                 call_stack_wr_data <= pc + 2;
@@ -180,16 +187,30 @@ module forth_cpu
                             data_stack_pointer <= data_stack_pointer + 1;
                             state <= STATE_FETCH;
                         end
+                        swap: begin
+                            data_stack_nwr <= 0;
+                            data_stack_wr_data <= data_stack_value1;
+                            data_stack_pointer <= data_stack_pointer + 1;
+                            temp <= data_stack_value2;
+                            state <= STATE_PUSH_TEMP;
+                        end
+                        rot: begin
+                            data_stack_pointer <= data_stack_pointer + 2;
+                            temp <= data_stack_value2;
+                            temp2 <= data_stack_value1;
+                            state <= STATE_PUSH_TEMP2;
+                        end
                         alu_op: begin
                             data_stack_nwr <= 0;
                             data_stack_wr_data <= alu(current_instruction[3:0]);
                             data_stack_pointer <= data_stack_pointer + 1;
                             state <= STATE_FETCH;
                         end
-                        set | get: begin
+                        set: begin
                             state <= STATE_WAITREADY;
-                            data_stack_pointer <= data_stack_pointer + 1;
+                            data_stack_pointer <= data_stack_pointer + 2;
                         end
+                        get: state <= STATE_WAITREADY;
                         ret: begin
                             pc <= call_stack_value;
                             call_stack_pointer <= call_stack_pointer + 1;
@@ -198,6 +219,7 @@ module forth_cpu
                         wfi: state <= STATE_WFI;
                         reti: begin
                             pc <= saved_pc;
+                            interrupt_ack <= 0;
                             state <= STATE_FETCH;
                         end
                         default: error <= 1;
@@ -229,6 +251,22 @@ module forth_cpu
                 STATE_WFI: begin
                     if (interrupt_no != 0)
                         state <= STATE_FETCH;
+                end
+                STATE_PUSH_TEMP: begin
+                    data_stack_wr_data <= temp;
+                    data_stack_pointer <= data_stack_pointer - 1;
+                    state <= STATE_FETCH;
+                end
+                STATE_PUSH_TEMP2: begin
+                    data_stack_wr_data <= temp2;
+                    data_stack_pointer <= data_stack_pointer - 1;
+                    state <= STATE_PUSH_TEMP;
+                end
+                STATE_SAVE_TEMP: begin
+                    data_stack_nwr <= 0;
+                    data_stack_wr_data <= temp;
+                    temp <= data_stack_value1;
+                    state <= STATE_PUSH_TEMP2;
                 end
             endcase
         end

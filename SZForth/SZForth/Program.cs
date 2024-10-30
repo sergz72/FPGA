@@ -3,11 +3,8 @@
 List<string> sources = [];
 var configFileName = "";
 var configFileNameExpected = false;
-var vmConfigFileName = "";
-var vmConfigFileNameExpected = false;
 var bits = 16;
 var bitsExpected = false;
-var onlyCompile = false;
 
 foreach (var arg in args)
 {
@@ -15,11 +12,6 @@ foreach (var arg in args)
     {
         configFileName = arg;
         configFileNameExpected = false;
-    }
-    else if (vmConfigFileNameExpected)
-    {
-        vmConfigFileName = arg;
-        vmConfigFileNameExpected = false;
     }
     else if (bitsExpected)
     {
@@ -43,14 +35,8 @@ foreach (var arg in args)
         {
             switch (arg)
             {
-                case "--config":
-                    configFileNameExpected = true;
-                    break;
-                case "--vmconfig":
-                    vmConfigFileNameExpected = true;
-                    break;
                 case "-c":
-                    onlyCompile = true;
+                    configFileNameExpected = true;
                     break;
                 case "-b":
                     bitsExpected = true;
@@ -65,7 +51,7 @@ foreach (var arg in args)
     }
 }
 
-if (sources.Count == 0 || configFileNameExpected || bitsExpected || vmConfigFileNameExpected || configFileName == "")
+if (sources.Count == 0 || configFileNameExpected || bitsExpected || configFileName == "")
     return Usage();
 else
 {
@@ -74,10 +60,7 @@ else
     try
     {
         var result = compiler.Compile();
-        if (onlyCompile)
-            BuildOutputFiles(config, result);
-        else
-            new ForthVM(config, vmConfigFileName, result).Run();
+        BuildOutputFiles(config, result);
     }
     catch (Exception e)
     {
@@ -92,12 +75,13 @@ return 0;
 void BuildOutputFiles(ParsedConfiguration config, CompilerResult result)
 {
     var format = bits == 16 ? "X2" : "X4";
-    BuildOutputFile(config.Code.FileName, result.CodeInstructions, format);
-    BuildOutputFile(config.Data.FileName, result.DataInstructions, format);
-    BuildOutputFile(config.RoData.FileName, result.RoDataInstructions, format);
+    var pcFormat = bits == 16 ? "X4" : "X8";
+    BuildOutputFile(config.Code.FileName, result.CodeInstructions, format, pcFormat, 0);
+    BuildOutputFile(config.Data.FileName, result.DataInstructions, pcFormat, pcFormat, (int)config.Data.Address);
+    BuildOutputFile(config.RoData.FileName, result.RoDataInstructions, pcFormat, pcFormat, (int)config.RoData.Address);
 }
 
-void BuildOutputFile(string fileName, List<Instruction> instructions, string format)
+void BuildOutputFile(string fileName, List<Instruction> instructions, string format, string pcFormat, int pc)
 {
     if (instructions.Count == 0)
     {
@@ -105,18 +89,19 @@ void BuildOutputFile(string fileName, List<Instruction> instructions, string for
             File.Delete(fileName);
     }
     else
-        File.WriteAllLines(fileName, BuildCodeLines(instructions, format));
+        File.WriteAllLines(fileName, BuildCodeLines(instructions, format, pcFormat, pc));
 }
 
-List<string> BuildCodeLines(List<Instruction> instructions, string format)
+List<string> BuildCodeLines(List<Instruction> instructions, string format, string pcFormat, int pc)
 {
     var result = new List<string>();
     foreach (var instruction in instructions)
     {
         var codeLines = instruction
-            .BuildCodeLines(format)
+            .BuildCodeLines(format, pcFormat, pc)
             .ToList();
         result.AddRange(codeLines);
+        pc += codeLines.Count;
     }
     return result;
 }

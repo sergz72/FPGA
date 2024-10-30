@@ -53,6 +53,13 @@ public partial class App : Application
                                 Cpu = (Tiny16v4)cpu
                             };
                             break;
+                        case "ForthCPU":
+                            cpu = new ForthCPU(code, config.CpuSpeed * 1000);
+                            cpuView = new ForthCPUView
+                            {
+                                Cpu = (ForthCPU)cpu
+                            };
+                            break;
                         default:
                             throw new Exception("invalid cpu");
                     }
