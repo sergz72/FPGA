@@ -18,10 +18,11 @@ command MAX_COMMAND_LENGTH + constant COMMAND_END
   command_ready @ if0
     command_p @ COMMAND_END < if
       dup
-      command_p @ ! command_p @ 1 + command_p !
-    then
-    '\r' = if
-      1 command_ready !
+      '\r' = if
+        command_ready !
+      else
+        command_p @ ! command_p @ 1 + command_p !
+      then
     then
   else
     drop
@@ -49,7 +50,7 @@ command MAX_COMMAND_LENGTH + constant COMMAND_END
       uart_echo
 
       command_ready @ if
-        '\n' uart_out
+        '\r' uart_out '\n' uart_out
         command command_p !
         command command_read_p !
         0 command_ready !

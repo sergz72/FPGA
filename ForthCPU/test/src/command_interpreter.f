@@ -24,7 +24,7 @@ variable length
       'A' 'Z' between if
         aA -
       else
-        drop 0
+        drop -1
       then
     then
   then
