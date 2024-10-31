@@ -91,6 +91,11 @@ module forth_cpu
             7: alu = {{WIDTH-1{1'b0}}, eq | gt};
             8: alu = {{WIDTH-1{1'b0}}, !gt};
             9: alu = {{WIDTH-1{1'b0}}, !eq & !gt};
+            10: alu = data_stack_value2 << data_stack_value1;
+            11: alu = data_stack_value2 >> data_stack_value1;
+            12: alu = data_stack_value2 * data_stack_value1;
+            13: alu = data_stack_value2 / data_stack_value1;
+            14: alu = data_stack_value2 % data_stack_value1;
             default: alu = data_stack_value2 - data_stack_value1;
         endcase
     endfunction
