@@ -337,9 +337,8 @@ module forth_cpu
                 STATE_FETCH2: begin
                     call_stack_nwr <= 1;
                     state <= STATE_FETCH;
-                    if (jmp | call | br | br0 | loop) begin
+                    if (jmp | call | br | br0 | loop)
                         pc <= jmp_address;
-                    end
                     else begin
                         pc <= pc + 1;
                         data_stack_nwr <= 0;
