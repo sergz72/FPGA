@@ -1,6 +1,4 @@
-﻿using System.Runtime.Intrinsics;
-
-namespace SZForth;
+﻿namespace SZForth;
 
 internal enum InstructionCodes
 {
@@ -19,6 +17,12 @@ internal enum InstructionCodes
     Drop,
     Swap,
     Rot,
+    Over,
+    Loop,
+    PstackPush,
+    PstackGet,
+    PstackGetReg,
+    PstackSetReg,
     AluOp = 0xF0
 }
 
@@ -34,6 +38,8 @@ internal enum AluOperations
     Ge,
     Le,
     Lt,
+    Shl,
+    Shr,
     Mul,
     Div,
     Rem,
@@ -169,5 +175,46 @@ internal sealed class OfInstruction: JmpInstruction
         pc += Offset;
         Code = [(uint)InstructionCodes.AluOp + (uint)AluOperations.Ne, (uint)InstructionCodes.Br, V1(pc), V2(pc),
                 (uint)InstructionCodes.Drop];
+    }
+}
+
+internal sealed class DoInstruction: Instruction
+{
+    internal DoInstruction() : base("do")
+    {
+        Size = 2;
+    }
+    
+    internal override void BuildCode(int labelAddress, int pc)
+    {
+        Code = [(uint)InstructionCodes.PstackPush,(uint)InstructionCodes.PstackPush];
+    }
+}
+
+internal sealed class LoopInstruction: JmpInstruction
+{
+    internal LoopInstruction(int bits, string jmpTo) : base(InstructionCodes.Br, "loop (1 +loop)", bits, jmpTo)
+    {
+        Size = 6;
+    }
+    
+    internal override void BuildCode(int labelAddress, int pc)
+    {
+        pc += Offset;
+        Code = [(uint)InstructionCodes.Push, 1, 0, (uint)InstructionCodes.Loop, V1(pc), V2(pc)];
+    }
+}
+
+internal sealed class PLoopInstruction: JmpInstruction
+{
+    internal PLoopInstruction(int bits, string jmpTo) : base(InstructionCodes.Br, "loop (1 +loop)", bits, jmpTo)
+    {
+        Size = 3;
+    }
+    
+    internal override void BuildCode(int labelAddress, int pc)
+    {
+        pc += Offset;
+        Code = [(uint)InstructionCodes.Loop, V1(pc), V2(pc)];
     }
 }

@@ -9,7 +9,8 @@ internal sealed class ForthCompiler
         Begin,
         While,
         Case,
-        Of
+        Of,
+        Do
     }
 
     private record Condition(ConditionType Type, List<JmpInstruction> I, int Pc, string Label = "");
@@ -284,6 +285,9 @@ internal sealed class ForthCompiler
             case "rot":
                 i = new OpcodeInstruction((uint)InstructionCodes.Rot, token.Word);
                 break;
+            case "over":
+                i = new OpcodeInstruction((uint)InstructionCodes.Over, token.Word);
+                break;
             case "@":
                 i = new OpcodeInstruction((uint)InstructionCodes.Get, "get");
                 break;
@@ -329,6 +333,15 @@ internal sealed class ForthCompiler
             case "xor":
                 i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Xor, token.Word);
                 break;
+            case "lshift":
+                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Shl, token.Word);
+                break;
+            case "rshift":
+                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Shr, token.Word);
+                break;
+            case "mod":
+                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Rem, token.Word);
+                break;
             case "wfi":
                 i = new OpcodeInstruction((uint)InstructionCodes.Wfi, token.Word);
                 break;
@@ -366,16 +379,19 @@ internal sealed class ForthCompiler
                 _conditionStack.Push(new Condition(ConditionType.Begin, [], _wordPc, _nextLabel));
                 break;
             case "case":
+                //todo
                 _conditionStack.Push(new Condition(ConditionType.Case, [], _wordPc, BuildLabelName()));
                 i = new OpcodeInstruction((uint)InstructionCodes.Dup, token.Word);
                 break;
             case "of":
+                //todo
                 if (!_conditionStack.TryPeek(out c) || c.Type != ConditionType.Case)
                     throw new CompilerException("unexpected of", token);
                 _conditionStack.Push(new Condition(ConditionType.Of, [], _wordPc));
                 i = new OfInstruction(_bits, BuildLabelName());
                 break;
             case "endof":
+                //todo
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Of)
                     throw new CompilerException("unexpected endof", token);
                 if (!_conditionStack.TryPeek(out var cs) || cs.Type != ConditionType.Case)
@@ -385,6 +401,7 @@ internal sealed class ForthCompiler
                 i = j;
                 break;
             case "endcase":
+                //todo
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Case)
                     throw new CompilerException("unexpected endcase", token);
                 break;
@@ -432,6 +449,27 @@ internal sealed class ForthCompiler
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Begin)
                     throw new CompilerException("unexpected until0", token);
                 j = new JmpInstruction(InstructionCodes.Br0, "br0", _bits, c.Label);
+                j.Offset = c.Pc - _wordPc;
+                i = j;
+                break;
+            case "do":
+                var d = new DoInstruction();
+                if (_nextLabel != "")
+                    d.Labels.Add(_nextLabel);
+                _nextLabel = BuildLabelName();
+                _conditionStack.Push(new Condition(ConditionType.Do, [], _wordPc, _nextLabel));
+                return d;
+            case "loop":
+                if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Do)
+                    throw new CompilerException("unexpected loop", token);
+                j = new LoopInstruction(_bits, c.Label);
+                j.Offset = c.Pc - _wordPc;
+                i = j;
+                break;
+            case "+loop":
+                if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Do)
+                    throw new CompilerException("unexpected +loop", token);
+                j = new PLoopInstruction(_bits, c.Label);
                 j.Offset = c.Pc - _wordPc;
                 i = j;
                 break;
