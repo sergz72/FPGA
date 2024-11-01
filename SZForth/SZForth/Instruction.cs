@@ -21,8 +21,9 @@ internal enum InstructionCodes
     Loop,
     PstackPush,
     PstackGet,
-    PstackGetReg,
-    PstackSetReg,
+    LocalGet,
+    LocalSet,
+    Locals,
     AluOp = 0xF0
 }
 
@@ -178,16 +179,20 @@ internal sealed class OfInstruction: JmpInstruction
     }
 }
 
-internal sealed class DoInstruction: Instruction
+internal sealed class Opcode2Instruction: Instruction
 {
-    internal DoInstruction() : base("do")
+    private readonly uint _opCode, _paramater;
+    
+    internal Opcode2Instruction(uint opCode, uint parameter, string name) : base(name)
     {
+        _opCode = opCode;
+        _paramater = parameter;
         Size = 2;
     }
     
     internal override void BuildCode(int labelAddress, int pc)
     {
-        Code = [(uint)InstructionCodes.PstackPush,(uint)InstructionCodes.PstackPush];
+        Code = [_opCode,_paramater];
     }
 }
 

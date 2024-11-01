@@ -23,6 +23,7 @@ internal sealed class ForthCompiler
     private readonly Dictionary<string, int> _wordAddresses;
     private readonly ParsedConfiguration _config;
     private readonly Stack<Condition> _conditionStack;
+    private readonly List<JmpInstruction> _exitInstructions;
     private List<Instruction> _currentWordInstructions, _dataInstructions, _roDataInstructions;
     private string _currentWord;
     private int _nextVariableAddress;
@@ -31,6 +32,7 @@ internal sealed class ForthCompiler
     private int _wordPc;
     private int _currentLabelNumber;
     private string _nextLabel;
+    private string[] _locals;
     
     internal ForthCompiler(ParsedConfiguration config, List<string> sources, int bits)
     {
@@ -47,6 +49,8 @@ internal sealed class ForthCompiler
         _conditionStack = new Stack<Condition>();
         _currentWord = "";
         _nextLabel = "";
+        _locals = [];
+        _exitInstructions = [];
     }
     
     internal CompilerResult Compile()
@@ -64,7 +68,7 @@ internal sealed class ForthCompiler
             if (_compileMode)
             {
                 var token = _tokens[start++];
-                var i = Compile(token);
+                var i = Compile(token, ref start);
                 if (i != null)
                 {
                     _wordPc += i.Size;
@@ -237,10 +241,12 @@ internal sealed class ForthCompiler
         _wordPc = 0;
         _currentLabelNumber = 0;
         _nextLabel = "";
+        _locals = [];
+        _exitInstructions.Clear();
         start++;
     }
 
-    private Instruction? Compile(Token token)
+    private Instruction? Compile(Token token, ref int start)
     {
         switch (token.Type)
         {
@@ -253,7 +259,7 @@ internal sealed class ForthCompiler
                 }
                 return i;
             default:
-                return CompileWord(token);
+                return CompileWord(token, ref start);
         }
     }
 
@@ -263,7 +269,7 @@ internal sealed class ForthCompiler
         return $"{_currentWord}_l{_currentLabelNumber}";
     }
     
-    private Instruction? CompileWord(Token token)
+    private Instruction? CompileWord(Token token, ref int start)
     {
         JmpInstruction j;
         Instruction? i = null;
@@ -272,9 +278,11 @@ internal sealed class ForthCompiler
         {
             case ";":
                 _compileMode = false;
+                foreach (var ei in _exitInstructions)
+                    ei.Offset = _wordPc - ei.Offset;
                 i = _config.Code.IsrHandlers.Contains(_currentWord) ?
                     new OpcodeInstruction((uint)InstructionCodes.Reti, "reti") :
-                    new OpcodeInstruction((uint)InstructionCodes.Ret, "ret");
+                    new Opcode2Instruction((uint)InstructionCodes.Ret, (uint)_locals.Length, $"ret {_locals.Length}");
                 break;
             case "dup":
                 i = new OpcodeInstruction((uint)InstructionCodes.Dup, token.Word);
@@ -456,7 +464,7 @@ internal sealed class ForthCompiler
                 i = j;
                 break;
             case "do":
-                var d = new DoInstruction();
+                var d = new Opcode2Instruction((uint)InstructionCodes.PstackPush, (uint)InstructionCodes.PstackPush, "do");
                 if (_nextLabel != "")
                     d.Labels.Add(_nextLabel);
                 _nextLabel = BuildLabelName();
@@ -477,16 +485,38 @@ internal sealed class ForthCompiler
                 i = j;
                 break;
             case "leave":
-                //todo
+                if (!_conditionStack.TryPeek(out c) ||
+                    (c.Type != ConditionType.Do && c.Type != ConditionType.While && c.Type != ConditionType.Begin))
+                    throw new CompilerException("unexpected leave", token);
+                j = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, "exit");
+                j.Offset = _wordPc;
+                c.LeaveInstructions.Add(j);
+                i = j;
                 break;
             case "exit":
+                j = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, "exit");
+                j.Offset = _wordPc;
+                _exitInstructions.Add(j);
+                i = j;
                 //todo
                 break;
+            case "locals":
+                var t = GetName(start);
+                start++;
+                if (t.Type != TokenType.Word)
+                    throw new CompilerException("comma separated variable name list expected", t);
+                _locals = t.StringValue!.Split(',');
+                i = new Opcode2Instruction((uint)InstructionCodes.Locals, (uint)_locals.Length, $"locals {_locals.Length}");
+                break;
             default:
-                if (_constantsAndVariables.TryGetValue(token.Word, out var value))
-                    i = new PushDataInstruction(token.Word, value, _bits);
-                else
-                    i = CompileCall(token.Word);
+                i = CompileLocalVariableOperation(token.Word);
+                if (i == null)
+                {
+                    if (_constantsAndVariables.TryGetValue(token.Word, out var value))
+                        i = new PushDataInstruction(token.Word, value, _bits);
+                    else
+                        i = CompileCall(token.Word);
+                }
                 break;
         }
 
@@ -497,6 +527,25 @@ internal sealed class ForthCompiler
         }
 
         return i;
+    }
+
+    private Instruction? CompileLocalVariableOperation(string word)
+    {
+        if (_locals.Length == 0)
+            return null;
+        var set = word is [.., _, '!']; 
+        var get = word is [.., _, '@'];
+        if (!set & !get)
+            return null;
+        var idx = _locals
+            .Select((l, i) => (l, i))
+            .Where(l => l.l == word[..^1])
+            .Select(l => l.i)
+            .FirstOrDefault(-1);
+        if (idx < 0)
+            return null;
+        return set ? new Opcode2Instruction((uint)InstructionCodes.LocalSet, (uint)idx, $"set {_locals[idx]}") :
+                     new Opcode2Instruction((uint)InstructionCodes.LocalGet, (uint)idx, $"get {_locals[idx]}");
     }
 
     private Instruction CompileCall(string word)
