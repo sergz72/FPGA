@@ -46,18 +46,28 @@
   scl_low
 ;
 
-\ stack: byte channel * 2 -> channel * 2
+\ stack: byte channel * 2 -> ack
 : i2c_byte_send
   8 0 do
     i2c_bit_send
     swap 1 rshift swap
   loop
-  swap drop dup
+  swap \ channel byte
+  drop \ channel
+  dup  \ channel channel
   sda_high
   dup
   scl_high
   dup
   I2C_ADDRESS_SDA + @ \ ack
-  over
+  swap
   scl_low
+;
+
+\ address channel * 2 -> ack
+: i2c_check
+  dup i2c_start
+  i2c_byte_send
+  swap
+  i2c_stop
 ;

@@ -1,3 +1,6 @@
+variable address
+variable length
+
 : read4 dup command_read_p @ @ dup is_hex if
   else
     0

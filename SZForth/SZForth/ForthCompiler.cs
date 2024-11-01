@@ -190,7 +190,10 @@ internal sealed class ForthCompiler
                 InterpretVariableDefinition(true, ref start);
                 break;
             case "array":
-                InterpretArrayDefinition(ref start);
+                InterpretArrayDefinition(false, ref start);
+                break;
+            case "iarray":
+                InterpretArrayDefinition(true, ref start);
                 break;
             case "constant":
                 InterpretConstantDefinition(ref start);
@@ -473,6 +476,12 @@ internal sealed class ForthCompiler
                 j.Offset = c.Pc - _wordPc;
                 i = j;
                 break;
+            case "leave":
+                //todo
+                break;
+            case "exit":
+                //todo
+                break;
             default:
                 if (_constantsAndVariables.TryGetValue(token.Word, out var value))
                     i = new PushDataInstruction(token.Word, value, _bits);
@@ -511,7 +520,7 @@ internal sealed class ForthCompiler
         start++;
     }
 
-    private void InterpretArrayDefinition(ref int start)
+    private void InterpretArrayDefinition(bool init, ref int start)
     {
         var t = GetName(start);
         CheckWordExists(t.Word);
@@ -519,6 +528,11 @@ internal sealed class ForthCompiler
             throw new CompilerException("constant or variable {name} already defined", t);
         start++;
         var v = GetNumber(start++);
+        if (init)
+        {
+            for (var i = 0; i < v; i++)
+                _dataInstructions.Add(new DataInstruction(t.Word, _dataStack.Pop()));
+        }
         _nextVariableAddress += v;
     }
     

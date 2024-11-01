@@ -1,5 +1,5 @@
 module forth_cpu
-#(parameter DATA_STACK_BITS = 6, CALL_STACK_BITS = 6, WIDTH = 16, ROM_BITS = 8, PARAMETER_STACK_BITS = 9)
+#(parameter DATA_STACK_BITS = 6, CALL_STACK_BITS = 9, WIDTH = 16, ROM_BITS = 8, PARAMETER_STACK_BITS = 4)
 (
     input wire clk,
     input wire nreset,
@@ -15,18 +15,20 @@ module forth_cpu
     input wire [1:0] interrupt,
     output reg [1:0] interrupt_ack = 0
 );
-    localparam STATE_WIDTH      = 4;
-    localparam STATE_FETCH      = 0;
-    localparam STATE_DECODE     = 1;
-    localparam STATE_FETCH2     = 2;
-    localparam STATE_WAITREADY  = 3;
-    localparam STATE_WFI        = 4;
-    localparam STATE_INTERRUPT  = 5;
-    localparam STATE_PUSH_TEMP  = 6;
-    localparam STATE_SAVE_TEMP  = 7;
-    localparam STATE_PUSH_TEMP2 = 8;
-    localparam STATE_PUSH_REG   = 9;
-    localparam STATE_LOOP       = 10;
+    localparam STATE_WIDTH          = 4;
+    localparam STATE_FETCH          = 0;
+    localparam STATE_DECODE         = 1;
+    localparam STATE_FETCH2         = 2;
+    localparam STATE_WAITREADY      = 3;
+    localparam STATE_WFI            = 4;
+    localparam STATE_INTERRUPT      = 5;
+    localparam STATE_PUSH_TEMP      = 6;
+    localparam STATE_SAVE_TEMP      = 7;
+    localparam STATE_PUSH_TEMP2     = 8;
+    localparam STATE_PUSH_LOCAL     = 9;
+    localparam STATE_PUSH_PARAMETER = 10;
+    localparam STATE_LOOP           = 11;
+    localparam STATE_RET            = 12;
 
     reg [WIDTH - 1:0] data_stack[0:(1<<DATA_STACK_BITS)-1];
     reg [WIDTH - 1:0] data_stack_wr_data, data_stack_value1, data_stack_value2;
@@ -34,14 +36,14 @@ module forth_cpu
     reg data_stack_nwr = 1;
 
     reg [WIDTH - 1:0] call_stack[0:(1<<CALL_STACK_BITS)-1];
-    reg [WIDTH - 1:0] call_stack_wr_data, call_stack_value;
-    reg [CALL_STACK_BITS - 1:0] call_stack_pointer = 0;
+    reg [WIDTH - 1:0] call_stack_wr_data, call_stack_value, local_value;
+    reg [CALL_STACK_BITS - 1:0] call_stack_pointer = 0, call_stack_wr_address;
+    reg [CALL_STACK_BITS - 1:0] local_pointer = 0;
     reg call_stack_nwr = 1;
 
     reg [WIDTH - 1:0] parameter_stack[0:(1<<PARAMETER_STACK_BITS)-1];
-    reg [WIDTH - 1:0] parameter_stack_wr_data, parameter_stack_value1, parameter_stack_value2, reg_value;
-    reg [PARAMETER_STACK_BITS - 1:0] parameter_stack_pointer = 0, parameter_stack_wr_address;
-    reg [PARAMETER_STACK_BITS - 1:0] reg_pointer = 0;
+    reg [WIDTH - 1:0] parameter_stack_value1, parameter_stack_value2, parameter_stack_wr_data, parameter_stack_value;
+    reg [PARAMETER_STACK_BITS - 1:0] parameter_stack_pointer = 0, parameter_stack_wr_address, parameter_stack_rd_address;
     reg parameter_stack_nwr = 1;
 
     reg [STATE_WIDTH - 1:0] state = STATE_FETCH;
@@ -56,7 +58,7 @@ module forth_cpu
     reg start = 0;
 
     wire push, dup, set, alu_op, jmp, get, call, ret, br, br0, reti, drop, swap, rot, over, loop;
-    wire pstack_add, pstack_get, pstack_push, pstack_get_reg, pstack_set_reg;
+    wire pstack_get, pstack_push, local_get, local_set, locals;
     wire eq, gt, z, pstack_ge;
     
     initial begin
@@ -82,8 +84,9 @@ module forth_cpu
     assign loop = current_instruction == 16;
     assign pstack_push = current_instruction == 17;
     assign pstack_get = current_instruction == 18;
-    assign pstack_get_reg = current_instruction == 19;
-    assign pstack_set_reg = current_instruction == 20;
+    assign local_get = current_instruction == 19;
+    assign local_set = current_instruction == 20;
+    assign locals = current_instruction == 21;
     assign alu_op = current_instruction[7:4] == 4'hF;
 
     assign jmp_address = {pc_data, immediate};
@@ -142,9 +145,11 @@ module forth_cpu
 
     always @(negedge clk) begin
         if (!call_stack_nwr)
-            call_stack[call_stack_pointer] <= call_stack_wr_data;
-        else
+            call_stack[call_stack_wr_address] <= call_stack_wr_data;
+        else begin
             call_stack_value <= call_stack[call_stack_pointer];
+            local_value <= call_stack[local_pointer];
+        end
     end
 
     always @(negedge clk) begin
@@ -153,7 +158,7 @@ module forth_cpu
         else begin
             parameter_stack_value1 <= parameter_stack[parameter_stack_pointer];
             parameter_stack_value2 <= parameter_stack[parameter_stack_pointer+1];
-            reg_value <= parameter_stack[reg_pointer];
+            parameter_stack_value <= parameter_stack[parameter_stack_rd_address];
         end
     end
 
@@ -179,6 +184,7 @@ module forth_cpu
                 STATE_FETCH: begin
                     data_stack_nwr <= 1;
                     parameter_stack_nwr <= 1;
+                    call_stack_nwr <= 1;
                     if (interrupt_no != 0 & interrupt_ack == 0) begin
                         saved_pc <= pc;
                         address <= interrupt_address;
@@ -202,8 +208,8 @@ module forth_cpu
                     mem_valid <= set | get;
                     mem_nwr <= !set;
                     case (1'b1)
-                        push | jmp | call | br | br0 | pstack_get | pstack_get_reg | pstack_set_reg: begin
-                            if ((!z & br) | (z & br0) | jmp | call | push | pstack_get | pstack_get_reg | pstack_set_reg) begin
+                        push | jmp | call | br | br0: begin
+                            if ((!z & br) | (z & br0) | jmp | call | push) begin
                                 immediate <= pc_data;
                                 state <= STATE_FETCH2;
                                 pc <= pc + 1;
@@ -217,6 +223,7 @@ module forth_cpu
                             if (call) begin
                                 call_stack_nwr <= 0;
                                 call_stack_wr_data <= pc + 2;
+                                call_stack_wr_address <= call_stack_pointer - 1;
                                 call_stack_pointer <= call_stack_pointer - 1;
                             end
                         end
@@ -261,14 +268,36 @@ module forth_cpu
                         end
                         get: state <= STATE_WAITREADY;
                         ret: begin
-                            pc <= call_stack_value;
-                            call_stack_pointer <= call_stack_pointer + 1;
-                            state <= STATE_FETCH;
+                            call_stack_pointer <= call_stack_pointer + pc_data;
+                            state <= STATE_RET;
                         end
                         wfi: state <= STATE_WFI;
                         reti: begin
                             pc <= saved_pc;
                             interrupt_ack <= 0;
+                            state <= STATE_FETCH;
+                        end
+                        pstack_get: begin
+                            parameter_stack_rd_address <= parameter_stack_pointer + pc_data[PARAMETER_STACK_BITS - 1:0];
+                            pc <= pc + 1;
+                            state <= STATE_PUSH_PARAMETER;
+                        end
+                        local_get: begin
+                            local_pointer <= call_stack_pointer + pc_data;
+                            pc <= pc + 1;
+                            state <= STATE_PUSH_LOCAL;
+                        end
+                        local_set: begin
+                            call_stack_nwr <= 0;
+                            call_stack_wr_data <= data_stack_value1;
+                            call_stack_wr_address <= call_stack_pointer + pc_data;
+                            data_stack_pointer <= data_stack_pointer + 1;
+                            pc <= pc + 1;
+                            state <= STATE_FETCH;
+                        end
+                        locals: begin
+                            call_stack_pointer <= call_stack_pointer - pc_data;
+                            pc <= pc + 1;
                             state <= STATE_FETCH;
                         end
                         pstack_push: begin
@@ -289,6 +318,11 @@ module forth_cpu
                         default: error <= 1;
                     endcase
                 end
+                STATE_RET: begin
+                    pc <= call_stack_value;
+                    call_stack_pointer <= call_stack_pointer + 1;
+                    state <= STATE_FETCH;
+                end
                 STATE_LOOP: begin
                     if (pstack_ge) begin
                         state <= STATE_FETCH;
@@ -302,34 +336,26 @@ module forth_cpu
                 end
                 STATE_FETCH2: begin
                     call_stack_nwr <= 1;
-                    pc <= jmp | call | br | br0 | loop ? jmp_address : pc + 1;
-                    case (1'b1)
-                        push: begin
-                            data_stack_nwr <= 0;
-                            data_stack_wr_data <= jmp_address;
-                            data_stack_pointer <= data_stack_pointer - 1;
-                            state <= STATE_FETCH;
-                        end
-                        pstack_get: begin
-                            reg_pointer <= parameter_stack_pointer + jmp_address[PARAMETER_STACK_BITS - 1:0];
-                            state <= STATE_PUSH_REG;
-                        end
-                        pstack_get_reg: begin
-                            reg_pointer <= jmp_address[PARAMETER_STACK_BITS - 1:0];
-                            state <= STATE_PUSH_REG;
-                        end
-                        pstack_set_reg: begin
-                            parameter_stack_nwr <= 0;
-                            parameter_stack_wr_data <= data_stack_value1;
-                            parameter_stack_wr_address <= jmp_address[PARAMETER_STACK_BITS - 1:0];
-                            data_stack_pointer <= data_stack_pointer + 1;
-                            state <= STATE_FETCH;
-                        end
-                    endcase
+                    state <= STATE_FETCH;
+                    if (jmp | call | br | br0 | loop) begin
+                        pc <= jmp_address;
+                    end
+                    else begin
+                        pc <= pc + 1;
+                        data_stack_nwr <= 0;
+                        data_stack_wr_data <= jmp_address;
+                        data_stack_pointer <= data_stack_pointer - 1;
+                    end
                 end
-                STATE_PUSH_REG: begin
+                STATE_PUSH_LOCAL: begin
                     data_stack_nwr <= 0;
-                    data_stack_wr_data <= reg_value;
+                    data_stack_wr_data <= local_value;
+                    data_stack_pointer <= data_stack_pointer - 1;
+                    state <= STATE_FETCH;
+                end
+                STATE_PUSH_PARAMETER: begin
+                    data_stack_nwr <= 0;
+                    data_stack_wr_data <= parameter_stack_value;
                     data_stack_pointer <= data_stack_pointer - 1;
                     state <= STATE_FETCH;
                 end
