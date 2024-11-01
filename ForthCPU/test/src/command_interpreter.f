@@ -1,61 +1,8 @@
 variable address
 variable length
-'A' 10 - constant A10
-'a' 10 - constant a10
 
 : err 'E' uart_out '\r' uart_out '\n' uart_out ;
 : ok 'K' uart_out '\r' uart_out '\n' uart_out ;
-
-\ v v1 v2 -> 1/0
-: between
-  rot \ v1 v2 v
-  dup \ v1 v2 v v
-  rot \ v1 v v v2
-  > if \ v1 v
-    drop drop 0
-  else
-    <=
-  then
-;
-
-: is_hex dup '0' '9' between if
-  '0' -
-  else
-    dup
-    'A' 'F' between if
-      A10 -
-    else
-      dup
-      'a' 'f' between if
-        a10 -
-      else
-        drop -1
-      then
-    then
-  then
-;
-
-: read4 dup command_read_p @ @ dup is_hex if
-  else
-    0
-  then
-;
-
-: ram_test 
-  command_p @ command_read_p @ - 8 = if
-    address read4 if
-      length read4 if
-        ok
-      else
-        err
-      then
-    else
-      err
-    then
-  else
-    err
-  then
-;
 
 : command2 ok ;
 

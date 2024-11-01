@@ -69,6 +69,7 @@ module forth_cpu
     assign drop = current_instruction == 12;
     assign swap = current_instruction == 13;
     assign rot = current_instruction == 14;
+    assign over = current_instruction == 15;
     assign alu_op = current_instruction[7:4] == 4'hF;
 
     assign jmp_address = {pc_data, immediate};
@@ -185,6 +186,12 @@ module forth_cpu
                         dup: begin
                             data_stack_nwr <= 0;
                             data_stack_wr_data <= data_stack_value1;
+                            data_stack_pointer <= data_stack_pointer - 1;
+                            state <= STATE_FETCH;
+                        end
+                        over: begin
+                            data_stack_nwr <= 0;
+                            data_stack_wr_data <= data_stack_value2;
                             data_stack_pointer <= data_stack_pointer - 1;
                             state <= STATE_FETCH;
                         end
