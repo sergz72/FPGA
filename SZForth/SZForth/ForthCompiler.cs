@@ -498,10 +498,10 @@ internal sealed class ForthCompiler
                 break;
             case "leave":
                 c = _conditionStack
-                    .LastOrDefault(cn => cn!.Type == ConditionType.Do || cn.Type != ConditionType.Begin, null);
+                    .LastOrDefault(cn => cn!.Type == ConditionType.Do || cn.Type == ConditionType.Begin, null);
                 if (c == null)
                     throw new CompilerException("unexpected leave", token);
-                j = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, "exit");
+                j = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, "leave");
                 j.Offset = _wordPc;
                 c.I.Add(j);
                 i = j;

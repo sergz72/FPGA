@@ -23,8 +23,8 @@ module forth_cpu
     localparam STATE_WFI            = 4;
     localparam STATE_INTERRUPT      = 5;
     localparam STATE_PUSH_TEMP      = 6;
-    localparam STATE_SAVE_TEMP      = 7;
-    localparam STATE_PUSH_TEMP2     = 8;
+    localparam STATE_PUSH_TEMP2     = 7;
+    localparam STATE_PUSH_TEMP22    = 8;
     localparam STATE_PUSH_LOCAL     = 9;
     localparam STATE_PUSH_PARAMETER = 10;
     localparam STATE_LOOP           = 11;
@@ -256,13 +256,13 @@ module forth_cpu
                             data_stack_nwr <= 0;
                             data_stack_wr_data <= data_stack_value1;
                             data_stack_pointer <= data_stack_pointer + 1;
-                            temp <= data_stack_value2;
-                            state <= STATE_PUSH_TEMP;
+                            temp2 <= data_stack_value2;
+                            state <= STATE_PUSH_TEMP22;
                         end
                         rot: begin
                             data_stack_pointer <= data_stack_pointer + 2;
-                            temp <= data_stack_value2;
-                            temp2 <= data_stack_value1;
+                            temp <= data_stack_value1;
+                            temp2 <= data_stack_value2;
                             state <= STATE_PUSH_TEMP2;
                         end
                         alu_op: begin
@@ -389,21 +389,21 @@ module forth_cpu
                     if (interrupt_no != 0)
                         state <= STATE_FETCH;
                 end
-                STATE_PUSH_TEMP: begin
-                    data_stack_wr_data <= temp;
+                STATE_PUSH_TEMP22: begin
+                    data_stack_wr_data <= temp2;
                     data_stack_pointer <= data_stack_pointer - 1;
                     state <= STATE_FETCH;
                 end
-                STATE_PUSH_TEMP2: begin
-                    data_stack_wr_data <= temp2;
-                    data_stack_pointer <= data_stack_pointer - 1;
-                    state <= STATE_PUSH_TEMP;
-                end
-                STATE_SAVE_TEMP: begin
-                    data_stack_nwr <= 0;
+                STATE_PUSH_TEMP: begin
                     data_stack_wr_data <= temp;
-                    temp <= data_stack_value1;
-                    state <= STATE_PUSH_TEMP2;
+                    data_stack_pointer <= data_stack_pointer - 1;
+                    state <= STATE_PUSH_TEMP22;
+                end
+                STATE_PUSH_TEMP2: begin
+                    data_stack_nwr <= 0;
+                    data_stack_wr_data <= temp2;
+                    temp2 <= data_stack_value1;
+                    state <= STATE_PUSH_TEMP;
                 end
             endcase
         end
