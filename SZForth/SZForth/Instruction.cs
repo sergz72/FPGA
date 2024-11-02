@@ -9,6 +9,7 @@ internal enum InstructionCodes
     Get,
     Call,
     Ret,
+    Retn,
     Hlt,
     Wfi,
     Br,
@@ -30,6 +31,7 @@ internal enum InstructionCodes
 internal enum AluOperations
 {
     Add = 0,
+    Sub,
     And,
     Or,
     Xor,
@@ -43,8 +45,7 @@ internal enum AluOperations
     Shr,
     Mul,
     Div,
-    Rem,
-    Sub
+    Rem
 }
 
 internal abstract class Instruction(string comment)

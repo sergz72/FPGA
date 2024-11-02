@@ -29,6 +29,7 @@ module forth_cpu
     localparam STATE_PUSH_PARAMETER = 10;
     localparam STATE_LOOP           = 11;
     localparam STATE_RET            = 12;
+    localparam STATE_PSTACK_PUSH    = 13;
 
     reg [WIDTH - 1:0] data_stack[0:(1<<DATA_STACK_BITS)-1];
     reg [WIDTH - 1:0] data_stack_wr_data, data_stack_value1, data_stack_value2;
@@ -42,8 +43,9 @@ module forth_cpu
     reg call_stack_nwr = 1;
 
     reg [WIDTH - 1:0] parameter_stack[0:(1<<PARAMETER_STACK_BITS)-1];
-    reg [WIDTH - 1:0] parameter_stack_value1, parameter_stack_value2, parameter_stack_wr_data, parameter_stack_value;
-    reg [PARAMETER_STACK_BITS - 1:0] parameter_stack_pointer = 0, parameter_stack_wr_address, parameter_stack_rd_address;
+    reg [WIDTH - 1:0] parameter_stack_value1, parameter_stack_value2, parameter_stack_wr_data;
+    reg [PARAMETER_STACK_BITS - 1:0] parameter_stack_pointer = 0;
+    wire [PARAMETER_STACK_BITS - 1:0] parameter_stack_rd_address;
     reg parameter_stack_nwr = 1;
 
     reg [STATE_WIDTH - 1:0] state = STATE_FETCH;
@@ -57,9 +59,9 @@ module forth_cpu
 
     reg start = 0;
 
-    wire push, dup, set, alu_op, jmp, get, call, ret, br, br0, reti, drop, swap, rot, over, loop;
+    wire push, dup, set, alu_op, jmp, get, call, ret, retn, br, br0, reti, drop, swap, rot, over, loop;
     wire pstack_get, pstack_push, local_get, local_set, locals;
-    wire eq, gt, z, pstack_ge;
+    wire eq, gt, z, pstack_le;
     
     initial begin
         $readmemh("asm/code.hex", rom);
@@ -72,21 +74,22 @@ module forth_cpu
     assign get = current_instruction == 4;
     assign call = current_instruction == 5;
     assign ret = current_instruction == 6;
-    assign hlt = current_instruction == 7;
-    assign wfi = current_instruction == 8;
-    assign br = current_instruction == 9;
-    assign br0 = current_instruction == 10;
-    assign reti = current_instruction == 11;
-    assign drop = current_instruction == 12;
-    assign swap = current_instruction == 13;
-    assign rot = current_instruction == 14;
-    assign over = current_instruction == 15;
-    assign loop = current_instruction == 16;
-    assign pstack_push = current_instruction == 17;
-    assign pstack_get = current_instruction == 18;
-    assign local_get = current_instruction == 19;
-    assign local_set = current_instruction == 20;
-    assign locals = current_instruction == 21;
+    assign retn = current_instruction == 7;
+    assign hlt = current_instruction == 8;
+    assign wfi = current_instruction == 9;
+    assign br = current_instruction == 10;
+    assign br0 = current_instruction == 11;
+    assign reti = current_instruction == 12;
+    assign drop = current_instruction == 13;
+    assign swap = current_instruction == 14;
+    assign rot = current_instruction == 15;
+    assign over = current_instruction == 16;
+    assign loop = current_instruction == 17;
+    assign pstack_push = current_instruction == 18;
+    assign pstack_get = current_instruction == 19;
+    assign local_get = current_instruction == 20;
+    assign local_set = current_instruction == 21;
+    assign locals = current_instruction == 22;
     assign alu_op = current_instruction[7:4] == 4'hF;
 
     assign jmp_address = {pc_data, immediate};
@@ -96,26 +99,33 @@ module forth_cpu
     assign eq = data_stack_value2 == data_stack_value1;
     assign gt = data_stack_value2 > data_stack_value1;
     assign z = data_stack_value1 == 0;
-    assign pstack_ge = parameter_stack_value2 >= parameter_stack_value1;
+    assign pstack_le = parameter_stack_value2 <= parameter_stack_value1;
+
+    assign parameter_stack_rd_address = pstack_get ? parameter_stack_pointer + pc_data[PARAMETER_STACK_BITS - 1:0] : parameter_stack_pointer + 1;
 
     function [WIDTH - 1:0] alu(input [3:0] op);
         case (op)
             0: alu = data_stack_value2 + data_stack_value1;
-            1: alu = data_stack_value2 & data_stack_value1;
-            2: alu = data_stack_value2 | data_stack_value1;
-            3: alu = data_stack_value2 ^ data_stack_value1;
-            4: alu = {{WIDTH-1{1'b0}}, eq};
-            5: alu = {{WIDTH-1{1'b0}}, !eq};
-            6: alu = {{WIDTH-1{1'b0}}, gt};
-            7: alu = {{WIDTH-1{1'b0}}, eq | gt};
-            8: alu = {{WIDTH-1{1'b0}}, !gt};
-            9: alu = {{WIDTH-1{1'b0}}, !eq & !gt};
-            10: alu = data_stack_value2 << data_stack_value1;
-            11: alu = data_stack_value2 >> data_stack_value1;
-            12: alu = data_stack_value2 * data_stack_value1;
-            13: alu = data_stack_value2 / data_stack_value1;
-            14: alu = data_stack_value2 % data_stack_value1;
-            default: alu = data_stack_value2 - data_stack_value1;
+            1: alu = data_stack_value2 - data_stack_value1;
+            2: alu = data_stack_value2 & data_stack_value1;
+            3: alu = data_stack_value2 | data_stack_value1;
+            4: alu = data_stack_value2 ^ data_stack_value1;
+            5: alu = {{WIDTH-1{1'b0}}, eq};
+            6: alu = {{WIDTH-1{1'b0}}, !eq};
+            7: alu = {{WIDTH-1{1'b0}}, gt};
+            8: alu = {{WIDTH-1{1'b0}}, eq | gt};
+            9: alu = {{WIDTH-1{1'b0}}, !gt};
+            10: alu = {{WIDTH-1{1'b0}}, !eq & !gt};
+            11: alu = data_stack_value2 << data_stack_value1;
+            12: alu = data_stack_value2 >> data_stack_value1;
+`ifdef MUL            
+            13: alu = data_stack_value2 * data_stack_value1;
+`endif
+`ifdef DIV            
+            14: alu = data_stack_value2 / data_stack_value1;
+            15: alu = data_stack_value2 % data_stack_value1;
+`endif
+            default: alu = {WIDTH{1'bx}};
         endcase
     endfunction
 
@@ -154,11 +164,10 @@ module forth_cpu
 
     always @(negedge clk) begin
         if (!parameter_stack_nwr)
-            parameter_stack[parameter_stack_wr_address] <= parameter_stack_wr_data;
+            parameter_stack[parameter_stack_pointer] <= parameter_stack_wr_data;
         else begin
             parameter_stack_value1 <= parameter_stack[parameter_stack_pointer];
-            parameter_stack_value2 <= parameter_stack[parameter_stack_pointer+1];
-            parameter_stack_value <= parameter_stack[parameter_stack_rd_address];
+            parameter_stack_value2 <= parameter_stack[parameter_stack_rd_address];
         end
     end
 
@@ -267,9 +276,14 @@ module forth_cpu
                             data_stack_pointer <= data_stack_pointer + 2;
                         end
                         get: state <= STATE_WAITREADY;
-                        ret: begin
-                            call_stack_pointer <= call_stack_pointer + pc_data;
+                        retn: begin
+                            call_stack_pointer <= call_stack_pointer + pc_data[7:0];
                             state <= STATE_RET;
+                        end
+                        ret: begin
+                            pc <= call_stack_value;
+                            call_stack_pointer <= call_stack_pointer + 1;
+                            state <= STATE_FETCH;
                         end
                         wfi: state <= STATE_WFI;
                         reti: begin
@@ -278,45 +292,47 @@ module forth_cpu
                             state <= STATE_FETCH;
                         end
                         pstack_get: begin
-                            parameter_stack_rd_address <= parameter_stack_pointer + pc_data[PARAMETER_STACK_BITS - 1:0];
                             pc <= pc + 1;
                             state <= STATE_PUSH_PARAMETER;
                         end
                         local_get: begin
-                            local_pointer <= call_stack_pointer + pc_data;
+                            local_pointer <= call_stack_pointer + pc_data[7:0];
                             pc <= pc + 1;
                             state <= STATE_PUSH_LOCAL;
                         end
                         local_set: begin
                             call_stack_nwr <= 0;
                             call_stack_wr_data <= data_stack_value1;
-                            call_stack_wr_address <= call_stack_pointer + pc_data;
+                            call_stack_wr_address <= call_stack_pointer + pc_data[7:0];
                             data_stack_pointer <= data_stack_pointer + 1;
                             pc <= pc + 1;
                             state <= STATE_FETCH;
                         end
                         locals: begin
-                            call_stack_pointer <= call_stack_pointer - pc_data;
+                            call_stack_pointer <= call_stack_pointer - pc_data[7:0];
                             pc <= pc + 1;
                             state <= STATE_FETCH;
                         end
                         pstack_push: begin
                             parameter_stack_nwr <= 0;
-                            parameter_stack_wr_data <= data_stack_value1;
-                            parameter_stack_wr_address <= parameter_stack_pointer - 1;
+                            parameter_stack_wr_data <= data_stack_value2;
                             parameter_stack_pointer <= parameter_stack_pointer - 1;
-                            data_stack_pointer <= data_stack_pointer + 1;
-                            state <= STATE_FETCH;
+                            state <= STATE_PSTACK_PUSH;
                         end
                         loop: begin
                             parameter_stack_nwr <= 0;
-                            parameter_stack_wr_data <= data_stack_value1 + parameter_stack_value2;
-                            parameter_stack_wr_address <= parameter_stack_pointer + 1;
+                            parameter_stack_wr_data <= data_stack_value1 + parameter_stack_value1;
                             data_stack_pointer <= data_stack_pointer + 1;
                             state <= STATE_LOOP;
                         end
                         default: error <= 1;
                     endcase
+                end
+                STATE_PSTACK_PUSH: begin
+                    parameter_stack_wr_data <= data_stack_value1;
+                    parameter_stack_pointer <= parameter_stack_pointer - 1;
+                    data_stack_pointer <= data_stack_pointer + 2;
+                    state <= STATE_FETCH;
                 end
                 STATE_RET: begin
                     pc <= call_stack_value;
@@ -324,7 +340,7 @@ module forth_cpu
                     state <= STATE_FETCH;
                 end
                 STATE_LOOP: begin
-                    if (pstack_ge) begin
+                    if (pstack_le) begin
                         state <= STATE_FETCH;
                         pc <= pc + 2;
                     end
@@ -354,7 +370,7 @@ module forth_cpu
                 end
                 STATE_PUSH_PARAMETER: begin
                     data_stack_nwr <= 0;
-                    data_stack_wr_data <= parameter_stack_value;
+                    data_stack_wr_data <= parameter_stack_value2;
                     data_stack_pointer <= data_stack_pointer - 1;
                     state <= STATE_FETCH;
                 end

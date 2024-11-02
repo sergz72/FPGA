@@ -268,6 +268,13 @@ internal sealed class ForthCompiler
         _currentLabelNumber++;
         return $"{_currentWord}_l{_currentLabelNumber}";
     }
+
+    private Instruction BuildRetInstruction()
+    {
+        return _locals.Length == 0
+            ? new OpcodeInstruction((uint)InstructionCodes.Ret, "ret")
+            : new Opcode2Instruction((uint)InstructionCodes.Retn, (uint)_locals.Length, $"retn {_locals.Length}");
+    }
     
     private Instruction? CompileWord(Token token, ref int start)
     {
@@ -281,8 +288,7 @@ internal sealed class ForthCompiler
                 foreach (var ei in _exitInstructions)
                     ei.Offset = _wordPc - ei.Offset;
                 i = _config.Code.IsrHandlers.Contains(_currentWord) ?
-                    new OpcodeInstruction((uint)InstructionCodes.Reti, "reti") :
-                    new Opcode2Instruction((uint)InstructionCodes.Ret, (uint)_locals.Length, $"ret {_locals.Length}");
+                    new OpcodeInstruction((uint)InstructionCodes.Reti, "reti") : BuildRetInstruction();
                 break;
             case "dup":
                 i = new OpcodeInstruction((uint)InstructionCodes.Dup, token.Word);
@@ -464,7 +470,7 @@ internal sealed class ForthCompiler
                 i = j;
                 break;
             case "do":
-                var d = new Opcode2Instruction((uint)InstructionCodes.PstackPush, (uint)InstructionCodes.PstackPush, "do");
+                var d = new OpcodeInstruction((uint)InstructionCodes.PstackPush, "do");
                 if (_nextLabel != "")
                     d.Labels.Add(_nextLabel);
                 _nextLabel = BuildLabelName();
@@ -490,7 +496,7 @@ internal sealed class ForthCompiler
                     throw new CompilerException("unexpected leave", token);
                 j = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, "exit");
                 j.Offset = _wordPc;
-                c.LeaveInstructions.Add(j);
+                //c.LeaveInstructions.Add(j);
                 i = j;
                 break;
             case "exit":
