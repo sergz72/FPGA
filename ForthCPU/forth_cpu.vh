@@ -1,0 +1,2 @@
+`define MUL
+`define DIV

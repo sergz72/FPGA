@@ -1,3 +1,5 @@
+`include "forth_cpu.vh"
+
 module forth_cpu
 #(parameter DATA_STACK_BITS = 6, CALL_STACK_BITS = 9, WIDTH = 16, ROM_BITS = 8, PARAMETER_STACK_BITS = 4)
 (
