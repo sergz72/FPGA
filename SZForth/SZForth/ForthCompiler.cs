@@ -442,6 +442,7 @@ internal sealed class ForthCompiler
                 j = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, c.Label);
                 j.Offset = c.Pc - _wordPc;
                 i = j;
+                UpdateJumps(c, j.Size);
                 break;
             case "repeat":
                 if (!_conditionStack.TryPop(out var w) || w.Type != ConditionType.While)
@@ -454,6 +455,7 @@ internal sealed class ForthCompiler
                 j.Offset = c.Pc - _wordPc;
                 w.I[0].Offset = _wordPc + j.Size - w.Pc;
                 _nextLabel = w.I[0].JmpTo;
+                UpdateJumps(c, j.Size);
                 return j;
             case "until":
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Begin)
@@ -461,6 +463,7 @@ internal sealed class ForthCompiler
                 j = new JmpInstruction(InstructionCodes.Br, "br", _bits, c.Label);
                 j.Offset = c.Pc - _wordPc;
                 i = j;
+                UpdateJumps(c, j.Size);
                 break;
             case "until0":
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Begin)
@@ -468,6 +471,7 @@ internal sealed class ForthCompiler
                 j = new JmpInstruction(InstructionCodes.Br0, "br0", _bits, c.Label);
                 j.Offset = c.Pc - _wordPc;
                 i = j;
+                UpdateJumps(c, j.Size);
                 break;
             case "do":
                 var d = new OpcodeInstruction((uint)InstructionCodes.PstackPush, "do");
@@ -482,6 +486,7 @@ internal sealed class ForthCompiler
                 j = new LoopInstruction(_bits, c.Label);
                 j.Offset = c.Pc - _wordPc;
                 i = j;
+                UpdateJumps(c, j.Size);
                 break;
             case "+loop":
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Do)
@@ -489,14 +494,16 @@ internal sealed class ForthCompiler
                 j = new PLoopInstruction(_bits, c.Label);
                 j.Offset = c.Pc - _wordPc;
                 i = j;
+                UpdateJumps(c, j.Size);
                 break;
             case "leave":
-                if (!_conditionStack.TryPeek(out c) ||
-                    (c.Type != ConditionType.Do && c.Type != ConditionType.While && c.Type != ConditionType.Begin))
+                c = _conditionStack
+                    .LastOrDefault(cn => cn!.Type == ConditionType.Do || cn.Type != ConditionType.Begin, null);
+                if (c == null)
                     throw new CompilerException("unexpected leave", token);
                 j = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, "exit");
                 j.Offset = _wordPc;
-                //c.LeaveInstructions.Add(j);
+                c.I.Add(j);
                 i = j;
                 break;
             case "exit":
@@ -509,9 +516,7 @@ internal sealed class ForthCompiler
             case "locals":
                 var t = GetName(start);
                 start++;
-                if (t.Type != TokenType.Word)
-                    throw new CompilerException("comma separated variable name list expected", t);
-                _locals = t.StringValue!.Split(',');
+                _locals = t.Word.Split(',');
                 i = new Opcode2Instruction((uint)InstructionCodes.Locals, (uint)_locals.Length, $"locals {_locals.Length}");
                 break;
             default:
@@ -533,6 +538,12 @@ internal sealed class ForthCompiler
         }
 
         return i;
+    }
+
+    private void UpdateJumps(Condition c, int jSize)
+    {
+        foreach (var j in c.I)
+            j.Offset = _wordPc + jSize - j.Offset;
     }
 
     private Instruction? CompileLocalVariableOperation(string word)
