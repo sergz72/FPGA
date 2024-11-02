@@ -165,6 +165,20 @@ internal class JmpInstruction: Instruction
     }
 }
 
+internal sealed class JmpDupInstruction: JmpInstruction
+{
+    internal JmpDupInstruction(int bits, string jmpTo) : base(InstructionCodes.Jmp, "jmp dup", bits, jmpTo)
+    {
+        Size = 4;
+    }
+    
+    internal override void BuildCode(int labelAddress, int pc)
+    {
+        pc += Offset;
+        Code = [(uint)InstructionCodes.Jmp, V1(pc), V2(pc), (uint)InstructionCodes.Dup];
+    }
+}
+
 internal sealed class OfInstruction: JmpInstruction
 {
     internal OfInstruction(int bits, string jmpTo) : base(InstructionCodes.Br, "of (= if drop)", bits, jmpTo)

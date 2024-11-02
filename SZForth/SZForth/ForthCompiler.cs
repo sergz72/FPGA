@@ -396,31 +396,34 @@ internal sealed class ForthCompiler
                 _conditionStack.Push(new Condition(ConditionType.Begin, [], _wordPc, _nextLabel));
                 break;
             case "case":
-                //todo
                 _conditionStack.Push(new Condition(ConditionType.Case, [], _wordPc, BuildLabelName()));
                 i = new OpcodeInstruction((uint)InstructionCodes.Dup, token.Word);
                 break;
             case "of":
-                //todo
                 if (!_conditionStack.TryPeek(out c) || c.Type != ConditionType.Case)
                     throw new CompilerException("unexpected of", token);
-                _conditionStack.Push(new Condition(ConditionType.Of, [], _wordPc));
-                i = new OfInstruction(_bits, BuildLabelName());
+                j = new OfInstruction(_bits, BuildLabelName());
+                _conditionStack.Push(new Condition(ConditionType.Of, [j], _wordPc));
+                i = j;
                 break;
             case "endof":
-                //todo
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Of)
                     throw new CompilerException("unexpected endof", token);
                 if (!_conditionStack.TryPeek(out var cs) || cs.Type != ConditionType.Case)
                     throw new CompilerException("endof without case", token);
-                j = new JmpInstruction(InstructionCodes.Jmp, "jmp", _bits, cs.Label);
+                j = new JmpDupInstruction(_bits, cs.Label);
+                j.Offset = _wordPc;
+                if (_nextLabel != "")
+                    j.Labels.Add(_nextLabel);
                 cs.I.Add(j);
-                i = j;
-                break;
+                c.I[0].Offset = _wordPc + j.Size - 1 - c.Pc;
+                _nextLabel = c.I[0].JmpTo;
+                return j;
             case "endcase":
-                //todo
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Case)
                     throw new CompilerException("unexpected endcase", token);
+                UpdateJumps(c, 0);
+                _nextLabel = c.Label;
                 break;
             case "while":
                 if (!_conditionStack.TryPeek(out c) || c.Type != ConditionType.Begin)
