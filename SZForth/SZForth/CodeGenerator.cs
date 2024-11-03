@@ -303,8 +303,10 @@ internal sealed class CodeGenerator
                     i = CompileLocalVariableOperation(token.Word);
                     if (i == null)
                     {
-                        if (_compiler.ConstantsAndVariables.TryGetValue(token.Word, out var value))
+                        if (_compiler.Constants.TryGetValue(token.Word, out var value))
                             i = new PushDataInstruction(token.Word, value, _compiler.Bits);
+                        else if (_compiler.Variables.TryGetValue(token.Word, out var v))
+                            i = new LabelInstruction(InstructionCodes.Push, "push", token.Word, _compiler.Bits);
                         else
                             i = CompileCall(token.Word);
                     }

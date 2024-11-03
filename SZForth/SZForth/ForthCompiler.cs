@@ -2,17 +2,32 @@
 
 internal sealed class ForthCompiler
 {
+    internal class Variable
+    {
+        internal readonly int Size;
+        internal readonly int[] Contents;
+        internal int? Address { get; set; }
+
+        internal Variable(int size, int[] contents)
+        {
+            Size = size;
+            Contents = contents;
+            Address = null;
+        }
+    }
+    
     private readonly List<Token> _tokens;
     private readonly Stack<int> _dataStack;
     private readonly Dictionary<string, List<Instruction>> _words;
     private readonly Dictionary<string, int> _wordAddresses;
     private readonly CodeGenerator _codeGenerator;
-    private List<Instruction> _currentWordInstructions, _dataInstructions, _roDataInstructions;
-    private int _nextVariableAddress;
-    private int _nextRoDataAddress;
 
-    internal readonly Dictionary<string, int> ConstantsAndVariables;
+    private List<Instruction> _currentWordInstructions, _dataInstructions, _roDataInstructions;
+
+    internal readonly Dictionary<string, int> Constants;
+    internal readonly Dictionary<string, Variable> Variables;
     internal readonly ParsedConfiguration Config;
+    
     internal bool CompileMode { get; set; }
     internal readonly int Bits;
     
@@ -23,7 +38,8 @@ internal sealed class ForthCompiler
         _tokens = new ForthParser(sources.Select(source => new ParserFile(source))).Parse();
         _dataStack = new Stack<int>();
         Bits = bits;
-        ConstantsAndVariables = new Dictionary<string, int>();
+        Constants = new Dictionary<string, int>();
+        Variables = new Dictionary<string, Variable>();
         _words = new Dictionary<string, List<Instruction>>();
         _wordAddresses = new Dictionary<string, int>();
         _currentWordInstructions = [];
@@ -33,8 +49,6 @@ internal sealed class ForthCompiler
     
     internal CompilerResult Compile()
     {
-        _nextVariableAddress = (int)Config.Data.Address;
-        _nextRoDataAddress = (int)Config.RoData.Address;
         _dataInstructions = [];
         _roDataInstructions = [];
         _wordAddresses.Clear();
@@ -62,17 +76,83 @@ internal sealed class ForthCompiler
             else
                 Interpret(ref start);
         }
+        Cleanup();
+        BuildVariableAddresses();
         var codeInstructions = BuildCodeInstructions();
         LinkInstructions(codeInstructions, _dataInstructions, _roDataInstructions);
         return new CompilerResult(codeInstructions, _dataInstructions, _roDataInstructions);
     }
 
-    private void LinkInstructions(params List<Instruction>[] instructions)
+    private void BuildVariableAddresses()
     {
-        foreach (var instructionList in instructions)
-            LinkInstructionList(instructionList);
+        var address = 0;
+        foreach (var variable in Variables.Where(v => v.Value.Contents.Length != 0))
+        {
+            variable.Value.Address = address;
+            address += variable.Value.Size;
+            foreach (var v in variable.Value.Contents)
+                _dataInstructions.Add(new DataInstruction(variable.Key, v));
+        }
+        foreach (var variable in Variables.Values.Where(v => v.Contents.Length == 0))
+        {
+            variable.Address = address;
+            address += variable.Size;
+        }
     }
 
+    private void Cleanup()
+    {
+        HashSet<string> inUseWords = [Config.Code.EntryPoint];
+        foreach (var name in Config.Code.IsrHandlers)
+            inUseWords.Add(name);
+        HashSet<string> inUseVariables = [];
+        var oldInUseWords = new HashSet<string>(inUseWords);
+        AddToInUseList(inUseWords, inUseVariables, Config.Code.EntryPoint);
+        foreach (var name in Config.Code.IsrHandlers)
+            AddToInUseList(inUseWords, inUseVariables, name);
+        while (oldInUseWords.Count != inUseWords.Count)
+        {
+            var toCheck = inUseWords.Except(oldInUseWords).ToList();
+            oldInUseWords = new HashSet<string>(inUseWords);
+            foreach (var w in toCheck)
+                AddToInUseList(inUseWords, inUseVariables, w);
+        }
+
+        var toRemove = _words.Keys.Where(w => !inUseWords.Contains(w)).ToList();
+        foreach (var w in toRemove)
+        {
+            Console.WriteLine($"Remove unused word {w}");
+            _words.Remove(w);
+        }
+        toRemove = Variables.Keys.Where(v => !inUseVariables.Contains(v)).ToList();
+        foreach (var v in toRemove)
+        {
+            Console.WriteLine($"Remove unused variable {v}");
+            Variables.Remove(v);
+        }
+    }
+    
+    private void AddToInUseList(HashSet<string> inUseWords, HashSet<string> inUseVariables, string word)
+    {
+        foreach (var w in _words[word]
+                     .Where(i => i is LabelInstruction)
+                     .Select(i => ((LabelInstruction)i).RequiredLabel!))
+        {
+            if (_words.ContainsKey(w))
+                inUseWords.Add(w);
+            else
+                inUseVariables.Add(w);
+        }
+    }
+    
+    private void LinkInstructions(List<Instruction> codeInstructions, List<Instruction> dataInstructions,
+                                    List<Instruction> roDataInstructions)
+    {
+        LinkInstructionList(codeInstructions);
+        LinkInstructionList(dataInstructions);
+        LinkInstructionList(roDataInstructions);
+    }
+    
     private void LinkInstructionList(List<Instruction> instructions)
     {
         int pc = 0;
@@ -146,7 +226,7 @@ internal sealed class ForthCompiler
                 start++;
                 break;
             default:
-                if (ConstantsAndVariables.TryGetValue(token.Word, out var value))
+                if (Constants.TryGetValue(token.Word, out var value))
                 {
                     _dataStack.Push(value);
                     start++;
@@ -206,55 +286,50 @@ internal sealed class ForthCompiler
         }
     }
 
+    internal void CheckName(Token t)
+    {
+        if (Constants.ContainsKey(t.Word) || _words.ContainsKey(t.Word) || Variables.ContainsKey(t.Word))
+            throw new CompilerException($"constant/variable/array/word with name {t.Word} already exists", t);
+    }
+    
     private void InterpretWordDefinition(ref int start)
     {
         var name = GetName(start);
-        if (ConstantsAndVariables.ContainsKey(name.Word) || _words.ContainsKey(name.Word))
-            throw new CompilerException($"constant/variable/array/word with name {name.Word} already exists", _tokens[start]);
+        CheckName(name);
         CompileMode = true;
         _currentWordInstructions = [];
         _codeGenerator.Init(name.Word);
         start++;
     }
     
-    private void CheckWordExists(string name)
-    {
-        if (_words.ContainsKey(name))
-            throw new CompilerException($"word with name {name} already exists");
-    }
     private void InterpretVariableDefinition(bool init, ref int start)
     {
         var t = GetName(start);
-        CheckWordExists(t.Word);
-        if (!ConstantsAndVariables.TryAdd(t.Word, _nextVariableAddress++))
-            throw new CompilerException("constant or variable {name} already defined", t);
-        if (init)
-            _dataInstructions.Add(new DataInstruction(t.Word, _dataStack.Pop()));
+        CheckName(t);
+        Variables.Add(t.Word, new Variable(1, init ? [_dataStack.Pop()] : []));
         start++;
     }
 
     private void InterpretArrayDefinition(bool init, ref int start)
     {
         var t = GetName(start);
-        CheckWordExists(t.Word);
-        if (!ConstantsAndVariables.TryAdd(t.Word, _nextVariableAddress))
-            throw new CompilerException("constant or variable {name} already defined", t);
+        CheckName(t);
         start++;
         var v = GetNumber(start++);
+        List<int> contents = [];
         if (init)
         {
             for (var i = 0; i < v; i++)
-                _dataInstructions.Add(new DataInstruction(t.Word, _dataStack.Pop()));
+                contents.Add(_dataStack.Pop());
         }
-        _nextVariableAddress += v;
+        Variables.Add(t.Word, new Variable(v, contents.ToArray()));
     }
     
     private void InterpretConstantDefinition(ref int start)
     {
         var t = GetName(start);
-        CheckWordExists(t.Word);
-        if (!ConstantsAndVariables.TryAdd(t.Word, _dataStack.Pop()))
-            throw new CompilerException("constant or variable {name} already defined", t);
+        CheckName(t);
+        Constants.Add(t.Word, _dataStack.Pop());
         start++;
     }
     
@@ -273,7 +348,7 @@ internal sealed class ForthCompiler
         var token = _tokens[start];
         if (token.Type == TokenType.Number)
             return (int)token.IntValue!;
-        if (!ConstantsAndVariables.TryGetValue(token.Word, out var value))
+        if (!Constants.TryGetValue(token.Word, out var value))
             throw new CompilerException("number expected", token);
         return value;
     }
@@ -288,8 +363,10 @@ internal sealed class ForthCompiler
     {
         if (requiredLabel == null)
             return 0;
-        if (ConstantsAndVariables.TryGetValue(requiredLabel, out var address))
+        if (Constants.TryGetValue(requiredLabel, out var address))
             return address;
+        if (Variables.TryGetValue(requiredLabel, out var v))
+            return (int)v.Address!;
         if (_wordAddresses.TryGetValue(requiredLabel, out var wordAddress))
             return wordAddress;
         throw new CompilerException($"{requiredLabel} not found");
