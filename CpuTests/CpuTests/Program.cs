@@ -25,7 +25,7 @@ try
     if (baseDir != "")
         Directory.SetCurrentDirectory(baseDir);
     var files = Directory.GetFiles(config.TestsDir,
-                                            config.SearchPattern == "" ? "*.S" : config.SearchPattern);
+                                            config.SearchPattern == null ? "*.S" : config.SearchPattern);
     var testCount = 0;
     foreach (var file in files)
     {
@@ -143,6 +143,6 @@ List<string> RunCommand(string path, string parameter = "")
     return lines;
 }
 
-internal record Configuration(string TestsDir, string SearchPattern, string BuildCommand, string SimulatorCommand, string Flag,
+internal record Configuration(string TestsDir, string? SearchPattern, string BuildCommand, string SimulatorCommand, string Flag,
                                 string Error, string Ok, string[] UartFlags, string? UartDataField);
                                 

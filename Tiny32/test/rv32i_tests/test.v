@@ -45,6 +45,7 @@ module tiny32_tb;
     assign ram_selected = address[31:28] == 4;
     assign mem_rdata = rom_selected ? rom_rdata : ram_rdata;
 
+    integer i;
     initial begin
         $dumpfile("tiny32_tb.vcd");
         $dumpvars(0, tiny32_tb);
@@ -56,7 +57,11 @@ module tiny32_tb;
         interrupt = 0;
         #20
         nreset = 1;
-        #100000
+        for (i = 0; i < 1000; i = i + 1) begin
+            #100
+            if (hlt | error)
+              $finish;
+        end
         $finish;
     end
 
