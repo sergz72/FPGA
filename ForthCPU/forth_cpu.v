@@ -148,15 +148,6 @@ module forth_cpu
     end
 
     always @(negedge clk) begin
-        if (!data_stack_nwr)
-            data_stack[data_stack_pointer] <= data_stack_wr_data;
-        else begin
-            data_stack_value1 <= data_stack[data_stack_pointer];
-            data_stack_value2 <= data_stack[data_stack_pointer+1];
-        end
-    end
-
-    always @(negedge clk) begin
         if (!call_stack_nwr)
             call_stack[call_stack_wr_address] <= call_stack_wr_data;
         else begin

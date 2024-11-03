@@ -3,11 +3,13 @@ using System.Text.Json;
 
 namespace SZForth;
 
-internal record Section(string FileName, string Address, string Size, string EntryPoint, string[] IsrHandlers);
+internal record Section(string FileName, string Address, string Size, string EntryPoint,
+                        string[] IsrHandlers);
 
-internal record Configuration(Section Code, Section Data, Section RoData);
+internal record Configuration(Section Code, Section Data, Section RoData, string? MapFileName);
 
-internal record ParsedSection(string FileName, uint Address, uint Size, string EntryPoint, string[] IsrHandlers)
+internal record ParsedSection(string FileName, uint Address, uint Size, string EntryPoint,
+                                string[] IsrHandlers)
 {
     internal ParsedSection(Section section, uint address, uint size):
         this(section.FileName, address, size, section.EntryPoint, section.IsrHandlers)
@@ -15,7 +17,7 @@ internal record ParsedSection(string FileName, uint Address, uint Size, string E
     }
 }
 
-internal record ParsedConfiguration(ParsedSection Code, ParsedSection Data, ParsedSection RoData)
+internal record ParsedConfiguration(ParsedSection Code, ParsedSection Data, ParsedSection RoData, string? MapFileName)
 {
     internal static ParsedConfiguration ReadConfiguration(string fileName)
     {
@@ -33,7 +35,8 @@ internal record ParsedConfiguration(ParsedSection Code, ParsedSection Data, Pars
             throw new CompilerException("invalid data segment configuration");
         return new ParsedConfiguration(new ParsedSection(config.Code, 0, codeSize),
                                         new ParsedSection(config.Data, dataAddress, dataSize),
-                                        new ParsedSection(config.RoData, roDataAddress, roDataSize));
+                                        new ParsedSection(config.RoData, roDataAddress, roDataSize),
+                                        config.MapFileName);
     }
 
     private static bool ParseAddress(string sAddress, out uint address)

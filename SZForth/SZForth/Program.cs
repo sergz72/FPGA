@@ -60,7 +60,9 @@ else
     try
     {
         var result = compiler.Compile();
-        BuildOutputFiles(config, result);
+        var pcFormat = bits == 16 ? "X4" : "X8";
+        BuildOutputFiles(config, result, pcFormat);
+        BuldMapFile(config, compiler, pcFormat);
     }
     catch (Exception e)
     {
@@ -72,10 +74,18 @@ else
 
 return 0;
 
-void BuildOutputFiles(ParsedConfiguration config, CompilerResult result)
+void BuldMapFile(ParsedConfiguration config, ForthCompiler compiler, string pcFormat)
+{
+    if (config.MapFileName != null)
+    {
+        var contents = compiler.BuildMapFile(pcFormat);
+        File.WriteAllLines(config.MapFileName, contents);
+    }
+}
+
+void BuildOutputFiles(ParsedConfiguration config, CompilerResult result, string pcFormat)
 {
     var format = bits == 16 ? "X2" : "X4";
-    var pcFormat = bits == 16 ? "X4" : "X8";
     BuildOutputFile(config.Code.FileName, result.CodeInstructions, format, pcFormat, 0);
     BuildOutputFile(config.Data.FileName, result.DataInstructions, pcFormat, pcFormat, (int)config.Data.Address);
     BuildOutputFile(config.RoData.FileName, result.RoDataInstructions, pcFormat, pcFormat, (int)config.RoData.Address);
