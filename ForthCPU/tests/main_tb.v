@@ -15,7 +15,7 @@ module main_tb;
         nreset = 0;
         #10
         nreset = 1;
-        #2000
+        #20000
         $finish;
     end
 endmodule

@@ -552,8 +552,8 @@ internal sealed class ForthCompiler
         return word switch
         {
             "I" => new Opcode2Instruction((uint)InstructionCodes.PstackGet, 0, "pstack_get I"),
-            "J" => new Opcode2Instruction((uint)InstructionCodes.PstackGet, unchecked((uint)-2), "pstack_get J"),
-            "K" => new Opcode2Instruction((uint)InstructionCodes.PstackGet, unchecked((uint)-4), "pstack_get K"),
+            "J" => new Opcode2Instruction((uint)InstructionCodes.PstackGet, 2, "pstack_get J"),
+            "K" => new Opcode2Instruction((uint)InstructionCodes.PstackGet, 4, "pstack_get K"),
             _ => null
         };
     }

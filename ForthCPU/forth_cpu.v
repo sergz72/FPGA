@@ -294,10 +294,7 @@ module forth_cpu
                             interrupt_ack <= 0;
                             state <= STATE_FETCH;
                         end
-                        pstack_get: begin
-                            pc <= pc + 1;
-                            state <= STATE_PUSH_PARAMETER;
-                        end
+                        pstack_get: state <= STATE_PUSH_PARAMETER;
                         local_get: begin
                             local_pointer <= call_stack_pointer + pc_data[7:0];
                             pc <= pc + 1;
@@ -348,6 +345,7 @@ module forth_cpu
                 end
                 STATE_LOOP2: begin
                     if (pstack_le) begin
+                        parameter_stack_pointer <= parameter_stack_pointer + 2;
                         state <= STATE_FETCH;
                         pc <= pc + 2;
                     end
@@ -379,6 +377,7 @@ module forth_cpu
                     data_stack_nwr <= 0;
                     data_stack_wr_data <= parameter_stack_value2;
                     data_stack_pointer <= data_stack_pointer - 1;
+                    pc <= pc + 1;
                     state <= STATE_FETCH;
                 end
                 STATE_WAITREADY: begin
