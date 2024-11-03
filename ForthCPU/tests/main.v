@@ -1,5 +1,5 @@
 module main
-#(parameter ROM_BITS = 8, RAM_BITS = 8, WIDTH = 16)
+#(parameter ROM_BITS = 9, RAM_BITS = 8, WIDTH = 16)
 (
     input wire clk,
     input wire nreset,

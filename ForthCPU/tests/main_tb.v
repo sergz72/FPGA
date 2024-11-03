@@ -7,6 +7,7 @@ module main_tb;
 
     always #1 clk <= ~clk;
     
+    integer i;
     initial begin
         $dumpfile("main_tb.vcd");
         $dumpvars(0, main_tb);
@@ -15,7 +16,12 @@ module main_tb;
         nreset = 0;
         #10
         nreset = 1;
-        #20000
+
+        for (i = 0; i < 5000; i = i + 1) begin
+            #100
+            if (hlt | wfi)
+              $finish;
+        end
         $finish;
     end
 endmodule
