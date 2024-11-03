@@ -7,16 +7,15 @@ decimal 128 constant MAX_COMMAND_LENGTH
 0 ivariable command_ready
 variable command_p
 variable command_read_p
+variable command_end
 array command MAX_COMMAND_LENGTH
-
-command MAX_COMMAND_LENGTH + constant COMMAND_END
 
 : isr1 1 timer_interrupt ! ;
 
 : isr2
   UART @
   command_ready @ if0
-    command_p @ COMMAND_END < if
+    command_p @ command_end @ < if
       dup
       '\r' = if
         command_ready !
@@ -42,6 +41,7 @@ command MAX_COMMAND_LENGTH + constant COMMAND_END
 : main 
   command command_p !
   command command_read_p !
+  command MAX_COMMAND_LENGTH + command_end !
   begin
     wfi
     timer_interrupt @ if
