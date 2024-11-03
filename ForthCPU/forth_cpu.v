@@ -30,8 +30,9 @@ module forth_cpu
     localparam STATE_PUSH_LOCAL     = 9;
     localparam STATE_PUSH_PARAMETER = 10;
     localparam STATE_LOOP           = 11;
-    localparam STATE_RET            = 12;
-    localparam STATE_PSTACK_PUSH    = 13;
+    localparam STATE_LOOP2          = 12;
+    localparam STATE_RET            = 13;
+    localparam STATE_PSTACK_PUSH    = 14;
 
     reg [WIDTH - 1:0] data_stack[0:(1<<DATA_STACK_BITS)-1];
     reg [WIDTH - 1:0] data_stack_wr_data, data_stack_value1, data_stack_value2;
@@ -342,6 +343,10 @@ module forth_cpu
                     state <= STATE_FETCH;
                 end
                 STATE_LOOP: begin
+                    parameter_stack_nwr <= 1;
+                    state <= STATE_LOOP2;
+                end
+                STATE_LOOP2: begin
                     if (pstack_le) begin
                         state <= STATE_FETCH;
                         pc <= pc + 2;

@@ -487,7 +487,7 @@ internal sealed class ForthCompiler
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Do)
                     throw new CompilerException("unexpected loop", token);
                 j = new LoopInstruction(_bits, c.Label);
-                j.Offset = c.Pc - _wordPc;
+                j.Offset = c.Pc + 1 - _wordPc;
                 i = j;
                 UpdateJumps(c, j.Size);
                 break;
@@ -495,7 +495,7 @@ internal sealed class ForthCompiler
                 if (!_conditionStack.TryPop(out c) || c.Type != ConditionType.Do)
                     throw new CompilerException("unexpected +loop", token);
                 j = new PLoopInstruction(_bits, c.Label);
-                j.Offset = c.Pc - _wordPc;
+                j.Offset = c.Pc + 1 - _wordPc;
                 i = j;
                 UpdateJumps(c, j.Size);
                 break;
@@ -523,13 +523,17 @@ internal sealed class ForthCompiler
                 i = new Opcode2Instruction((uint)InstructionCodes.Locals, (uint)_locals.Length, $"locals {_locals.Length}");
                 break;
             default:
-                i = CompileLocalVariableOperation(token.Word);
+                i = CompileLoopVariableGet(token.Word);
                 if (i == null)
                 {
-                    if (_constantsAndVariables.TryGetValue(token.Word, out var value))
-                        i = new PushDataInstruction(token.Word, value, _bits);
-                    else
-                        i = CompileCall(token.Word);
+                    i = CompileLocalVariableOperation(token.Word);
+                    if (i == null)
+                    {
+                        if (_constantsAndVariables.TryGetValue(token.Word, out var value))
+                            i = new PushDataInstruction(token.Word, value, _bits);
+                        else
+                            i = CompileCall(token.Word);
+                    }
                 }
                 break;
         }
@@ -541,6 +545,17 @@ internal sealed class ForthCompiler
         }
 
         return i;
+    }
+
+    private Instruction? CompileLoopVariableGet(string word)
+    {
+        return word switch
+        {
+            "I" => new Opcode2Instruction((uint)InstructionCodes.PstackGet, 0, "pstack_get I"),
+            "J" => new Opcode2Instruction((uint)InstructionCodes.PstackGet, unchecked((uint)-2), "pstack_get J"),
+            "K" => new Opcode2Instruction((uint)InstructionCodes.PstackGet, unchecked((uint)-4), "pstack_get K"),
+            _ => null
+        };
     }
 
     private void UpdateJumps(Condition c, int jSize)
