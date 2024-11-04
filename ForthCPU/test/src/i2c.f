@@ -1,73 +1,61 @@
-\ stack: channel * 2
-: sda_low
-  I2C_ADDRESS_SDA + 0 swap !
+2 constant SCL
+1 constant SDA
+3 constant SCLSDA
+
+: i2c_channel_set
+  I2C_ADDRESS + !
 ;
 
-\ stack: channel * 2
-: scl_low
-  I2C_ADDRESS_SCL + 0 swap !
-;
-
-\ stack: channel * 2
-: sda_high
-  I2C_ADDRESS_SDA + 1 swap !
-;
-
-\ stack: channel * 2
-: scl_high
-  I2C_ADDRESS_SCL + 1 swap !
-;
-
-\ stack: data channel * 2
-: sda_set
-  I2C_ADDRESS_SDA + !
-;
-
-\ stack: channel * 2
+\ stack: channel
 : i2c_start
-  dup sda_low
-  scl_low
+  dup SCLSDA i2c_channel_set
+  dup SCL i2c_channel_set \ sda low
+  0 i2c_channel_set \ scl low
 ;
 
-\ stack: channel * 2
+\ stack: channel
 : i2c_stop
-  dup scl_high
-  sda_high
+  dup 0 i2c_channel_set \ scl low sda low
+  dup SCL i2c_channel_set \ scl high
+  SCLSDA i2c_channel_set \ sda high
 ;
 
-\ stack: byte channel * 2 -> byte channel * 2
+\ stack: byte channel -> byte channel
 : i2c_bit_send
-  over \ byte, channel * 2, byte
-  over \ byte, channel * 2, byte, channel * 2
-  sda_set
-  dup
-  scl_high
-  dup
-  scl_low
+  locals state
+  over \ byte, channel, byte
+  128 and if SDA else 0 then dup state!
+  over \ byte, channel, flag, channel
+  i2c_channel_set
+  dup state@ SCL or
+  i2c_channel_set
+  dup state@
+  i2c_channel_set
 ;
 
-\ stack: byte channel * 2 -> ack
+\ stack: byte channel -> ack
 : i2c_byte_send
   8 0 do
     i2c_bit_send
-    swap 1 rshift swap
+    swap 1 lshift swap
   loop
   swap \ channel byte
   drop \ channel
   dup  \ channel channel
-  sda_high
+  SDA i2c_channel_set \ sda high
   dup
-  scl_high
+  SCLSDA i2c_channel_set \ scl high
   dup
-  I2C_ADDRESS_SDA + @ \ ack
+  I2C_ADDRESS + @ SDA and \ ack
   swap
-  scl_low
+  SDA i2c_channel_set \ scl low
 ;
 
-\ address channel * 2 -> ack
+\ address channel -> ack
 : i2c_check
   dup i2c_start
-  i2c_byte_send
-  swap
-  i2c_stop
+  dup rot \ channel address channel
+  i2c_byte_send \ channel ack
+  swap \ ack channel
+  i2c_stop \ ack
 ;

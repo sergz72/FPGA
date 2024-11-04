@@ -1,7 +1,7 @@
 1 constant I2C_CHANNELS
 4 constant KNOWN_DEVICES
 
-hex 10 22 34 46 iarray known_devices KNOWN_DEVICES
+hex 10 22 34 46 carray known_devices KNOWN_DEVICES
 decimal
 
 : cr '\r' uart_out '\n' uart_out ;
@@ -22,7 +22,7 @@ decimal
   hex_out
 ;
 
-\ channel * 2 > device_id
+\ channel > device_id
 : i2c_test_channel
   KNOWN_DEVICES 0 do
     I known_devices + @ \ channel device_id
@@ -32,13 +32,13 @@ decimal
     i2c_check \ device_id channel ack
     if0 drop exit then
     swap drop \ channel
-  2 +loop
+  loop
   drop 0
 ;
 
 : i2c_test
   I2C_CHANNELS 0 do
-    I 1 lshift i2c_test_channel
+    I i2c_test_channel
     h. space
   loop
   cr ok
