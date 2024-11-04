@@ -11,7 +11,6 @@ public enum LogLevel
 }
 public interface ILogger
 {
-    void SetLevel(LogLevel level);
     void Debug(string message);
     void Info(string message);
     void Warning(string message);

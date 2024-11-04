@@ -2,6 +2,7 @@
   "Cpu": "ForthCPU",
   "CpuSpeed": 100,
   "LogFile": "emulator.log",
+  "LogLevel": "Error",
   "IODevices": [
     { "FileName": "../../../../../../Rider/Cpu16Emulator/IODeviceBaseMemory/bin/Debug/net8.0/IODeviceBaseMemory.dll", "Parameters": "address=0 size=1024 readonly=false contents=asm/data.hex" },
     { "FileName": "../../../../../../Rider/Cpu16Emulator/IODeviceUart/bin/Debug/net8.0/IODeviceUart.dll", "Parameters": "address=0xCFFF interrupt=2" }

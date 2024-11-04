@@ -4,7 +4,8 @@ public class Configuration
 {
     public string Cpu { get; set; }
     public int CpuSpeed { get; set; }
-    public string LogFile { get; set; }
+    public string? LogFile { get; set; }
+    public string? LogLevel { get; set; }
     public IODeviceFile[] IODevices { get; set; }
     public string[]? CpuOptions { get; set; }
 }

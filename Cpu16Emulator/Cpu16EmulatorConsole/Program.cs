@@ -45,13 +45,10 @@ if (configurationFileNameExpected || limitExpected || configurationFileName == n
     return;
 }
 
-var logger = new ConsoleLogger();
+var (cpu, devices, logFileName, logLevel) = Cpu.Load(configurationFileName, codeFileName);
 
-var (cpu, devices, logFileName) =
-    Cpu.Load(configurationFileName, codeFileName, logger);
-
-logger.SetLevel(LogLevel.Warning);
-logger.SetFileName(logFileName);
+var logger = new ConsoleLogger(logFileName, logLevel);
+cpu.Logger = logger;
 
 foreach (var d in devices)
     d.Device.Init(d.Parameters, logger);

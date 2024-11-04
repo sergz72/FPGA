@@ -4,17 +4,13 @@ namespace Cpu16EmulatorConsole;
 
 public class ConsoleLogger: ILogger
 {
-    private LogLevel _logLevel = LogLevel.Debug;
-    private StreamWriter? _logFile;
+    private readonly LogLevel _logLevel;
+    private readonly StreamWriter? _logFile;
     
-    public void SetLevel(LogLevel level)
+    internal ConsoleLogger(string? fileName, LogLevel logLevel)
     {
-        _logLevel = level;
-    }
-
-    internal void SetFileName(string fileName)
-    {
-        _logFile = fileName != "" ? new StreamWriter(fileName) : null;
+        _logFile = fileName != null ? new StreamWriter(fileName) : null;
+        _logLevel = logLevel;
     }
     
     public void Debug(string message)

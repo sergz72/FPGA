@@ -56,6 +56,8 @@ public abstract class Cpu
     
     public uint Interrupt { get; set; }
     
+    public ILogger? Logger { get; set; }
+    
     public EventHandler<IoEvent>? IoWriteEventHandler;
     public EventHandler<IoEvent>? IoReadEventHandler;
     public EventHandler<int>? TicksEventHandler;
@@ -118,7 +120,7 @@ public abstract class Cpu
         
     }
     
-    public static (Cpu, IODevice[], string) Load(string configurationFileName, string codeFileName, ILogger? logger = null)
+    public static (Cpu, IODevice[], string?, LogLevel) Load(string configurationFileName, string codeFileName)
     {
         var stream = File.OpenRead(configurationFileName);
         var config = JsonSerializer.Deserialize<Configuration>(stream);
@@ -129,15 +131,26 @@ public abstract class Cpu
         {
             "Cpu16Lite" => new Cpu16Lite(code, config.CpuSpeed * 1000),
             "Tiny16v4" => new Tiny16v4(code, config.CpuSpeed * 1000),
-            "ForthCPU" => new ForthCPU(code, config.CpuSpeed * 1000, logger!, 256, 256, 16,
+            "ForthCPU" => new ForthCPU(code, config.CpuSpeed * 1000, 256, 256, 16,
                                         config.CpuOptions),
             _ => throw new CpuException("invalid cpu")
         };
         var ioDevices = LoadIODevices(config.IODevices);
         cpu.Reset();
-        return (cpu, ioDevices, config.LogFile);
+        return (cpu, ioDevices, config.LogFile, ParseLogLevel(config.LogLevel));
     }
-    
+
+    private static LogLevel ParseLogLevel(string? logLevel)
+    {
+        return logLevel switch
+        {
+            "Info" => LogLevel.Info,
+            "Warning" => LogLevel.Warning,
+            "Error" => LogLevel.Error,
+            _ => LogLevel.Debug
+        };
+    }
+
     private static IODevice[] LoadIODevices(IODeviceFile[] deviceFiles)
     {
         return deviceFiles.SelectMany(LoadIODevices).ToArray();

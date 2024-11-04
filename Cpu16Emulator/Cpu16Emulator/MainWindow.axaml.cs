@@ -119,10 +119,6 @@ public partial class MainWindow : Window, ILogger
         LbLog.Items.Add(formatted);
     }
     
-    public void SetLevel(LogLevel level)
-    {
-    }
-
     public void Debug(string message)
     {
         Log("DEBUG", message);

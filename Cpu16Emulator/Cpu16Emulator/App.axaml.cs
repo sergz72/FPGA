@@ -31,8 +31,10 @@ public partial class App : Application
             {
                 try
                 {
-                    var (cpu, ioDevices, logFile) =
+                    var (cpu, ioDevices, logFile, _) =
                         Cpu.Load(desktop.Args[0], desktop.Args[1]);
+                    if (logFile == null)
+                        throw new Exception("null logFile");
                     ICpuView cpuView = cpu switch
                     {
                         Cpu16Lite cpu16 => new CPU16View { Cpu = cpu16 },

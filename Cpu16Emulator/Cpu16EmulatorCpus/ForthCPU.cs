@@ -2,7 +2,7 @@
 
 namespace Cpu16EmulatorCpus;
 
-public class ForthCPU(string[] code, int speed, ILogger? logger, int dataStackSize, int callStackSize,
+public class ForthCPU(string[] code, int speed, int dataStackSize, int callStackSize,
                         int parametersStackSize, string[]? cpuOptions): Cpu(code, speed, 0)
 {
     private const byte PUSH = 0;
@@ -143,11 +143,11 @@ public class ForthCPU(string[] code, int speed, ILogger? logger, int dataStackSi
                 Pc = CallStack.Pop(Pc);
                 break;
             case HLT:
-                logger?.Info($"{Ticks}: HLT {Pc:X4}");
+                Logger?.Info($"{Ticks}: HLT {Pc:X4}");
                 Hlt = true;
                 break;
             case WFI:
-                logger?.Info($"{Ticks}: WFI {Pc:X4}");
+                Logger?.Info($"{Ticks}: WFI {Pc:X4}");
                 Wfi = true;
                 break;
             case BR:
@@ -283,7 +283,7 @@ public class ForthCPU(string[] code, int speed, ILogger? logger, int dataStackSi
                                 DataStack.Push((ushort)(data * data2), Pc);
                             else
                             {
-                                logger?.Error($"{Ticks}: ERROR");
+                                Logger?.Error($"{Ticks}: ERROR");
                                 Error = true;
                             }
                             break;
@@ -292,7 +292,7 @@ public class ForthCPU(string[] code, int speed, ILogger? logger, int dataStackSi
                                 DataStack.Push((ushort)(data / data2), Pc);
                             else
                             {
-                                logger?.Error($"{Ticks}: ERROR {Pc:X4}");
+                                Logger?.Error($"{Ticks}: ERROR {Pc:X4}");
                                 Error = true;
                             }
                             break;
@@ -301,19 +301,19 @@ public class ForthCPU(string[] code, int speed, ILogger? logger, int dataStackSi
                                 DataStack.Push((ushort)(data % data2), Pc);
                             else
                             {
-                                logger?.Error($"{Ticks}: ERROR {Pc:X4}");
+                                Logger?.Error($"{Ticks}: ERROR {Pc:X4}");
                                 Error = true;
                             }
                             break;
                         default:
-                            logger?.Error($"{Ticks}: ERROR {Pc:X4}");
+                            Logger?.Error($"{Ticks}: ERROR {Pc:X4}");
                             Error = true;
                             break;
                     }
                 }
                 else
                 {
-                    logger?.Error($"{Ticks}: ERROR {Pc:X4}");
+                    Logger?.Error($"{Ticks}: ERROR {Pc:X4}");
                     Error = true;
                 }
                 break;
