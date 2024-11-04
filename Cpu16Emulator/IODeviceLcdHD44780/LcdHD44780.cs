@@ -1,6 +1,5 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Layout;
-using Avalonia.Media;
 using Cpu16EmulatorCommon;
 
 namespace IODeviceLcdHD44780;
@@ -14,7 +13,7 @@ public class LcdHD44780: IIODevice
     private bool _prevE, _on;
     private int _currentAddress;
     
-    public Control? Init(string parameters, ILogger logger)
+    public object? Init(string parameters, ILogger logger)
     {
         var kv = IODeviceParametersParser.ParseParameters(parameters);
         _address = IODeviceParametersParser.ParseUShort(kv, "address") ?? 
@@ -125,8 +124,9 @@ public class LcdHD44780: IIODevice
         }
     }
 
-    public uint? TicksUpdate(int cpuSped, int ticks)
+    public uint TicksUpdate(int cpuSped, int ticks, bool wfi, uint interruptAck, out uint interruptClearMask)
     {
-        return null;
+        interruptClearMask = 0;
+        return 0;
     }
 }

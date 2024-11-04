@@ -16,6 +16,16 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODeviceLCD1", "IODeviceLCD
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODeviceLcdHD44780", "IODeviceLcdHD44780\IODeviceLcdHD44780.csproj", "{7DB8CD64-AB9A-461F-9591-097965E70675}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cpu16EmulatorGuiCommon", "Cpu16EmulatorGuiCommon\Cpu16EmulatorGuiCommon.csproj", "{14B61657-D174-4288-82AC-44EE879EDDB7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cpu16EmulatorCpus", "Cpu16EmulatorCpus\Cpu16EmulatorCpus.csproj", "{BD49380B-625B-4047-BBF8-4FD633A9F978}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cpu16EmulatorConsole", "Cpu16EmulatorConsole\Cpu16EmulatorConsole.csproj", "{B6DC89B1-C369-4C39-96D9-CCFC1FA30163}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODeviceBaseMemory", "IODeviceBaseMemory\IODeviceBaseMemory.csproj", "{C005ACF6-8494-415D-A740-C274981AAA37}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODeviceUart", "IODeviceUart\IODeviceUart.csproj", "{F00C04C0-1D5A-418D-B23C-DE96B9B98ADD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -54,5 +64,25 @@ Global
 		{7DB8CD64-AB9A-461F-9591-097965E70675}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7DB8CD64-AB9A-461F-9591-097965E70675}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7DB8CD64-AB9A-461F-9591-097965E70675}.Release|Any CPU.Build.0 = Release|Any CPU
+		{14B61657-D174-4288-82AC-44EE879EDDB7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14B61657-D174-4288-82AC-44EE879EDDB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14B61657-D174-4288-82AC-44EE879EDDB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14B61657-D174-4288-82AC-44EE879EDDB7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD49380B-625B-4047-BBF8-4FD633A9F978}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD49380B-625B-4047-BBF8-4FD633A9F978}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD49380B-625B-4047-BBF8-4FD633A9F978}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD49380B-625B-4047-BBF8-4FD633A9F978}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6DC89B1-C369-4C39-96D9-CCFC1FA30163}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6DC89B1-C369-4C39-96D9-CCFC1FA30163}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6DC89B1-C369-4C39-96D9-CCFC1FA30163}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6DC89B1-C369-4C39-96D9-CCFC1FA30163}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C005ACF6-8494-415D-A740-C274981AAA37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C005ACF6-8494-415D-A740-C274981AAA37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C005ACF6-8494-415D-A740-C274981AAA37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C005ACF6-8494-415D-A740-C274981AAA37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F00C04C0-1D5A-418D-B23C-DE96B9B98ADD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F00C04C0-1D5A-418D-B23C-DE96B9B98ADD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F00C04C0-1D5A-418D-B23C-DE96B9B98ADD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F00C04C0-1D5A-418D-B23C-DE96B9B98ADD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

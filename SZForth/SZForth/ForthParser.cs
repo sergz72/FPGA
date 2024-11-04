@@ -17,7 +17,6 @@ public sealed class ForthParser(IEnumerable<ParserFile> sources)
     private int _currentLine;
     private int _currentPosition;
     private ParserMode _mode;
-    private string _stringTokenWord = "";
     
     public List<Token> Parse()
     {
@@ -59,8 +58,8 @@ public sealed class ForthParser(IEnumerable<ParserFile> sources)
                     sb.Append(c);
                 else
                 {
-                    result.Add(new Token(TokenType.Word, _stringTokenWord, null, sb.ToString(),
-                        _currentFile, _currentLine, _currentPosition));
+                    result.Add(new Token(TokenType.String, sb.ToString(), null, _currentFile, _currentLine,
+                                            _currentPosition));
                     _mode = ParserMode.Word;
                     sb.Clear();
                 }
@@ -78,6 +77,8 @@ public sealed class ForthParser(IEnumerable<ParserFile> sources)
                     sb.Clear();
                 }
             }
+            else if (c == '"')
+                _mode = ParserMode.String;
             else
                 sb.Append(c);
             _currentPosition++;
@@ -131,20 +132,12 @@ public sealed class ForthParser(IEnumerable<ParserFile> sources)
 
     private Token? BuildToken(string word)
     {
-        if (word.Contains('"'))
-        {
-            _mode = ParserMode.String;
-            _stringTokenWord = word;
-            return null;
-        }
-
         if (word.StartsWith('\''))
-           return new Token(TokenType.Number, word, BuildChar(word), null, 
-                            _currentFile, _currentLine, _currentPosition);
+           return new Token(TokenType.Number, word, BuildChar(word), _currentFile, _currentLine, _currentPosition);
         
         if (int.TryParse(word, _numberStyles, NumberFormatInfo.InvariantInfo, out var value))
-            return new Token(TokenType.Number, word, value, null, _currentFile, _currentLine, _currentPosition);
-        return new Token(TokenType.Word, word, 0, null, _currentFile, _currentLine, _currentPosition);
+            return new Token(TokenType.Number, word, value, _currentFile, _currentLine, _currentPosition);
+        return new Token(TokenType.Word, word, 0, _currentFile, _currentLine, _currentPosition);
     }
 
     private int BuildChar(string s)
@@ -180,7 +173,8 @@ internal class ParserException(string message, string fileName, int line, int po
 public enum TokenType
 {
     Number,
-    Word
+    Word,
+    String
 }
 
-public record Token(TokenType Type, string Word, int? IntValue, string? StringValue, string FileName, int Line, int Position);
+public record Token(TokenType Type, string Word, int? IntValue, string FileName, int Line, int Position);

@@ -14,7 +14,7 @@ module main
     localparam MEMORY_SELECTOR_START_BIT = 13;
 
     wire error, hlt, wfi;
-    wire [15:0] mem_address, mem_data_in, mem_data_out, ports_rdata, uart_rdata;
+    wire [15:0] mem_address, mem_data_in, mem_data_out, uart_rdata;
     reg [15:0] ram_rdata;
     wire cpu_clk;
     wire mem_valid, mem_nwr;
@@ -60,10 +60,9 @@ module main
     assign uart_selected = memory_selector == 6;
     assign ports_selected = memory_selector == 7;
 
-    assign ports_rdata = {15'h0, uart_busy};
-    assign uart_rdata = {8'h0, uart_data};
+    assign uart_rdata = {7'h0, uart_busy, uart_data};
 
-    assign mem_data_out = ram_selected ? ram_rdata : (uart_selected ? uart_rdata : ports_rdata);
+    assign mem_data_out = ram_selected ? ram_rdata : uart_rdata;
 
     assign uart_send = nreset & mem_valid & mem_ready & uart_selected & !mem_nwr;
 

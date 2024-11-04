@@ -10,8 +10,4 @@
       <Compile Remove="Class1.cs" />
     </ItemGroup>
 
-    <ItemGroup>
-      <PackageReference Include="Avalonia" Version="11.1.3" />
-    </ItemGroup>
-
 </Project>

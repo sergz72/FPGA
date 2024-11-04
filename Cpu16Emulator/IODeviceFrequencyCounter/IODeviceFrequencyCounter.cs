@@ -1,6 +1,4 @@
-﻿using System.Globalization;
-using Avalonia.Controls;
-using Cpu16EmulatorCommon;
+﻿using Cpu16EmulatorCommon;
 
 namespace IODeviceFrequencyCounter;
 
@@ -11,7 +9,7 @@ public class IODeviceFrequencyCounter: IIODevice
     private int _interrupt;
     private ILogger? _logger;
     
-    public Control? Init(string parameters, ILogger logger)
+    public object? Init(string parameters, ILogger logger)
     {
         var kv = IODeviceParametersParser.ParseParameters(parameters);
         _address = IODeviceParametersParser.ParseUShort(kv, "address") ?? 
@@ -40,10 +38,11 @@ public class IODeviceFrequencyCounter: IIODevice
             _logger?.Error("Frequency counter io write");
     }
 
-    public uint? TicksUpdate(int cpuSpeed, int ticks)
+    public uint TicksUpdate(int cpuSpeed, int ticks, bool wfi, uint interruptAck, out uint interruptClearMask)
     {
         if ((ticks % cpuSpeed) == 0)
             _interrupt = 0x8000;
-        return null;
+        interruptClearMask = 0;
+        return 0;
     }
 }

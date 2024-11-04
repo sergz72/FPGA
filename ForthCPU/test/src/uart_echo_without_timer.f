@@ -2,15 +2,13 @@ hex FFFF constant PORT
 hex CFFF constant UART
 decimal 128 constant MAX_COMMAND_LENGTH
 
-0 ivariable led_state
-0 ivariable timer_interrupt
 0 ivariable command_ready
 variable command_p
 variable command_read_p
 variable command_end
 array command MAX_COMMAND_LENGTH
 
-: isr1 1 timer_interrupt ! ;
+: isr1 ;
 
 : isr2
   UART @
@@ -28,8 +26,6 @@ array command MAX_COMMAND_LENGTH
   then
 ;
 
-: blink led_state @ dup PORT ! 1 + led_state ! ;
-
 : uart_out begin UART @ 256 and until UART ! ;
 
 : uart_echo begin command_read_p @ command_p @ != while
@@ -44,17 +40,14 @@ array command MAX_COMMAND_LENGTH
   command MAX_COMMAND_LENGTH + command_end !
   begin
     wfi
-    timer_interrupt @ if
-      0 timer_interrupt !
-      blink
-      uart_echo
 
-      command_ready @ if
-        '\r' uart_out '\n' uart_out
-        command command_p !
-        command command_read_p !
-        0 command_ready !
-      then
+    uart_echo
+
+    command_ready @ if
+      '\r' uart_out '\n' uart_out
+      command command_p !
+      command command_read_p !
+      0 command_ready !
     then
   again
 ;

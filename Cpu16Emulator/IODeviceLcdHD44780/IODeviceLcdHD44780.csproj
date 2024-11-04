@@ -10,4 +10,8 @@
       <ProjectReference Include="..\Cpu16EmulatorCommon\Cpu16EmulatorCommon.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Avalonia" Version="11.1.3" />
+    </ItemGroup>
+
 </Project>

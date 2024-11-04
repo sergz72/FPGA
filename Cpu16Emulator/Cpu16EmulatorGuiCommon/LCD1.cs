@@ -1,15 +1,16 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Cpu16EmulatorCommon;
 
-namespace Cpu16EmulatorCommon;
+namespace Cpu16EmulatorGuiCommon;
 
 public class LCD1: Control
 {
     private readonly int _scaledWidth;
     private readonly int _scaledHeight;
     private readonly int _scale;
-    protected readonly ushort[] _ram;
+    protected readonly ushort[] Ram;
 
     private bool _on;
 
@@ -27,7 +28,7 @@ public class LCD1: Control
 
     public LCD1(ushort[] ram, int width, int scale, bool on = false)
     {
-        _ram = ram;
+        Ram = ram;
         var height = (ram.Length << 4) / width;
         _scale = scale;
         _scaledHeight = height * scale;
@@ -46,7 +47,7 @@ public class LCD1: Control
         {
             for (var x = 0; x < _scaledWidth; x += _scale)
             {
-                if ((_ram[idx] & bit) != 0)
+                if ((Ram[idx] & bit) != 0)
                     context.FillRectangle(Brushes.Black, new Rect(x, y, _scale, _scale));
                 if (bit == 0x8000)
                 {

@@ -24,5 +24,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Cpu16EmulatorCommon\Cpu16EmulatorCommon.csproj" />
+      <ProjectReference Include="..\Cpu16EmulatorCpus\Cpu16EmulatorCpus.csproj" />
     </ItemGroup>
 </Project>

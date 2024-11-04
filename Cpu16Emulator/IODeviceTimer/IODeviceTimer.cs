@@ -1,5 +1,4 @@
-﻿using Avalonia.Controls;
-using Cpu16EmulatorCommon;
+﻿using Cpu16EmulatorCommon;
 
 namespace IODeviceTimer;
 
@@ -10,7 +9,7 @@ public class IODeviceTimer: IIODevice
     private uint _interrupt;
     private ILogger? _logger;
 
-    public Control? Init(string parameters, ILogger logger)
+    public object? Init(string parameters, ILogger logger)
     {
         var kv = IODeviceParametersParser.ParseParameters(parameters);
         _address = IODeviceParametersParser.ParseUShort(kv, "address") ?? 
@@ -39,14 +38,15 @@ public class IODeviceTimer: IIODevice
             ev.InterruptClearMask = ~_interrupt;
     }
 
-    public uint? TicksUpdate(int cpuSpeed, int ticks)
+    public uint TicksUpdate(int cpuSpeed, int ticks, bool wfi, uint interruptAck, out uint interruptClearMask)
     {
+        interruptClearMask = 0;
         if (_counter == _maxValue)
         {
             _counter = 0;
             return _interrupt;
         }
         _counter++;
-        return null;
+        return 0;
     }
 }

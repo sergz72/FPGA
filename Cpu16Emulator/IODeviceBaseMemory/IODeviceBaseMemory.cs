@@ -1,17 +1,14 @@
 ﻿using System.Globalization;
-using Avalonia.Controls;
 using Cpu16EmulatorCommon;
-using Cpu16EmulatorGuiCommon;
 
-namespace IODeviceMemory;
+namespace IODeviceBaseMemory;
 
-public sealed class IODeviceMemory: IIODevice
+public sealed class IODeviceBaseMemory: IIODevice
 {
     private ushort _startAddress, _endAddress;
     private ushort[] _memory = [];
     private bool _readOnly;
     private ILogger? _logger;
-    private Control? _control;
     
     public object? Init(string parameters, ILogger logger)
     {
@@ -20,8 +17,6 @@ public sealed class IODeviceMemory: IIODevice
                         throw new IODeviceException("memory: missing or wrong address parameter");
         var size = IODeviceParametersParser.ParseUShort(kv, "size") ?? 
                         throw new IODeviceException("memory: missing or wrong size parameter");
-        if (!kv.TryGetValue("control", out var control))
-            throw new IODeviceException("IODeviceMemory: missing control parameter");
 
         _logger = logger;
         
@@ -37,12 +32,7 @@ public sealed class IODeviceMemory: IIODevice
         if (kv.TryGetValue("contents", out var fileName))
             Init(fileName);
 
-        if (control.StartsWith("LCD1,"))
-            _control = LCD1.Create(_memory, control[5..]);
-        else
-            _control = null;
-
-        return _control;
+        return null;
     }
 
     private void Init(string fileName)
@@ -65,16 +55,13 @@ public sealed class IODeviceMemory: IIODevice
             if (_readOnly)
                 _logger?.Error($"Readonly memory write {ev.Address}");
             else
-            {
                 _memory[ev.Address - _startAddress] = ev.Data;
-                _control?.InvalidateVisual();
-            }
         }
     }
 
-    public uint TicksUpdate(int cpuSped, int ticks, bool wfi, uint interruptAck, out uint interruptClearMask)
+    public uint TicksUpdate(int cpuSped, int ticks, bool wfi, uint interruptAck, out uint clearMask)
     {
-        interruptClearMask = 0;
+        clearMask = 0;
         return 0;
     }
 }

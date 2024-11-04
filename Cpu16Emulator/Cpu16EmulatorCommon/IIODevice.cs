@@ -1,10 +1,17 @@
 ﻿using System.Globalization;
-using Avalonia.Controls;
 
 namespace Cpu16EmulatorCommon;
 
+public enum LogLevel
+{
+    Debug,
+    Info,
+    Warning,
+    Error
+}
 public interface ILogger
 {
+    void SetLevel(LogLevel level);
     void Debug(string message);
     void Info(string message);
     void Warning(string message);
@@ -13,10 +20,10 @@ public interface ILogger
 
 public interface IIODevice
 {
-    Control? Init(string parameters, ILogger logger);
+    object? Init(string parameters, ILogger logger);
     void IoRead(IoEvent ev);
     void IoWrite(IoEvent ev);
-    uint? TicksUpdate(int cpuSped, int ticks);
+    uint TicksUpdate(int cpuSped, int ticks, bool wfi, uint interruptAck, out uint interruptClearMask);
 }
 
 public static class IODeviceParametersParser
@@ -64,4 +71,4 @@ public sealed class IoEvent
     public uint? InterruptClearMask;
 }
 
-public class IODeviceException(string message): Exception(message);
+public sealed class IODeviceException(string message): Exception(message);

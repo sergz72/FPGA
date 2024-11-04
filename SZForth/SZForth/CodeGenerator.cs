@@ -18,6 +18,7 @@ internal sealed class CodeGenerator
     private readonly ForthCompiler _compiler;
     private readonly Stack<Condition> _conditionStack;
     private readonly List<JmpInstruction> _exitInstructions;
+    private readonly bool _hardMul, _hardDiv;
     private int _currentLabelNumber;
     private string _nextLabel;
     private string[] _locals;
@@ -32,6 +33,8 @@ internal sealed class CodeGenerator
         _nextLabel = "";
         _locals = [];
         _exitInstructions = [];
+        _hardMul = _compiler.Config.Options?.Contains("MUL") ?? false;
+        _hardDiv = _compiler.Config.Options?.Contains("DIV") ?? false;
     }
 
     internal void Init(string currentWord)
@@ -92,10 +95,14 @@ internal sealed class CodeGenerator
                 i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Sub, token.Word);
                 break;
             case "*":
-                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Mul, token.Word);
+                i = _hardMul
+                    ? new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Mul, token.Word)
+                    : CompileCall("mul");
                 break;
             case "/":
-                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Div, token.Word);
+                i = _hardDiv
+                    ? new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Div, token.Word)
+                    : CompileCall("div");
                 break;
             case "=":
                 i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Eq, token.Word);
@@ -305,7 +312,7 @@ internal sealed class CodeGenerator
                     {
                         if (_compiler.Constants.TryGetValue(token.Word, out var value))
                             i = new PushDataInstruction(token.Word, value, _compiler.Bits);
-                        else if (_compiler.Variables.TryGetValue(token.Word, out var v))
+                        else if (_compiler.Variables.ContainsKey(token.Word) || _compiler.RoDataConstants.ContainsKey(token.Word))
                             i = new LabelInstruction(InstructionCodes.Push, "push", token.Word, _compiler.Bits);
                         else
                             i = CompileCall(token.Word);

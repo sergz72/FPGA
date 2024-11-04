@@ -2,6 +2,13 @@
 
 internal sealed class ForthCompiler
 {
+    internal enum ArrayStorageType
+    {
+        Data,
+        RoData,
+        Bss
+    }
+    
     internal class Variable
     {
         internal readonly int Size;
@@ -18,6 +25,7 @@ internal sealed class ForthCompiler
     
     private readonly List<Token> _tokens;
     private readonly Stack<int> _dataStack;
+    private readonly Stack<string> _stringStack;
     private readonly Dictionary<string, List<Instruction>> _words;
     private readonly Dictionary<string, int> _wordAddresses;
     private readonly CodeGenerator _codeGenerator;
@@ -25,6 +33,7 @@ internal sealed class ForthCompiler
     private List<Instruction> _currentWordInstructions, _dataInstructions, _roDataInstructions;
 
     internal readonly Dictionary<string, int> Constants;
+    internal readonly Dictionary<string, Variable> RoDataConstants;
     internal readonly Dictionary<string, Variable> Variables;
     internal readonly ParsedConfiguration Config;
     
@@ -33,12 +42,14 @@ internal sealed class ForthCompiler
     
     internal ForthCompiler(ParsedConfiguration config, List<string> sources, int bits)
     {
-        _codeGenerator = new CodeGenerator(this);
         Config = config;
+        _codeGenerator = new CodeGenerator(this);
         _tokens = new ForthParser(sources.Select(source => new ParserFile(source))).Parse();
         _dataStack = new Stack<int>();
+        _stringStack = new Stack<string>();
         Bits = bits;
         Constants = new Dictionary<string, int>();
+        RoDataConstants = new Dictionary<string, Variable>();
         Variables = new Dictionary<string, Variable>();
         _words = new Dictionary<string, List<Instruction>>();
         _wordAddresses = new Dictionary<string, int>();
@@ -78,14 +89,32 @@ internal sealed class ForthCompiler
         }
         Cleanup();
         BuildVariableAddresses();
+        BuildRoDataConstants();
         var codeInstructions = BuildCodeInstructions();
         LinkInstructions(codeInstructions, _dataInstructions, _roDataInstructions);
         return new CompilerResult(codeInstructions, _dataInstructions, _roDataInstructions);
     }
 
+    private void BuildRoDataConstants()
+    {
+        var address = (int)Config.RoData.Address;
+        foreach (var c in RoDataConstants)
+        {
+            c.Value.Address = address;
+            address += c.Value.Size;
+            BuildRoDataConstant(c.Key, c.Value);
+        }
+    }
+
+    private void BuildRoDataConstant(string name, Variable v)
+    {
+        foreach (var c in v.Contents)
+            _roDataInstructions.Add(new DataInstruction(name, c));
+    }
+
     private void BuildVariableAddresses()
     {
-        var address = 0;
+        var address = (int)Config.Data.Address;
         foreach (var variable in Variables.Where(v => v.Value.Contents.Length != 0))
         {
             variable.Value.Address = address;
@@ -106,16 +135,17 @@ internal sealed class ForthCompiler
         foreach (var name in Config.Code.IsrHandlers)
             inUseWords.Add(name);
         HashSet<string> inUseVariables = [];
+        HashSet<string> inUseRoDataConstants = [];
         var oldInUseWords = new HashSet<string>(inUseWords);
-        AddToInUseList(inUseWords, inUseVariables, Config.Code.EntryPoint);
+        AddToInUseList(inUseWords, inUseVariables, inUseRoDataConstants, Config.Code.EntryPoint);
         foreach (var name in Config.Code.IsrHandlers)
-            AddToInUseList(inUseWords, inUseVariables, name);
+            AddToInUseList(inUseWords, inUseVariables, inUseRoDataConstants, name);
         while (oldInUseWords.Count != inUseWords.Count)
         {
             var toCheck = inUseWords.Except(oldInUseWords).ToList();
             oldInUseWords = new HashSet<string>(inUseWords);
             foreach (var w in toCheck)
-                AddToInUseList(inUseWords, inUseVariables, w);
+                AddToInUseList(inUseWords, inUseVariables, inUseRoDataConstants, w);
         }
 
         var toRemove = _words.Keys.Where(w => !inUseWords.Contains(w)).ToList();
@@ -130,9 +160,16 @@ internal sealed class ForthCompiler
             Console.WriteLine($"Remove unused variable {v}");
             Variables.Remove(v);
         }
+        toRemove = RoDataConstants.Keys.Where(v => !inUseRoDataConstants.Contains(v)).ToList();
+        foreach (var v in toRemove)
+        {
+            Console.WriteLine($"Remove unused rodata constant {v}");
+            RoDataConstants.Remove(v);
+        }
     }
     
-    private void AddToInUseList(HashSet<string> inUseWords, HashSet<string> inUseVariables, string word)
+    private void AddToInUseList(HashSet<string> inUseWords, HashSet<string> inUseVariables,
+                                HashSet<string> inUseRoDataConstants, string word)
     {
         foreach (var w in _words[word]
                      .Where(i => i is LabelInstruction)
@@ -140,22 +177,22 @@ internal sealed class ForthCompiler
         {
             if (_words.ContainsKey(w))
                 inUseWords.Add(w);
+            else if (RoDataConstants.ContainsKey(w))
+                inUseRoDataConstants.Add(w);
             else
                 inUseVariables.Add(w);
         }
     }
     
-    private void LinkInstructions(List<Instruction> codeInstructions, List<Instruction> dataInstructions,
-                                    List<Instruction> roDataInstructions)
+    private void LinkInstructions(params List<Instruction>[] instructions)
     {
-        LinkInstructionList(codeInstructions);
-        LinkInstructionList(dataInstructions);
-        LinkInstructionList(roDataInstructions);
+        foreach (var i in instructions)
+            LinkInstructionList(i);
     }
     
     private void LinkInstructionList(List<Instruction> instructions)
     {
-        int pc = 0;
+        var pc = 0;
         foreach (var instruction in instructions)
         {
             var address = instruction.RequiredLabel != null ? GetLabelAddress(instruction.RequiredLabel) : 0;
@@ -225,6 +262,10 @@ internal sealed class ForthCompiler
                 _dataStack.Push((int)token.IntValue!);
                 start++;
                 break;
+            case TokenType.String:
+                _stringStack.Push(token.Word);
+                start++;
+                break;
             default:
                 if (Constants.TryGetValue(token.Word, out var value))
                 {
@@ -250,13 +291,19 @@ internal sealed class ForthCompiler
                 InterpretVariableDefinition(true, ref start);
                 break;
             case "array":
-                InterpretArrayDefinition(false, ref start);
+                InterpretArrayDefinition(ArrayStorageType.Bss, ref start);
                 break;
             case "iarray":
-                InterpretArrayDefinition(true, ref start);
+                InterpretArrayDefinition(ArrayStorageType.Data, ref start);
+                break;
+            case "carray":
+                InterpretArrayDefinition(ArrayStorageType.RoData, ref start);
                 break;
             case "constant":
                 InterpretConstantDefinition(ref start);
+                break;
+            case "sconstant":
+                InterpretStringConstantDefinition(ref start);
                 break;
             case "+":
                 v1 = _dataStack.Pop();
@@ -310,19 +357,23 @@ internal sealed class ForthCompiler
         start++;
     }
 
-    private void InterpretArrayDefinition(bool init, ref int start)
+    private void InterpretArrayDefinition(ArrayStorageType storageType, ref int start)
     {
         var t = GetName(start);
         CheckName(t);
         start++;
         var v = GetNumber(start++);
         List<int> contents = [];
-        if (init)
+        if (storageType != ArrayStorageType.Bss)
         {
             for (var i = 0; i < v; i++)
                 contents.Add(_dataStack.Pop());
+            contents.Reverse();
         }
-        Variables.Add(t.Word, new Variable(v, contents.ToArray()));
+        if (storageType == ArrayStorageType.RoData)
+            RoDataConstants.Add(t.Word, new Variable(v, contents.ToArray()));
+        else
+            Variables.Add(t.Word, new Variable(v, contents.ToArray()));
     }
     
     private void InterpretConstantDefinition(ref int start)
@@ -332,7 +383,23 @@ internal sealed class ForthCompiler
         Constants.Add(t.Word, _dataStack.Pop());
         start++;
     }
-    
+
+    private void InterpretStringConstantDefinition(ref int start)
+    {
+        var t = GetName(start);
+        CheckName(t);
+        RoDataConstants.Add(t.Word, BuildStringConstant(_stringStack.Pop()));
+        start++;
+    }
+
+    private static Variable BuildStringConstant(string s)
+    {
+        List<int> contents = [s.Length];
+        foreach (var c in s)
+            contents.Add(c);
+        return new Variable(s.Length + 1, contents.ToArray());
+    }
+
     internal Token GetName(int start)
     {
         CheckEof(start);
@@ -367,8 +434,10 @@ internal sealed class ForthCompiler
             return address;
         if (Variables.TryGetValue(requiredLabel, out var v))
             return (int)v.Address!;
-        if (_wordAddresses.TryGetValue(requiredLabel, out var wordAddress))
-            return wordAddress;
+        if (_wordAddresses.TryGetValue(requiredLabel, out address))
+            return address;
+        if (RoDataConstants.TryGetValue(requiredLabel, out v))
+            return (int)v.Address!;
         throw new CompilerException($"{requiredLabel} not found");
     }
 
@@ -378,10 +447,29 @@ internal sealed class ForthCompiler
         return $"{name}: {spc}";
     }
     
-    internal IEnumerable<string> BuildMapFile(string pcFormat)
+    internal List<string> BuildMapFile(string pcFormat)
     {
-        return _wordAddresses.OrderBy(wa => wa.Value)
-            .Select(wa => BuildMapRow(wa.Key, wa.Value, pcFormat));
+        List<string> lines = ["code:"];
+        lines.AddRange(_wordAddresses
+            .OrderBy(wa => wa.Value)
+            .Select(wa => BuildMapRow(wa.Key, wa.Value, pcFormat)));
+        if (Variables.Count != 0)
+        {
+            lines.Add("");
+            lines.Add("data/bss:");
+            lines.AddRange(Variables
+                .OrderBy(v => v.Value.Address)
+                .Select(v => BuildMapRow(v.Key, (int)v.Value.Address!, pcFormat)));
+        }
+        if (RoDataConstants.Count != 0)
+        {
+            lines.Add("");
+            lines.Add("rodata:");
+            lines.AddRange(RoDataConstants
+                .OrderBy(v => v.Value.Address)
+                .Select(v => BuildMapRow(v.Key, (int)v.Value.Address!, pcFormat)));
+        }
+        return lines;
     }
 }
 

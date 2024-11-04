@@ -1,0 +1,9 @@
+{
+  "TestsDir": "src",
+  "SearchPattern": "*.f",
+  "BuildCommand": "build_16.bat",
+  "SimulatorCommand": "run_emulator.bat",
+  "Flag": "WFI",
+  "Error": "HLT",
+  "Ok": "WFI"
+}

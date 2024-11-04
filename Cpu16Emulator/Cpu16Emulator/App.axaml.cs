@@ -8,6 +8,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Cpu16EmulatorCommon;
+using Cpu16EmulatorCpus;
 
 namespace Cpu16Emulator;
 
@@ -30,42 +31,16 @@ public partial class App : Application
             {
                 try
                 {
-                    var stream = File.OpenRead(desktop.Args[0]);
-                    var config = JsonSerializer.Deserialize<Configuration>(stream);
-                    if (config == null || config.CpuSpeed == 0 || config.Cpu == "")
-                        throw new Exception("incorrect configuration file");
-                    var code = File.ReadAllLines(desktop.Args[1]);
-                    Cpu cpu;
-                    ICpuView cpuView;
-                    switch (config.Cpu)
+                    var (cpu, ioDevices, logFile) =
+                        Cpu.Load(desktop.Args[0], desktop.Args[1]);
+                    ICpuView cpuView = cpu switch
                     {
-                        case "Cpu16Lite":
-                            cpu = new Cpu16Lite(code, config.CpuSpeed * 1000);
-                            cpuView = new CPU16View
-                            {
-                                Cpu = (Cpu16Lite)cpu
-                            };
-                            break;
-                        case "Tiny16v4":
-                            cpu = new Tiny16v4(code, config.CpuSpeed * 1000);
-                            cpuView = new Tiny16v4View
-                            {
-                                Cpu = (Tiny16v4)cpu
-                            };
-                            break;
-                        case "ForthCPU":
-                            cpu = new ForthCPU(code, config.CpuSpeed * 1000);
-                            cpuView = new ForthCPUView
-                            {
-                                Cpu = (ForthCPU)cpu
-                            };
-                            break;
-                        default:
-                            throw new Exception("invalid cpu");
-                    }
-                    var ioDevices = LoadIODevices(config.IODevices);
-                    cpu.Reset();
-                    desktop.MainWindow = new MainWindow(cpu, ioDevices, config.LogFile, cpuView);
+                        Cpu16Lite cpu16 => new CPU16View { Cpu = cpu16 },
+                        Tiny16v4 t16v4 => new Tiny16v4View { Cpu = t16v4 },
+                        ForthCPU fcpu => new ForthCPUView { Cpu = fcpu },
+                        _ => throw new Exception("unknown cpu")
+                    };
+                    desktop.MainWindow = new MainWindow(cpu, ioDevices, logFile, cpuView);
                 }
                 catch (Exception e)
                 {
@@ -76,41 +51,4 @@ public partial class App : Application
 
         base.OnFrameworkInitializationCompleted();
     }
-
-    private static IODevice[] LoadIODevices(IODeviceFile[] deviceFiles)
-    {
-        return deviceFiles.SelectMany(LoadIODevices).ToArray();
-    }
-    
-    private static IODevice[] LoadIODevices(IODeviceFile deviceFile)
-    {
-        var assembly = Assembly.LoadFile(Path.GetFullPath(deviceFile.FileName));
-        return assembly.GetExportedTypes()
-            .Where(t => typeof(IIODevice).IsAssignableFrom(t))
-            .Select(t => new IODevice {
-                Device = (IIODevice)(Activator.CreateInstance(t) ?? throw new IODeviceException($"cannot create instance for type {t.Name}")),
-                Parameters = deviceFile.Parameters
-            })
-            .ToArray();
-    }
-}
-
-public class Configuration
-{
-    public string Cpu { get; set; }
-    public int CpuSpeed { get; set; }
-    public string LogFile { get; set; }
-    public IODeviceFile[] IODevices { get; set; }
-}
-
-public class IODeviceFile
-{
-    public string FileName { get; set; }
-    public string Parameters { get; set; }
-}
-
-public class IODevice
-{
-    public IIODevice Device;
-    public string Parameters { get; set; }
 }

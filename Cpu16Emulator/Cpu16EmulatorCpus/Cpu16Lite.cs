@@ -1,6 +1,6 @@
 ﻿using Cpu16EmulatorCommon;
 
-namespace Cpu16Emulator;
+namespace Cpu16EmulatorCpus;
 
 public sealed class Cpu16Lite(string[] code, int speed): Cpu(code, speed, 256)
 {
@@ -22,6 +22,8 @@ public sealed class Cpu16Lite(string[] code, int speed): Cpu(code, speed, 256)
     private const int ALU_OP_SHLC = 15;
     private const int ALU_OP_SHRC = 16;
 
+    public bool InInterrupt { get; private set; }
+    
     public ushort Rp { get; private set; }
 
     public ushort AluOut { get; private set; }
@@ -438,6 +440,7 @@ public sealed class Cpu16Lite(string[] code, int speed): Cpu(code, speed, 256)
     public override void Reset()
     {
         base.Reset();
+        InInterrupt = false;
         Rp = 0;
     }
 }

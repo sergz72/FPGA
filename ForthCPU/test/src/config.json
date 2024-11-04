@@ -1,6 +1,6 @@
 {
-  "Code":   { "FileName": "code.hex", "Size": "1K", "EntryPoint": "main", "IsrHandlers": ["isr1","isr2"] },
-  "Data":   { "FileName": "data.hex", "Address": "0", "Size": "1K" },
-  "RoData": { "FileName": "rodata.hex", "Address": "0x2000", "Size": "1K" },
-  "MapFileName": "map.map"
+  "Code":   { "FileName": "asm/code.hex", "Size": "1K", "EntryPoint": "main", "IsrHandlers": ["isr1","isr2"] },
+  "Data":   { "FileName": "asm/data.hex", "Address": "0", "Size": "1K" },
+  "RoData": { "FileName": "asm/rodata.hex", "Address": "0x2000", "Size": "1K" },
+  "MapFileName": "asm/map.map"
 }

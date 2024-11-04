@@ -1,0 +1,8 @@
+{
+  "Cpu": "ForthCPU",
+  "CpuSpeed": 100,
+  "IODevices": [
+    { "FileName": "../../../Cpu16Emulator/IODeviceBaseMemory/bin/Debug/net8.0/IODeviceBaseMemory.dll", "Parameters": "address=0 size=1024 readonly=false" }
+  ],
+  "CpuOptions": ["MUL", "DIV"]
+}

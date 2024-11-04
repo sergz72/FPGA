@@ -1,6 +1,5 @@
 ﻿using System.Globalization;
 using System.Text.Json;
-using Avalonia.Controls;
 using Cpu16EmulatorCommon;
 
 namespace IODeviceI2CSlave;
@@ -56,7 +55,7 @@ public class IODeviceI2CSlave: IIODevice
     private I2CDeviceData? _currentDevice;
     private byte _readData;
 
-    public Control? Init(string parameters, ILogger logger)
+    public object? Init(string parameters, ILogger logger)
     {
         var kv = IODeviceParametersParser.ParseParameters(parameters);
         _address = IODeviceParametersParser.ParseUShort(kv, "address") ?? 
@@ -196,8 +195,9 @@ public class IODeviceI2CSlave: IIODevice
         return true;
     }
 
-    public uint? TicksUpdate(int cpuSped, int ticks)
+    public uint TicksUpdate(int cpuSped, int ticks, bool wfi, uint interruptAck, out uint interruptClearMask)
     {
-        return null;
+        interruptClearMask = 0;
+        return 0;
     }
 }

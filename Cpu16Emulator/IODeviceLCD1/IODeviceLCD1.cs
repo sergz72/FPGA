@@ -9,7 +9,7 @@ public class IODeviceLCD1: IIODevice
     private ILogger? _logger;
     private ILcdDriver? _lcdDriver;
 
-    public Control? Init(string parameters, ILogger logger)
+    public object? Init(string parameters, ILogger logger)
     {
         var kv = IODeviceParametersParser.ParseParameters(parameters);
 
@@ -59,9 +59,10 @@ public class IODeviceLCD1: IIODevice
             _lcdDriver?.Write(ev.Address, (byte)ev.Data);
     }
 
-    public uint? TicksUpdate(int cpuSped, int ticks)
+    public uint TicksUpdate(int cpuSped, int ticks, bool wfi, uint interruptAck, out uint interruptClearMask)
     {
-        return null;
+        interruptClearMask = 0;
+        return 0;
     }
 }
 

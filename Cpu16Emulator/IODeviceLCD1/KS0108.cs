@@ -1,6 +1,7 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Layout;
 using Cpu16EmulatorCommon;
+using Cpu16EmulatorGuiCommon;
 
 namespace IODeviceLCD1;
 

@@ -1,6 +1,5 @@
-﻿using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
+﻿using Avalonia.Controls;
+using Cpu16EmulatorCpus;
 
 namespace Cpu16Emulator;
 

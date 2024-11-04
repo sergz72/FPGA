@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Cpu16EmulatorCommon\Cpu16EmulatorCommon.csproj" />
+      <ProjectReference Include="..\Cpu16EmulatorGuiCommon\Cpu16EmulatorGuiCommon.csproj" />
     </ItemGroup>
 
 </Project>

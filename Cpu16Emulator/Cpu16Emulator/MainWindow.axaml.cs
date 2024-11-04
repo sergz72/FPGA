@@ -4,15 +4,16 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Cpu16EmulatorCommon;
+using Cpu16EmulatorCpus;
 
 namespace Cpu16Emulator;
 
 public partial class MainWindow : Window, ILogger
 {
     private readonly Cpu _cpu;
-    private readonly IODevice[] _devices;
     private readonly StreamWriter? _logFile;
     private readonly ICpuView _cpuView;
+    private readonly IODevices _ioDevices;
 
     private Point _mousePosition;
     
@@ -23,54 +24,27 @@ public partial class MainWindow : Window, ILogger
         _logFile = logFile != "" ? new StreamWriter(logFile) : null;
             
         _cpu = cpu;
-        _devices = devices;
         _cpuView = cpuView;
 
+        _ioDevices = new IODevices(cpu, devices, this);
+        
         LbCode.Lines = _cpu.Code;
         LbCode.Breakpoints = _cpu.Breakpoints;
 
         CpuView.Children.Add((Control)cpuView);
         
-        cpu.IoReadEventHandler = IoRead;
-        cpu.IoWriteEventHandler = IoWrite;
-        cpu.TicksEventHandler = TicksUpdate;
+        cpu.IoReadEventHandler = _ioDevices.IoRead;
+        cpu.IoWriteEventHandler = _ioDevices.IoWrite;
+        cpu.TicksEventHandler = _ioDevices.TicksUpdate;
 
         foreach (var d in devices)
         {
             var c = d.Device.Init(d.Parameters, this);
             if (c != null)
-                SpIODevices.Children.Add(c);
+                SpIODevices.Children.Add((Control)c);
         }
     }
-
-    private void IoRead(object? sender, IoEvent e)
-    {
-        foreach (var d in _devices)
-            d.Device.IoRead(e);
-        Info($"IO read, address = {e.Address:X4}, data = {e.Data:X4}");
-        if (e.InterruptClearMask != null)
-            _cpu.Interrupt &= (uint)e.InterruptClearMask;
-    }
-
-    private void IoWrite(object? sender, IoEvent e)
-    {
-        Info($"IO write, address = {e.Address:X4}, data = {e.Data:X4}");
-        foreach (var d in _devices)
-            d.Device.IoWrite(e);
-        if (e.InterruptClearMask != null)
-            _cpu.Interrupt &= (uint)e.InterruptClearMask;
-    }
-
-    private void TicksUpdate(object? sender, int ticks)
-    {
-        foreach (var d in _devices)
-        {
-            var i = d.Device.TicksUpdate(_cpu.Speed, ticks);
-            if (i != null)
-                _cpu.Interrupt |= (uint)i;
-        }
-    }
-
+    
     private void InputElement_OnKeyDown(object? sender, KeyEventArgs e)
     {
         switch (e.Key)
@@ -145,6 +119,10 @@ public partial class MainWindow : Window, ILogger
         LbLog.Items.Add(formatted);
     }
     
+    public void SetLevel(LogLevel level)
+    {
+    }
+
     public void Debug(string message)
     {
         Log("DEBUG", message);

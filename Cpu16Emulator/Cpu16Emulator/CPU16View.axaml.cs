@@ -1,5 +1,6 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Media;
+using Cpu16EmulatorCpus;
 
 namespace Cpu16Emulator;
 
