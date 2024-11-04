@@ -5,32 +5,46 @@ namespace Cpu16EmulatorConsole;
 public class ConsoleLogger: ILogger
 {
     private LogLevel _logLevel = LogLevel.Debug;
+    private StreamWriter? _logFile;
     
     public void SetLevel(LogLevel level)
     {
         _logLevel = level;
     }
 
+    internal void SetFileName(string fileName)
+    {
+        _logFile = fileName != "" ? new StreamWriter(fileName) : null;
+    }
+    
     public void Debug(string message)
     {
+        var formatted = $"DEBUG: {message}";
         if (_logLevel <= LogLevel.Debug)
-            Console.WriteLine($"DEBUG: {message}");
+            Console.WriteLine(formatted);
+        _logFile?.WriteLine(formatted);
     }
 
     public void Info(string message)
     {
+        var formatted = $"INFO: {message}";
         if (_logLevel <= LogLevel.Info)
-            Console.WriteLine($"INFO: {message}");
+            Console.WriteLine(formatted);
+        _logFile?.WriteLine(formatted);
     }
 
     public void Warning(string message)
     {
+        var formatted = $"WARNING: {message}";
         if (_logLevel <= LogLevel.Warning)
-            Console.WriteLine($"WARNING: {message}");
+            Console.WriteLine(formatted);
+        _logFile?.WriteLine(formatted);
     }
 
     public void Error(string message)
     {
-        Console.WriteLine($"ERROR: {message}");
+        var formatted = $"ERROR: {message}";
+        Console.WriteLine(formatted);
+        _logFile?.WriteLine(formatted);
     }
 }

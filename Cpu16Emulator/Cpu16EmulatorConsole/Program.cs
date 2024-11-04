@@ -1,4 +1,5 @@
-﻿using Cpu16EmulatorConsole;
+﻿using Cpu16EmulatorCommon;
+using Cpu16EmulatorConsole;
 using Cpu16EmulatorCpus;
 
 var configurationFileNameExpected = false;
@@ -46,8 +47,11 @@ if (configurationFileNameExpected || limitExpected || configurationFileName == n
 
 var logger = new ConsoleLogger();
 
-var (cpu, devices, _) =
+var (cpu, devices, logFileName) =
     Cpu.Load(configurationFileName, codeFileName, logger);
+
+logger.SetLevel(LogLevel.Warning);
+logger.SetFileName(logFileName);
 
 foreach (var d in devices)
     d.Device.Init(d.Parameters, logger);
