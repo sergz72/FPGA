@@ -28,6 +28,7 @@ public class ForthCPU(string[] code, int speed, int dataStackSize, int callStack
     private const byte LOCAL_GET   = 20;
     private const byte LOCAL_SET   = 21;
     private const byte LOCALS      = 22;
+    private const byte UPDATE_PSTACK_POINTER = 23;
     private const byte ALU_OP      = 0xF0;
 
     private const byte ALU_OP_ADD  = 0;
@@ -235,6 +236,11 @@ public class ForthCPU(string[] code, int speed, int dataStackSize, int callStack
                 data = (ushort)Code[Pc].Instruction;
                 Pc = (ushort)(Pc + 1); 
                 CallStack.IncrementPointer(data, Pc);
+                break;
+            case UPDATE_PSTACK_POINTER:
+                data = (ushort)Code[Pc].Instruction;
+                Pc = (ushort)(Pc + 1); 
+                ParametersStack.DropN(data, Pc);
                 break;
             default:
                 if ((instruction & ALU_OP) == ALU_OP)
