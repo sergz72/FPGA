@@ -28,9 +28,9 @@ decimal
     I known_devices + @ \ channel device_id
     over \ channel device_id channel
     over \ channel device_id channel device_id
-    i2c_check \ device_id channel ack
-    if0 drop exit then
-    swap drop \ channel
+    i2c_check \ channel device_id ack
+    if0 swap drop exit then
+    drop \ channel
   loop
   drop 0
 ;

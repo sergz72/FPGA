@@ -17,7 +17,6 @@ internal sealed class CodeGenerator
 
     private readonly ForthCompiler _compiler;
     private readonly Stack<Condition> _conditionStack;
-    private readonly List<JmpInstruction> _exitInstructions;
     private readonly bool _hardMul, _hardDiv;
     private int _currentLabelNumber;
     private string _nextLabel;
@@ -32,9 +31,8 @@ internal sealed class CodeGenerator
         CurrentWord = "";
         _nextLabel = "";
         _locals = [];
-        _exitInstructions = [];
-        _hardMul = _compiler.Config.Options?.Contains("MUL") ?? false;
-        _hardDiv = _compiler.Config.Options?.Contains("DIV") ?? false;
+        _hardMul = _compiler.Config.Options.Contains("MUL");
+        _hardDiv = _compiler.Config.Options.Contains("DIV");
     }
 
     internal void Init(string currentWord)
@@ -44,7 +42,6 @@ internal sealed class CodeGenerator
         _currentLabelNumber = 0;
         _nextLabel = "";
         _locals = [];
-        _exitInstructions.Clear();
     }
 
     internal void Finish()
@@ -62,10 +59,7 @@ internal sealed class CodeGenerator
         {
             case ";":
                 _compiler.CompileMode = false;
-                foreach (var ei in _exitInstructions)
-                    ei.Offset = WordPc - ei.Offset;
-                i = _compiler.Config.Code.IsrHandlers.Contains(CurrentWord) ?
-                    new OpcodeInstruction((uint)InstructionCodes.Reti, "reti") : BuildRetInstruction();
+                i = BuildRetInstruction();
                 break;
             case "dup":
                 i = new OpcodeInstruction((uint)InstructionCodes.Dup, token.Word);
@@ -291,11 +285,10 @@ internal sealed class CodeGenerator
                 i = j;
                 break;
             case "exit":
-                j = new JmpInstruction(InstructionCodes.Jmp, "jmp", _compiler.Bits, "exit");
-                j.Offset = WordPc;
-                _exitInstructions.Add(j);
-                i = j;
-                //todo
+                var pstackCorrection = CalculatePstackCorrection();
+                i = pstackCorrection == 0
+                    ? BuildRetInstruction()
+                    : BuildRetWithPstackCorrectionInstruction(pstackCorrection);
                 break;
             case "locals":
                 var t = _compiler.GetName(start);
@@ -330,6 +323,11 @@ internal sealed class CodeGenerator
         return i;
     }
     
+    private int CalculatePstackCorrection()
+    {
+        return _conditionStack.Count(i => i.Type == ConditionType.Do) * 2;
+    }
+
     private string BuildLabelName()
     {
         _currentLabelNumber++;
@@ -338,9 +336,20 @@ internal sealed class CodeGenerator
 
     private Instruction BuildRetInstruction()
     {
+        if (_compiler.Config.Code.IsrHandlers.Contains(CurrentWord))
+            return new OpcodeInstruction((uint)InstructionCodes.Reti, "reti"); 
         return _locals.Length == 0
             ? new OpcodeInstruction((uint)InstructionCodes.Ret, "ret")
             : new Opcode2Instruction((uint)InstructionCodes.Retn, (uint)_locals.Length, $"retn {_locals.Length}");
+    }
+    
+    private Instruction? BuildRetWithPstackCorrectionInstruction(int pstackCorrection)
+    {
+        if (_compiler.Config.Code.IsrHandlers.Contains(CurrentWord))
+            return new RetWithPstackCorrectionInstruction(pstackCorrection, (uint)InstructionCodes.Reti, "reti");
+        return _locals.Length == 0
+            ? new RetWithPstackCorrectionInstruction(pstackCorrection, (uint)InstructionCodes.Ret, "ret")
+            : new RetnWithPstackCorrectionInstruction(pstackCorrection, (uint)_locals.Length);
     }
     
     private Instruction? CompileLoopVariableGet(string word)

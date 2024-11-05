@@ -131,18 +131,19 @@ public class IODeviceI2CSlave: IIODevice
                                 if (sda)
                                     _data |= 1;
                                 _bitCounter++;
+                                if (_bitCounter == 8)
+                                {
+                                    if (_mode == Mode.Address)
+                                    {
+                                        _mode = (_data & 1) != 0 ? Mode.Read : Mode.Write;
+                                        _ack = GetAck();
+                                    }
+                                    _sentData = !_ack;
+                                }
                             }
                             else
                             {
-                                if (_mode == Mode.Address)
-                                {
-                                    _mode = (_data & 1) != 0 ? Mode.Read : Mode.Write;
-                                    _ack = GetAck();
-                                }
-                                else
-                                    _currentDevice?.Device.Write(_logger!, _currentDevice.Name, _byteCounter++, (byte)_data);
-
-                                _sentData = !_ack;
+                                _currentDevice?.Device.Write(_logger!, _currentDevice.Name, _byteCounter++, (byte)_data);
                                 _bitCounter = 0;
                             }
                         }

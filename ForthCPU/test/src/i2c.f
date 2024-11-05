@@ -57,8 +57,9 @@
   SDA i2c_channel_set \ scl low
 ;
 
-\ address channel -> ack
+\ channel address -> ack
 : i2c_check
+  1 lshift swap
   dup i2c_start
   dup \ address channel channel
   rot \ channel channel address

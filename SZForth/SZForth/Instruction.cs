@@ -25,6 +25,7 @@ internal enum InstructionCodes
     LocalGet,
     LocalSet,
     Locals,
+    UpdatePstackPointer,
     AluOp = 0xF0
 }
 
@@ -193,6 +194,41 @@ internal sealed class JmpDupInstruction: JmpInstruction
     {
         pc += Offset;
         Code = [(uint)InstructionCodes.Jmp, V1(pc), V2(pc), (uint)InstructionCodes.Dup];
+    }
+}
+
+internal sealed class RetWithPstackCorrectionInstruction: Instruction
+{
+    private readonly uint _correction, _opCode;
+    
+    internal RetWithPstackCorrectionInstruction(int correction, uint opCode, string name) :
+        base($"pstack correction + {name}")
+    {
+        Size = 3;
+        _correction = (uint)correction;
+        _opCode = opCode;
+    }
+    
+    internal override void BuildCode(int labelAddress, int pc)
+    {
+        Code = [(uint)InstructionCodes.UpdatePstackPointer, _correction, _opCode];
+    }
+}
+
+internal sealed class RetnWithPstackCorrectionInstruction: Instruction
+{
+    private readonly uint _correction, _n;
+    
+    internal RetnWithPstackCorrectionInstruction(int correction, uint n) : base($"pstack correction + retn {n}")
+    {
+        Size = 4;
+        _correction = (uint)correction;
+        _n = n;
+    }
+    
+    internal override void BuildCode(int labelAddress, int pc)
+    {
+        Code = [(uint)InstructionCodes.UpdatePstackPointer, _correction, (uint)InstructionCodes.Retn, _n];
     }
 }
 

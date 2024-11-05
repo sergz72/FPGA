@@ -63,7 +63,7 @@ module forth_cpu
     reg start = 0;
 
     wire push, dup, set, alu_op, jmp, get, call, ret, retn, br, br0, reti, drop, swap, rot, over, loop;
-    wire pstack_get, pstack_push, local_get, local_set, locals;
+    wire pstack_get, pstack_push, local_get, local_set, locals, update_pstack_pointer;
     wire eq, gt, z, pstack_le;
     
     initial begin
@@ -93,6 +93,7 @@ module forth_cpu
     assign local_get = current_instruction == 20;
     assign local_set = current_instruction == 21;
     assign locals = current_instruction == 22;
+    assign update_pstack_pointer = current_instruction == 23;
     assign alu_op = current_instruction[7:4] == 4'hF;
 
     assign jmp_address = {pc_data, immediate};
@@ -315,6 +316,11 @@ module forth_cpu
                             parameter_stack_wr_data <= data_stack_value1 + parameter_stack_value1;
                             data_stack_pointer <= data_stack_pointer + 1;
                             state <= STATE_LOOP;
+                        end
+                        update_pstack_pointer: begin
+                            parameter_stack_pointer <= parameter_stack_pointer + pc_data[PARAMETER_STACK_BITS - 1:0];
+                            pc <= pc + 1;
+                            state <= STATE_FETCH;
                         end
                         default: error <= 1;
                     endcase

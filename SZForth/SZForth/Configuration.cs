@@ -6,7 +6,7 @@ namespace SZForth;
 internal record Section(string FileName, string Address, string Size, string EntryPoint,
                         string[] IsrHandlers);
 
-internal record Configuration(Section Code, Section Data, Section RoData, string? MapFileName, string[] Options);
+internal record Configuration(Section Code, Section Data, Section RoData, string? MapFileName, string[]? Options);
 
 internal record ParsedSection(string FileName, uint Address, uint Size, string EntryPoint,
                                 string[] IsrHandlers)
@@ -37,7 +37,7 @@ internal record ParsedConfiguration(ParsedSection Code, ParsedSection Data, Pars
         return new ParsedConfiguration(new ParsedSection(config.Code, 0, codeSize),
                                         new ParsedSection(config.Data, dataAddress, dataSize),
                                         new ParsedSection(config.RoData, roDataAddress, roDataSize),
-                                        config.MapFileName, config.Options);
+                                        config.MapFileName, config.Options ?? []);
     }
 
     private static bool ParseAddress(string sAddress, out uint address)
