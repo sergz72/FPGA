@@ -51,6 +51,7 @@ public class ForthCPU(string[] code, int speed, int dataStackSize, int callStack
     
     private readonly bool _hardMul = cpuOptions?.Contains("MUL") ?? false;
     private readonly bool _hardDiv = cpuOptions?.Contains("DIV") ?? false;
+    private readonly bool _trace = cpuOptions?.Contains("TRACE") ?? false;
     
     public uint InterruptAck { get; private set; }
 
@@ -84,6 +85,9 @@ public class ForthCPU(string[] code, int speed, int dataStackSize, int callStack
     {
         base.Step();
 
+        if (_trace)
+            Logger?.Debug($"Step: {Pc:X4} {Wfi}");
+        
         if (Error | Hlt)
             return;
 

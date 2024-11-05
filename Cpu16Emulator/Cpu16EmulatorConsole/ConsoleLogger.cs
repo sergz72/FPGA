@@ -19,6 +19,7 @@ public class ConsoleLogger: ILogger
         if (_logLevel <= LogLevel.Debug)
             Console.WriteLine(formatted);
         _logFile?.WriteLine(formatted);
+        _logFile?.Flush();
     }
 
     public void Info(string message)
@@ -27,6 +28,7 @@ public class ConsoleLogger: ILogger
         if (_logLevel <= LogLevel.Info)
             Console.WriteLine(formatted);
         _logFile?.WriteLine(formatted);
+        _logFile?.Flush();
     }
 
     public void Warning(string message)
@@ -35,6 +37,7 @@ public class ConsoleLogger: ILogger
         if (_logLevel <= LogLevel.Warning)
             Console.WriteLine(formatted);
         _logFile?.WriteLine(formatted);
+        _logFile?.Flush();
     }
 
     public void Error(string message)
@@ -42,5 +45,6 @@ public class ConsoleLogger: ILogger
         var formatted = $"ERROR: {message}";
         Console.WriteLine(formatted);
         _logFile?.WriteLine(formatted);
+        _logFile?.Flush();
     }
 }

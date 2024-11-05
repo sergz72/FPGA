@@ -1,7 +1,7 @@
-1 constant I2C_CHANNELS
-4 constant KNOWN_DEVICES
+2 constant I2C_CHANNELS
+2 constant KNOWN_DEVICES
 
-hex 10 22 34 46 carray known_devices KNOWN_DEVICES
+hex 60 62 carray known_devices KNOWN_DEVICES
 decimal
 
 : cr '\r' uart_out '\n' uart_out ;
@@ -26,9 +26,8 @@ decimal
 : i2c_test_channel
   KNOWN_DEVICES 0 do
     I known_devices + @ \ channel device_id
-    swap \ device_id channel
-    over \ device_id channel device_id
-    over \ device_id channel device_id channel
+    over \ channel device_id channel
+    over \ channel device_id channel device_id
     i2c_check \ device_id channel ack
     if0 drop exit then
     swap drop \ channel

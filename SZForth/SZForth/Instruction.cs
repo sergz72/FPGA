@@ -48,7 +48,7 @@ internal enum AluOperations
     Rem
 }
 
-internal abstract class Instruction(string comment)
+internal abstract class Instruction
 {
     internal string? RequiredLabel { get; init; }
 
@@ -60,6 +60,13 @@ internal abstract class Instruction(string comment)
     
     internal abstract void BuildCode(int labelAddress, int pc);
 
+    protected string Comment;
+    
+    protected Instruction(string comment)
+    {
+       Comment = comment; 
+    }
+    
     internal IEnumerable<string> BuildCodeLines(string codeFormat, string pcFormat, int pc)
     {
         if (Code == null) throw new InstructionException("null code"); 
@@ -70,7 +77,7 @@ internal abstract class Instruction(string comment)
     {
         if (i != 0)
             return "";
-        return " " + comment + string.Join("", Labels.Select(FormatLabel));
+        return " " + Comment + string.Join("", Labels.Select(FormatLabel));
     }
 
     private static string FormatLabel(string label)
@@ -90,6 +97,7 @@ internal sealed class PushDataInstruction: Instruction
 {
     private uint _value;
     private int _bits;
+    
     internal PushDataInstruction(string name, int value, int bits) : base($"push {name} {value} {value:X}")
     {
         Size = 3;
@@ -114,7 +122,16 @@ internal sealed class DataInstruction(string name, int value): Instruction($"{na
 internal sealed class LabelInstruction: Instruction
 {
     private readonly int _bits;
-    private readonly InstructionCodes _opCode;
+    private InstructionCodes _opCode;
+
+    internal bool IsData
+    {
+        set
+        {
+            _opCode = value ? InstructionCodes.Push : InstructionCodes.Call;
+            Comment = value ? $"push {RequiredLabel}" : $"call {RequiredLabel}";
+        }
+    }
 
     internal LabelInstruction(InstructionCodes opCode, string name, string label, int bits) : base($"{name} {label}")
     {

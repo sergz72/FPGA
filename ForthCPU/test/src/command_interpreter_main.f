@@ -1,4 +1,4 @@
-hex AFFF constant I2C_ADDRESS
+hex A000 constant I2C_ADDRESS
 hex FFFF constant PORT
 hex CFFF constant UART
 decimal 128 constant MAX_COMMAND_LENGTH
@@ -51,8 +51,8 @@ array command MAX_COMMAND_LENGTH
       uart_echo
 
       command_ready @ if
-        interpret_command
         '\r' uart_out '\n' uart_out
+        interpret_command
         command command_p !
         command command_read_p !
         0 command_ready !

@@ -140,11 +140,7 @@ public class IODeviceI2CSlave: IIODevice
                                     _ack = GetAck();
                                 }
                                 else
-                                {
-                                    if (_currentDevice == null)
-                                        throw new IODeviceException("null currentDevice");
-                                    _currentDevice.Device.Write(_logger!, _currentDevice.Name, _byteCounter++, (byte)_data);
-                                }
+                                    _currentDevice?.Device.Write(_logger!, _currentDevice.Name, _byteCounter++, (byte)_data);
 
                                 _sentData = !_ack;
                                 _bitCounter = 0;
@@ -159,9 +155,10 @@ public class IODeviceI2CSlave: IIODevice
                                 if (_bitCounter == 0)
                                 {
                                     if (_currentDevice == null)
-                                        throw new IODeviceException("null currentDevice");
-                                    _readData = _currentDevice.Device.Read(_logger!, _currentDevice.Name,
-                                        _byteCounter++);
+                                        _readData = 0xFF;
+                                    else
+                                        _readData = _currentDevice.Device.Read(_logger!, _currentDevice.Name,
+                                                                                _byteCounter++);
                                 }
 
                                 _sentData = (_readData & 0x80) != 0;
@@ -185,10 +182,11 @@ public class IODeviceI2CSlave: IIODevice
 
     private bool GetAck()
     {
-        if (!_devices.TryGetValue(_data & 0xFE, out _currentDevice))
+        var address = _data & 0xFE;
+        if (!_devices.TryGetValue(address, out _currentDevice))
         {
             _currentDevice = null;
-            _logger?.Error($"unknown I2C Device address: {_data:X2}");
+            _logger?.Error($"unknown I2C Device address: {address:X2}");
             return false;
         }
 

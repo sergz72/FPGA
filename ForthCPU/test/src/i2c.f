@@ -2,7 +2,13 @@
 1 constant SDA
 3 constant SCLSDA
 
+\ channel data
 : i2c_channel_set
+  swap I2C_ADDRESS + !
+;
+
+\ channel data
+: i2c_channel_set2
   I2C_ADDRESS + !
 ;
 
@@ -26,7 +32,7 @@
   over \ byte, channel, byte
   128 and if SDA else 0 then dup state!
   over \ byte, channel, flag, channel
-  i2c_channel_set
+  i2c_channel_set2
   dup state@ SCL or
   i2c_channel_set
   dup state@
@@ -54,7 +60,9 @@
 \ address channel -> ack
 : i2c_check
   dup i2c_start
-  dup rot \ channel address channel
+  dup \ address channel channel
+  rot \ channel channel address
+  rot \ channel address channel
   i2c_byte_send \ channel ack
   swap \ ack channel
   i2c_stop \ ack

@@ -195,7 +195,9 @@ internal sealed class ForthCompiler
         var pc = 0;
         foreach (var instruction in instructions)
         {
-            var address = instruction.RequiredLabel != null ? GetLabelAddress(instruction.RequiredLabel) : 0;
+            var (address, isData) = instruction.RequiredLabel != null ? GetLabelAddress(instruction.RequiredLabel) : (0, true);
+            if (instruction is LabelInstruction li)
+                li.IsData = isData;
             instruction.BuildCode(address, pc);
             pc += instruction.Size;
         }
@@ -426,18 +428,19 @@ internal sealed class ForthCompiler
             throw new CompilerException("unexpected end of file");
     }
 
-    private int GetLabelAddress(string? requiredLabel)
+    // returns address and is_data flag
+    private (int, bool) GetLabelAddress(string? requiredLabel)
     {
         if (requiredLabel == null)
-            return 0;
+            return (0, true);
         if (Constants.TryGetValue(requiredLabel, out var address))
-            return address;
+            return (address, true);
         if (Variables.TryGetValue(requiredLabel, out var v))
-            return (int)v.Address!;
+            return ((int)v.Address!, true);
         if (_wordAddresses.TryGetValue(requiredLabel, out address))
-            return address;
+            return (address, false);
         if (RoDataConstants.TryGetValue(requiredLabel, out v))
-            return (int)v.Address!;
+            return ((int)v.Address!, true);
         throw new CompilerException($"{requiredLabel} not found");
     }
 

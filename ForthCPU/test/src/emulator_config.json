@@ -5,7 +5,10 @@
   "LogLevel": "Error",
   "IODevices": [
     { "FileName": "../../../../../../Rider/Cpu16Emulator/IODeviceBaseMemory/bin/Debug/net8.0/IODeviceBaseMemory.dll", "Parameters": "address=0 size=1024 readonly=false contents=asm/data.hex" },
-    { "FileName": "../../../../../../Rider/Cpu16Emulator/IODeviceUart/bin/Debug/net8.0/IODeviceUart.dll", "Parameters": "address=0xCFFF interrupt=2" }
+    { "FileName": "../../../../../../Rider/Cpu16Emulator/IODeviceBaseMemory/bin/Debug/net8.0/IODeviceBaseMemory.dll", "Parameters": "address=0x2000 size=1024 readonly=true contents=asm/rodata.hex" },
+    { "FileName": "../../../../../../Rider/Cpu16Emulator/IODeviceUart/bin/Debug/net8.0/IODeviceUart.dll", "Parameters": "address=0xCFFF interrupt=2" },
+    { "FileName": "../../../../../../Rider/Cpu16Emulator/IODeviceI2CSlave/bin/Debug/net8.0/IODeviceI2CSlave.dll", "Parameters": "address=0xA000 devices=i2cConfig.json" },
+    { "FileName": "../../../../../../Rider/Cpu16Emulator/IODeviceI2CSlave/bin/Debug/net8.0/IODeviceI2CSlave.dll", "Parameters": "address=0xA001 devices=i2cConfig2.json" }
   ],
   "CpuOptions": ["MUL", "DIV"]
 }
