@@ -2,6 +2,10 @@
 1 constant SDA
 3 constant SCLSDA
 
+: i2c_delay
+  8 0 do loop
+;
+
 \ channel data
 : i2c_channel_set
   swap I2C_ADDRESS + !
@@ -16,13 +20,16 @@
 : i2c_start
   dup SCLSDA i2c_channel_set
   dup SCL i2c_channel_set \ sda low
+  i2c_delay
   0 i2c_channel_set \ scl low
 ;
 
 \ stack: channel
 : i2c_stop
   dup 0 i2c_channel_set \ scl low sda low
+  i2c_delay
   dup SCL i2c_channel_set \ scl high
+  i2c_delay
   SCLSDA i2c_channel_set \ sda high
 ;
 
@@ -35,6 +42,7 @@
   i2c_channel_set2
   dup state@ SCL or
   i2c_channel_set
+  i2c_delay
   dup state@
   i2c_channel_set
 ;
@@ -51,6 +59,7 @@
   SDA i2c_channel_set \ sda high
   dup
   SCLSDA i2c_channel_set \ scl high
+  i2c_delay
   dup
   I2C_ADDRESS + @ SDA and \ ack
   swap
