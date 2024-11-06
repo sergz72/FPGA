@@ -1,0 +1,7 @@
+{
+  "Cpu": "ForthCPU",
+  "CpuSpeed": 100,
+  "IODevices": [
+  ],
+  "CpuOptions": ["MUL", "DIV"]
+}

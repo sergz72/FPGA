@@ -335,7 +335,7 @@ public sealed class ForthStack<T>(string name, int size)
 {
     public readonly T[] Contents = new T[size];
 
-    public int Pointer { get; private set; }
+    public int Pointer { get; private set; } = -1;
 
     internal void Push(T value, ushort pc)
     {
@@ -347,14 +347,14 @@ public sealed class ForthStack<T>(string name, int size)
 
     internal T Peek(ushort pc)
     {
-        if (Pointer <= 0)
+        if (Pointer < 0)
             throw new CpuException($"{name} stack underflow at {pc:X4}");
         return Contents[Pointer];
     }
 
     internal T Pop(ushort pc)
     {
-        if (Pointer <= 0)
+        if (Pointer < 0)
             throw new CpuException($"{name} stack underflow at {pc:X4}");
         return Contents[Pointer--];
     }
@@ -382,7 +382,7 @@ public sealed class ForthStack<T>(string name, int size)
     
     internal void Clear()
     {
-        Pointer = 0;
+        Pointer = -1;
     }
 
     public void IncrementPointer(ushort data, ushort pc)
