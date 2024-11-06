@@ -1,5 +1,6 @@
 1 constant I2C_CHANNELS
 1 constant KNOWN_DEVICES
+'A' 10 - constant A10
 
 hex 5E carray known_devices KNOWN_DEVICES
 decimal
@@ -11,7 +12,7 @@ decimal
 
 : hex_out
   hex F and decimal
-  dup 9 > if 'A' else '0' then
+  dup 9 > if A10 else '0' then
   + uart_out
 ;
 

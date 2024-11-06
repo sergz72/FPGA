@@ -310,22 +310,47 @@ internal sealed class ForthCompiler
             case "+":
                 v1 = _dataStack.Pop();
                 v2 = _dataStack.Pop();
-                _dataStack.Push(v1 + v2);
+                _dataStack.Push(v2 + v1);
                 break;
             case "-":
                 v1 = _dataStack.Pop();
                 v2 = _dataStack.Pop();
-                _dataStack.Push(v1 - v2);
+                _dataStack.Push(v2 - v1);
                 break;
             case "*":
                 v1 = _dataStack.Pop();
                 v2 = _dataStack.Pop();
-                _dataStack.Push(v1 * v2);
+                _dataStack.Push(v2 * v1);
                 break;
             case "/":
                 v1 = _dataStack.Pop();
                 v2 = _dataStack.Pop();
-                _dataStack.Push(v1 / v2);
+                _dataStack.Push(v2 / v1);
+                break;
+            case "<<":
+                v1 = _dataStack.Pop();
+                v2 = _dataStack.Pop();
+                _dataStack.Push(v2 << v1);
+                break;
+            case ">>":
+                v1 = _dataStack.Pop();
+                v2 = _dataStack.Pop();
+                _dataStack.Push(v2 >> v1);
+                break;
+            case "and":
+                v1 = _dataStack.Pop();
+                v2 = _dataStack.Pop();
+                _dataStack.Push(v2 & v1);
+                break;
+            case "or":
+                v1 = _dataStack.Pop();
+                v2 = _dataStack.Pop();
+                _dataStack.Push(v2 | v1);
+                break;
+            case "xor":
+                v1 = _dataStack.Pop();
+                v2 = _dataStack.Pop();
+                _dataStack.Push(v2 ^ v1);
                 break;
             case ":":
                 InterpretWordDefinition(ref start);
