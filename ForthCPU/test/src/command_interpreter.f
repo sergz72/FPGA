@@ -1,7 +1,7 @@
-2 constant I2C_CHANNELS
-2 constant KNOWN_DEVICES
+1 constant I2C_CHANNELS
+1 constant KNOWN_DEVICES
 
-hex 60 62 carray known_devices KNOWN_DEVICES
+hex 5E carray known_devices KNOWN_DEVICES
 decimal
 
 : cr '\r' uart_out '\n' uart_out ;

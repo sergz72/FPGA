@@ -1,7 +1,7 @@
 `include "main.vh"
 
 module main
-#(parameter ROM_BITS = 10, RAM_BITS = 10, RODATA_BITS = 8, I2C_PORTS_BITS = 0)
+#(parameter ROM_BITS = 10, RAM_BITS = 10, RODATA_BITS = 8, I2C_PORTS_BITS = 1)
 (
     input wire clk,
     output wire nerror,
