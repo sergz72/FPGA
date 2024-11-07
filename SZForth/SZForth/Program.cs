@@ -118,6 +118,6 @@ List<string> BuildCodeLines(List<Instruction> instructions, string format, strin
 
 int Usage()
 {
-    Console.WriteLine("Usage: SZForth -c configFileName [-c] sources");
+    Console.WriteLine("Usage: SZForth -c configFileName [-b 16|32] sources");
     return 1;
 }

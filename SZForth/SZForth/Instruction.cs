@@ -26,6 +26,8 @@ internal enum InstructionCodes
     LocalSet,
     Locals,
     UpdatePstackPointer,
+    GetAluOut2,
+    Mul = 0xE0,
     AluOp = 0xF0
 }
 
@@ -44,7 +46,7 @@ internal enum AluOperations
     Lt,
     Shl,
     Shr,
-    Mul,
+    BitTest,
     Div,
     Rem
 }
@@ -96,19 +98,21 @@ internal sealed class InstructionException(string message) : Exception(message);
 
 internal sealed class PushDataInstruction: Instruction
 {
-    private uint _value;
-    private int _bits;
+    private readonly int _value;
+    private readonly int _bits;
     
     internal PushDataInstruction(string name, int value, int bits) : base($"push {name} {value} {value:X}")
     {
         Size = 3;
         _bits = bits;
-        _value = (uint)value;
+        _value = value;
     }
     
     internal override void BuildCode(int labelAddress, int pc)
     {
-        Code = [(uint)InstructionCodes.Push, (uint)(_value & ((1 << (_bits / 2)) - 1)), _value >> (_bits / 2)];
+        var v1 = (uint)(_value & ((1 << (_bits / 2)) - 1));
+        var v2 = (ushort)((_value >> (_bits / 2)) & ((1 << (_bits / 2)) - 1));
+        Code = [(uint)InstructionCodes.Push, v1, v2];
     }
 }
 
@@ -120,16 +124,16 @@ internal sealed class DataInstruction(string name, int value): Instruction($"{na
     }
 }
 
-internal sealed class LabelInstruction: Instruction
+internal class LabelInstruction: Instruction
 {
-    private readonly int _bits;
-    private InstructionCodes _opCode;
+    protected readonly int Bits;
+    protected InstructionCodes OpCode;
 
     internal bool IsData
     {
         set
         {
-            _opCode = value ? InstructionCodes.Push : InstructionCodes.Call;
+            OpCode = value ? InstructionCodes.Push : InstructionCodes.Call;
             Comment = value ? $"push {RequiredLabel}" : $"call {RequiredLabel}";
         }
     }
@@ -138,13 +142,27 @@ internal sealed class LabelInstruction: Instruction
     {
         RequiredLabel = label;
         Size = 3;
-        _bits = bits;
-        _opCode = opCode;
+        Bits = bits;
+        OpCode = opCode;
     }
     
     internal override void BuildCode(int labelAddress, int pc)
     {
-        Code = [(uint)_opCode, (uint)(labelAddress & ((1 << (_bits / 2)) - 1)), (uint)labelAddress >> (_bits / 2)];
+        Code = [(uint)OpCode, (uint)(labelAddress & ((1 << (Bits / 2)) - 1)), (uint)labelAddress >> (Bits / 2)];
+    }
+}
+
+internal class LabelGetInstruction : LabelInstruction
+{
+    internal LabelGetInstruction(string label, int bits) : base(InstructionCodes.Push, "push", label, bits)
+    {
+        Size = 4;
+    }
+    
+    internal override void BuildCode(int labelAddress, int pc)
+    {
+        Code = [(uint)OpCode, (uint)(labelAddress & ((1 << (Bits / 2)) - 1)), (uint)labelAddress >> (Bits / 2),
+                (uint)InstructionCodes.Get];
     }
 }
 

@@ -90,13 +90,20 @@ internal sealed class CodeGenerator
                 break;
             case "*":
                 i = _hardMul
-                    ? new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Mul, token.Word)
-                    : CompileCall("mul");
+                    ? new OpcodeInstruction((uint)InstructionCodes.Mul, token.Word) : CompileCall("mul");
+                break;
+            case "alu_out2":
+                i = _hardMul
+                    ? new OpcodeInstruction((uint)InstructionCodes.GetAluOut2, token.Word)
+                    : new LabelGetInstruction(token.Word, _compiler.Bits);
                 break;
             case "/":
                 i = _hardDiv
                     ? new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Div, token.Word)
                     : CompileCall("div");
+                break;
+            case "bit?":
+                i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.BitTest, token.Word);
                 break;
             case "=":
                 i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Eq, token.Word);

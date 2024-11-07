@@ -327,12 +327,12 @@ internal sealed class ForthCompiler
                 v2 = _dataStack.Pop();
                 _dataStack.Push(v2 / v1);
                 break;
-            case "<<":
+            case "lshift":
                 v1 = _dataStack.Pop();
                 v2 = _dataStack.Pop();
                 _dataStack.Push(v2 << v1);
                 break;
-            case ">>":
+            case "rshift":
                 v1 = _dataStack.Pop();
                 v2 = _dataStack.Pop();
                 _dataStack.Push(v2 >> v1);

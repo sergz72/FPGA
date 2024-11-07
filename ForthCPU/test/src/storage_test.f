@@ -1,4 +1,6 @@
 11 constant c
+-1 constant m1
+10 20 - constant m2
 variable v
 1 ivariable iv
 array a 10
@@ -10,4 +12,4 @@ array a 10
 : isr1 ;
 : isr2 ;
 
-: main c v ! c iv ! c a ! c ia ! ca @ ca2 @ s @ ;
+: main c v ! c iv ! c a ! c ia ! ca @ ca2 @ s @ m1 m2 ;

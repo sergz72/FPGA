@@ -1,0 +1,8 @@
+{
+  "Cpu": "ForthCPU",
+  "CpuSpeed": 100,
+  "IODevices": [
+    { "FileName": "../../../../Cpu16Emulator/IODeviceBaseMemory/bin/Debug/net8.0/IODeviceBaseMemory.dll", "Parameters": "address=0x2000 size=1024 readonly=true contents=asm/rodata.hex" }
+  ],
+  "CpuOptions": ["MUL", "DIV"]
+}

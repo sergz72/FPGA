@@ -3,7 +3,7 @@
 3 constant SCLSDA
 
 : i2c_delay
-  8 0 do loop
+  6 0 do loop
 ;
 
 \ channel data
@@ -37,7 +37,7 @@
 : i2c_bit_send
   locals state
   over \ byte, channel, byte
-  128 and if SDA else 0 then dup state!
+  7 bit? dup state!
   over \ byte, channel, flag, channel
   i2c_channel_set2
   dup state@ SCL or

@@ -28,7 +28,7 @@ module main
     reg [15:0] ram_rdata, rodata_rdata;
     wire cpu_clk;
     wire mem_valid, mem_nwr;
-    wire ram_selected, rodata_selected, port_selected, uart_selected, i2c_selected, mem_selected;
+    wire ram_selected, rodata_selected, port_selected, uart_selected, i2c_selected, mem_selected, timer_selected;
 
     reg mem_ready = 0;
     wire [RAM_BITS - 1:0] ram_address;
@@ -40,11 +40,11 @@ module main
     wire [7:0] uart_data;
     wire uart_send, uart_busy, uart_interrupt;
 
-    reg timer_interrupt = 0;
+    wire timer_interrupt, timer_nwr;
 
     reg nreset = 0;
 
-    reg [`CPU_TIMER_BITS - 1:0] cpu_timer = 0;
+    reg [`RESET_BIT:0] reset_timer = 0;
 
     reg [15:0] ram [0:(1<<RAM_BITS)-1];
     reg [15:0] rodata [0:(1<<RODATA_BITS)-1];
@@ -62,6 +62,9 @@ module main
         utx(.clk(clk), .tx(tx), .data(mem_data_in[7:0]), .send(uart_send), .busy(uart_busy), .nreset(nreset));
     uart1rx #(.CLOCK_DIV(`UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(`UART_CLOCK_COUNTER_BITS))
         urx(.clk(clk), .rx(rx), .data(uart_data), .interrupt(uart_interrupt), .interrupt_clear(interrupt_ack[1]), .nreset(nreset));
+
+    timer #(.BITS(16), .MHZ_TIMER_BITS(`MHZ_TIMER_BITS), .MHZ_TIMER_VALUE(`MHZ_TIMER_VALUE))
+        t(.clk(clk), .nreset(nreset), .nwr(timer_nwr), .value(mem_data_in), .interrupt(timer_interrupt), .interrupt_clear(interrupt_ack[0]));
 
     genvar i;
     generate
@@ -83,7 +86,7 @@ module main
     assign interrupt = {uart_interrupt, timer_interrupt};
 
     assign memory_selector = mem_address[15:MEMORY_SELECTOR_START_BIT];
-    assign cpu_clk = cpu_timer[`CPU_CLOCK_BIT];
+    assign cpu_clk = reset_timer[`CPU_CLOCK_BIT];
     assign nerror = !error;
     assign nhlt = !hlt;
     assign nwfi = !wfi;
@@ -92,6 +95,7 @@ module main
 
     assign ram_selected = memory_selector == 0;
     assign rodata_selected = memory_selector == 1;
+    assign timer_selected = memory_selector == 4;
     assign i2c_selected = memory_selector == 5;
     assign uart_selected = memory_selector == 6;
     assign port_selected = memory_selector == 7;
@@ -108,6 +112,7 @@ module main
     assign mem_data_out = ram_selected ? ram_rdata : (rodata_selected ? rodata_rdata : (uart_selected ? uart_rdata : i2c_rdata));
 
     assign uart_send = nreset & mem_valid & mem_ready & uart_selected & !mem_nwr;
+    assign timer_nwr = !(nreset & mem_valid & mem_ready & timer_selected & !mem_nwr);
 
     assign mem_selected = mem_valid & !mem_ready;
 
@@ -117,13 +122,9 @@ module main
     end
 
     always @(posedge clk) begin
-        if (interrupt_ack[0])
-            timer_interrupt <= 0;
-        else if (cpu_timer == {`CPU_TIMER_BITS{1'b1}})
-            timer_interrupt <= 1;
-        if (cpu_timer[`RESET_BIT - 1])
+        if (reset_timer[`RESET_BIT])
             nreset <= 1;
-        cpu_timer <= cpu_timer + 1;
+        reset_timer <= reset_timer + 1;
     end
 
     always @(posedge cpu_clk) begin
@@ -132,7 +133,7 @@ module main
                 ram[ram_address] <= mem_data_in;
             ram_rdata <= ram[ram_address];
         end
-        mem_ready <= nreset & mem_valid & (ram_selected | i2c_selected | port_selected | uart_selected | rodata_selected);
+        mem_ready <= nreset & mem_valid & (ram_selected | i2c_selected | port_selected | uart_selected | rodata_selected | timer_selected);
     end
 
     always @(posedge cpu_clk) begin

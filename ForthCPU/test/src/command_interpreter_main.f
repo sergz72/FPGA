@@ -1,3 +1,5 @@
+10000 constant DELAY \ 100 ms
+hex 8000 constant TIMER
 hex A000 constant I2C_ADDRESS
 hex FFFF constant PORT
 hex CFFF constant UART
@@ -31,10 +33,10 @@ array command MAX_COMMAND_LENGTH
 
 : blink led_state @ dup PORT ! 1 + led_state ! ;
 
-: uart_out begin UART @ 256 and until UART ! ;
+: emit begin UART @ 256 and until UART ! ;
 
 : uart_echo begin command_read_p @ command_p @ != while
-    command_read_p @ dup @ uart_out
+    command_read_p @ dup @ emit
     1 + command_read_p !
   repeat
 ;
@@ -43,6 +45,7 @@ array command MAX_COMMAND_LENGTH
   command command_p !
   command command_read_p !
   command MAX_COMMAND_LENGTH + command_end !
+  DELAY TIMER !
   begin
     wfi
     timer_interrupt @ if
@@ -51,12 +54,13 @@ array command MAX_COMMAND_LENGTH
       uart_echo
 
       command_ready @ if
-        '\r' uart_out '\n' uart_out
+        cr
         interpret_command
         command command_p !
         command command_read_p !
         0 command_ready !
       then
+      DELAY TIMER !
     then
   again
 ;

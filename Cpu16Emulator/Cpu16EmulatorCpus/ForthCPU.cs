@@ -29,6 +29,8 @@ public class ForthCPU(string[] code, int speed, int dataStackSize, int callStack
     private const byte LOCAL_SET   = 21;
     private const byte LOCALS      = 22;
     private const byte UPDATE_PSTACK_POINTER = 23;
+    private const byte GET_ALU_OUT2 = 24;
+    private const byte MUL         = 0xE0;
     private const byte ALU_OP      = 0xF0;
 
     private const byte ALU_OP_ADD  = 0;
@@ -44,11 +46,11 @@ public class ForthCPU(string[] code, int speed, int dataStackSize, int callStack
     private const byte ALU_OP_LT   = 10;
     private const byte ALU_OP_SHL  = 11;
     private const byte ALU_OP_SHR  = 12;
-    private const byte ALU_OP_MUL  = 13;
+    private const byte ALU_OP_BIT_TEST = 13;
     private const byte ALU_OP_DIV  = 14;
     private const byte ALU_OP_REM  = 15;
-    
-    private ushort _savedPc;
+
+    private ushort _savedPc, _aluOut2;
     
     private readonly bool _hardMul = cpuOptions?.Contains("MUL") ?? false;
     private readonly bool _hardDiv = cpuOptions?.Contains("DIV") ?? false;
@@ -242,6 +244,30 @@ public class ForthCPU(string[] code, int speed, int dataStackSize, int callStack
                 Pc = (ushort)(Pc + 1); 
                 ParametersStack.DropN(data, Pc);
                 break;
+            case GET_ALU_OUT2:
+                if (_hardMul)
+                    DataStack.Push(_aluOut2, Pc);
+                else
+                {
+                    Logger?.Error($"{Ticks}: ERROR");
+                    Error = true;
+                }
+                break;
+            case MUL:
+                data2 = DataStack.Pop(Pc);
+                data = DataStack.Pop(Pc);
+                if (_hardMul)
+                {
+                    var result = (uint)(data * data2);
+                    _aluOut2 = (ushort)(result >> 16);
+                    DataStack.Push((ushort)result, Pc);
+                }
+                else
+                {
+                    Logger?.Error($"{Ticks}: ERROR");
+                    Error = true;
+                }
+                break;
             default:
                 if ((instruction & ALU_OP) == ALU_OP)
                 {
@@ -288,14 +314,8 @@ public class ForthCPU(string[] code, int speed, int dataStackSize, int callStack
                         case ALU_OP_SHR:
                             DataStack.Push((ushort)(data >> data2), Pc);
                             break;
-                        case ALU_OP_MUL:
-                            if (_hardMul)
-                                DataStack.Push((ushort)(data * data2), Pc);
-                            else
-                            {
-                                Logger?.Error($"{Ticks}: ERROR");
-                                Error = true;
-                            }
+                        case ALU_OP_BIT_TEST:
+                            DataStack.Push((data & (1 << (data2 & 0x0F))) != 0 ? (ushort)1 : (ushort)0, Pc);
                             break;
                         case ALU_OP_DIV:
                             if (_hardDiv)
@@ -375,7 +395,7 @@ public sealed class ForthStack<T>(string name, int size)
 
     internal void DropN(int n, ushort pc)
     {
-        if (Pointer < n)
+        if (Pointer < n - 1)
             throw new CpuException($"{name} stack underflow at {pc:X4}");
         Pointer -= n;
     }

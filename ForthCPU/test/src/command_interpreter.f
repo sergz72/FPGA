@@ -1,27 +1,16 @@
 1 constant I2C_CHANNELS
 1 constant KNOWN_DEVICES
 'A' 10 - constant A10
+20 constant COMMAND_PART_LENGTH
+6 constant COMMAND_PARTS
+COMMAND_PART_LENGTH COMMAND_PARTS * constant COMMAND_PARTS_LENGTH
 
-hex 5E carray known_devices KNOWN_DEVICES
-decimal
+"i2c_test" sconstant I2C_TEST
 
-: cr '\r' uart_out '\n' uart_out ;
-: space 32 uart_out ;
-: err 'E' uart_out cr ;
-: ok 'K' uart_out cr ;
+array command_parts COMMAND_PARTS_LENGTH
+variable command_parts_count
 
-: hex_out
-  hex F and decimal
-  dup 9 > if A10 else '0' then
-  + uart_out
-;
-
-: h.
-  dup 12 rshift hex_out
-  dup 8 rshift hex_out
-  dup 4 rshift hex_out
-  hex_out
-;
+hex 5E carray known_devices KNOWN_DEVICES decimal
 
 \ channel > device_id
 : i2c_test_channel
@@ -44,14 +33,55 @@ decimal
   cr ok
 ;
 
+\ idx -> reference
+: command_part
+  COMMAND_PART_LENGTH * command_parts +
+;
+
+: split_command
+  locals command_part_p,start
+
+  0 command_parts_count !
+  0 start!
+  begin command_p @ command_read_p @ != while
+    command_read_p @ @
+    command_read_p @ 1 + command_read_p !
+    dup 32 > if
+       start@ if0
+         command_parts_count @ command_part 1 + command_part_p!
+         command_parts_count @ 1 + command_parts_count !
+       then
+       command_part_p@ !
+       command_part_p@ 1 + command_part_p!
+       1 start!
+    else
+      drop
+      start@ if
+        command_parts_count @ 1 - command_part dup 1 + \ cp cp+1
+        command_part_p@ swap \ cp cpp cp+1
+        - \ cp l
+        swap ! \ save string length
+      then
+      0 start!
+    then
+  repeat
+  start@ if
+    command_parts_count @ 1 - command_part dup 1 + \ cp cp+1
+    command_part_p@ swap \ cp cpp cp+1
+    - \ cp l
+    swap ! \ save string length
+  then
+;
+
 : interpret_command
   command command_read_p !
   command_p @ command_read_p @ != if
-    command_read_p @ @
-    command_read_p @ 1 + command_read_p !
-    case
-      'i' of i2c_test endof
-      drop err
+    split_command
+\    command_parts_count @ dup h. cr
+\    0 do I command_part s. cr loop
+    0 command_part case
+      I2C_TEST compare 0 of i2c_test endof
+      drop drop err
     endcase
   then
 ;
