@@ -1,0 +1,70 @@
+## blink.ccf
+#
+# Date: 2024-07-18
+#
+# Syntax:
+# NET "<pin-name>" Loc = "<pin-location>" | <opt.-constraints>;
+#
+# Backward compatible legacy syntax:
+# <pin-direction> "<pin-name>" Loc = "<pin-location>" | <opt.-constraints>;
+#
+# Additional constraints can be appended using the pipe symbol.
+# Files are read line by line. Text after the hash symbol is ignored.
+#
+# Available legacy pin directions:
+#
+# Pin_in
+#   defines an input pin
+# Pin_out
+#   defines an output pin
+# Pin_triout
+#   defines a tristate output pin
+# Pin_inout
+#   defines a bidirectional pin
+#
+# Available pin constraints:
+#
+# SCHMITT_TRIGGER={true,false}
+#   enables or disables schmitt trigger (hysteresis) option
+# PULLUP={true,false}
+#   enables or disables I/O pullup resistor of nominal 50kOhm
+# PULLDOWN={true,false}
+#   enables or disables I/O pulldown resistor of nominal 50kOhm
+# KEEPER={true,false}
+#   enables or disables I/O keeper option
+# SLEW={slow,fast}
+#   sets slew rate to slow or fast
+# DRIVE={3,6,9,12}
+#   sets output drive strength to 3mA..12mA
+# DELAY_OBF={0..15}
+#   adds an additional delay of n * nominal 50ps to output signal
+# DELAY_IBF={0..15}
+#   adds an additional delay of n * nominal 50ps to input signal
+# FF_IBF={true,false}
+#   enables or disables placing of FF in input buffer, if possible
+# FF_OBF={true,false}
+#   enables or disables placing of FF in output buffer, if possible
+# LVDS_BOOST={true,false}
+#   enables increased LVDS output current of 6.4mA (default: 3.2mA)
+# LVDS_RTERM={true,false}
+#   enables on-chip LVDS termination resistor of nominal 100Ohm, in input mode only
+#
+# Global IO constraints can be set with the default_GPIO statement. It can be
+# overwritten by individual settings for specific GPIOs, e.g.:
+#   default_GPIO | DRIVE=3; # sets all output strengths to 3mA, unless overwritten
+#
+
+Net "clk"  Loc = "IO_SB_A8" | SCHMITT_TRIGGER=true;
+Net "led"  Loc = "IO_SB_B6" DRIVE=3;
+
+Net "nhlt" Loc = "IO_EA_A4" DRIVE=3;
+Net "nerror" Loc = "IO_EA_B4" DRIVE=3;
+Net "nwfi" Loc = "IO_EA_A5" DRIVE=3;
+
+Net "scl_io[0]" Loc = "IO_EA_B5" PULLUP=true DRIVE=3;
+Net "sda_io[0]" Loc = "IO_EA_A6" PULLUP=true DRIVE=3;
+Net "scl_io[1]" Loc = "IO_EA_B6" PULLUP=true DRIVE=3;
+Net "sda_io[1]" Loc = "IO_EA_A7" PULLUP=true DRIVE=3;
+
+Net "tx"   Loc = "IO_SA_B6" DRIVE=3;
+Net "rx"   Loc = "IO_SA_A6";

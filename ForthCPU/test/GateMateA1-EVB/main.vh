@@ -1,0 +1,7 @@
+// 40 MHz clk
+`define UART_CLOCK_DIV 347
+`define UART_CLOCK_COUNTER_BITS 9
+`define CPU_CLOCK_BIT 0
+`define RESET_BIT 3
+`define MHZ_TIMER_BITS 9
+`define MHZ_TIMER_VALUE 399
