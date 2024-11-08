@@ -24,11 +24,11 @@ internal sealed class ForthCompiler
     }
     
     private readonly List<Token> _tokens;
-    private readonly Stack<int> _dataStack;
     private readonly Stack<string> _stringStack;
     private readonly Dictionary<string, List<Instruction>> _words;
     private readonly Dictionary<string, int> _wordAddresses;
     private readonly CodeGenerator _codeGenerator;
+    private readonly Preprocessor _preprocessor;
 
     private List<Instruction> _currentWordInstructions, _dataInstructions, _roDataInstructions;
 
@@ -36,6 +36,7 @@ internal sealed class ForthCompiler
     internal readonly Dictionary<string, Variable> RoDataConstants;
     internal readonly Dictionary<string, Variable> Variables;
     internal readonly ParsedConfiguration Config;
+    internal readonly Stack<int> DataStack;
     
     internal bool CompileMode { get; set; }
     internal readonly int Bits;
@@ -45,7 +46,7 @@ internal sealed class ForthCompiler
         Config = config;
         _codeGenerator = new CodeGenerator(this);
         _tokens = new ForthParser(sources.Select(source => new ParserFile(source))).Parse();
-        _dataStack = new Stack<int>();
+        DataStack = new Stack<int>();
         _stringStack = new Stack<string>();
         Bits = bits;
         Constants = new Dictionary<string, int>();
@@ -56,6 +57,7 @@ internal sealed class ForthCompiler
         _currentWordInstructions = [];
         _dataInstructions = [];
         _roDataInstructions = [];
+        _preprocessor = new Preprocessor(this);
     }
     
     internal CompilerResult Compile()
@@ -63,11 +65,16 @@ internal sealed class ForthCompiler
         _dataInstructions = [];
         _roDataInstructions = [];
         _wordAddresses.Clear();
-        _dataStack.Clear();
+        DataStack.Clear();
         var start = 0;
         CompileMode = false;
         while (start < _tokens.Count)
         {
+            if (_preprocessor.Process(_tokens[start]))
+            {
+                start++;
+                continue;
+            }
             if (CompileMode)
             {
                 var token = _tokens[start++];
@@ -87,6 +94,7 @@ internal sealed class ForthCompiler
             else
                 Interpret(ref start);
         }
+        _preprocessor.Finish();
         Cleanup();
         BuildVariableAddresses();
         BuildRoDataConstants();
@@ -261,7 +269,7 @@ internal sealed class ForthCompiler
         switch (token.Type)
         {
             case TokenType.Number:
-                _dataStack.Push((int)token.IntValue!);
+                DataStack.Push((int)token.IntValue!);
                 start++;
                 break;
             case TokenType.String:
@@ -271,7 +279,7 @@ internal sealed class ForthCompiler
             default:
                 if (Constants.TryGetValue(token.Word, out var value))
                 {
-                    _dataStack.Push(value);
+                    DataStack.Push(value);
                     start++;
                 }
                 else
@@ -308,49 +316,49 @@ internal sealed class ForthCompiler
                 InterpretStringConstantDefinition(ref start);
                 break;
             case "+":
-                v1 = _dataStack.Pop();
-                v2 = _dataStack.Pop();
-                _dataStack.Push(v2 + v1);
+                v1 = DataStack.Pop();
+                v2 = DataStack.Pop();
+                DataStack.Push(v2 + v1);
                 break;
             case "-":
-                v1 = _dataStack.Pop();
-                v2 = _dataStack.Pop();
-                _dataStack.Push(v2 - v1);
+                v1 = DataStack.Pop();
+                v2 = DataStack.Pop();
+                DataStack.Push(v2 - v1);
                 break;
             case "*":
-                v1 = _dataStack.Pop();
-                v2 = _dataStack.Pop();
-                _dataStack.Push(v2 * v1);
+                v1 = DataStack.Pop();
+                v2 = DataStack.Pop();
+                DataStack.Push(v2 * v1);
                 break;
             case "/":
-                v1 = _dataStack.Pop();
-                v2 = _dataStack.Pop();
-                _dataStack.Push(v2 / v1);
+                v1 = DataStack.Pop();
+                v2 = DataStack.Pop();
+                DataStack.Push(v2 / v1);
                 break;
             case "lshift":
-                v1 = _dataStack.Pop();
-                v2 = _dataStack.Pop();
-                _dataStack.Push(v2 << v1);
+                v1 = DataStack.Pop();
+                v2 = DataStack.Pop();
+                DataStack.Push(v2 << v1);
                 break;
             case "rshift":
-                v1 = _dataStack.Pop();
-                v2 = _dataStack.Pop();
-                _dataStack.Push(v2 >> v1);
+                v1 = DataStack.Pop();
+                v2 = DataStack.Pop();
+                DataStack.Push(v2 >> v1);
                 break;
             case "and":
-                v1 = _dataStack.Pop();
-                v2 = _dataStack.Pop();
-                _dataStack.Push(v2 & v1);
+                v1 = DataStack.Pop();
+                v2 = DataStack.Pop();
+                DataStack.Push(v2 & v1);
                 break;
             case "or":
-                v1 = _dataStack.Pop();
-                v2 = _dataStack.Pop();
-                _dataStack.Push(v2 | v1);
+                v1 = DataStack.Pop();
+                v2 = DataStack.Pop();
+                DataStack.Push(v2 | v1);
                 break;
             case "xor":
-                v1 = _dataStack.Pop();
-                v2 = _dataStack.Pop();
-                _dataStack.Push(v2 ^ v1);
+                v1 = DataStack.Pop();
+                v2 = DataStack.Pop();
+                DataStack.Push(v2 ^ v1);
                 break;
             case ":":
                 InterpretWordDefinition(ref start);
@@ -380,7 +388,7 @@ internal sealed class ForthCompiler
     {
         var t = GetName(start);
         CheckName(t);
-        Variables.Add(t.Word, new Variable(1, init ? [_dataStack.Pop()] : []));
+        Variables.Add(t.Word, new Variable(1, init ? [DataStack.Pop()] : []));
         start++;
     }
 
@@ -394,7 +402,7 @@ internal sealed class ForthCompiler
         if (storageType != ArrayStorageType.Bss)
         {
             for (var i = 0; i < v; i++)
-                contents.Add(_dataStack.Pop());
+                contents.Add(DataStack.Pop());
             contents.Reverse();
         }
         if (storageType == ArrayStorageType.RoData)
@@ -407,7 +415,7 @@ internal sealed class ForthCompiler
     {
         var t = GetName(start);
         CheckName(t);
-        Constants.Add(t.Word, _dataStack.Pop());
+        Constants.Add(t.Word, DataStack.Pop());
         start++;
     }
 
