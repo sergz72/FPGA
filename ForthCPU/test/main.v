@@ -16,9 +16,8 @@ module main
 `else
     input wire [(1 << I2C_PORTS_BITS) - 1:0] scl_in,
     input wire [(1 << I2C_PORTS_BITS) - 1:0] sda_in,
-    output reg [(1 << I2C_PORTS_BITS) - 1:0] scl_oe = 0,
-    output reg [(1 << I2C_PORTS_BITS) - 1:0] sda_oe = 0,
-    output wire zero
+    output wire [(1 << I2C_PORTS_BITS) - 1:0] scl_oe,
+    output wire [(1 << I2C_PORTS_BITS) - 1:0] sda_oe
 `endif
 );
     localparam MEMORY_SELECTOR_START_BIT = 13;
@@ -78,10 +77,6 @@ module main
 `endif
         end
     endgenerate
-
-`ifdef NO_INOUT_PINS
-    assign zero = 0;
-`endif
 
     assign interrupt = {uart_interrupt, timer_interrupt};
 
