@@ -11,7 +11,7 @@
   swap I2C_ADDRESS + !
 ;
 
-\ channel data
+\ data channel
 : i2c_channel_set2
   I2C_ADDRESS + !
 ;
@@ -66,14 +66,69 @@
   SDA i2c_channel_set \ scl low
 ;
 
-\ channel address -> ack
-: i2c_check
+\ stack: channel -> channel bit
+: i2c_bit_read
+  dup \ channel channel
+  i2c_delay
+  SCLSDA i2c_channel_set \ channel
+  i2c_delay
+  dup I2C_ADDRESS + @ SDA and \ channel bit
+  over \ channel bit channel
+  SDA i2c_channel_set \ channel bit
+;
+
+\ stack: ack channel -> byte
+: i2c_byte_read
+  locals data
+  0 data!
+  8 0 do
+    i2c_bit_read
+    data@ 1 lshift or data!
+  loop
+  i2c_bit_send
+  2drop data@
+;
+
+\ channel address -> channel ack
+: i2c_send_address
   1 lshift swap
   dup i2c_start
   dup \ address channel channel
   rot \ channel channel address
   rot \ channel address channel
   i2c_byte_send \ channel ack
+;
+
+: i2c_check
+  i2c_send_address
   swap \ ack channel
   i2c_stop \ ack
+;
+
+\ read_address read_count write_address write_count channel address -> ack
+: i2c_transfer
+  locals channel, last
+  i2c_send_address
+  if
+    i2c_stop
+    2drop 2drop 1
+  else
+    channel!
+    0 do
+      dup @ channel@ i2c_byte_send
+      if i2c_stop 2drop 1 exit then
+      1 +
+    loop
+    drop
+    dup 1 - last!
+    0 do
+      dup
+      I last@ = if 1 else 0 then \ ack/nack
+      channel@ i2c_byte_read
+      ! 1 +
+    loop
+    drop
+    channel@ i2c_stop
+    0
+  then
 ;

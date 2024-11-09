@@ -145,3 +145,5 @@
     drop r@ 1
   then
 ;
+
+: 2drop drop drop ;

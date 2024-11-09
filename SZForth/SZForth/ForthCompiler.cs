@@ -40,6 +40,7 @@ internal sealed class ForthCompiler
     
     internal bool CompileMode { get; set; }
     internal readonly int Bits;
+    private int _totalSize, _codeSegmentSize, _dataSegmentSize, _roDataSegmentSize;
     
     internal ForthCompiler(ParsedConfiguration config, List<string> sources, int bits)
     {
@@ -477,35 +478,66 @@ internal sealed class ForthCompiler
         throw new CompilerException($"{requiredLabel} not found");
     }
 
-    private static string BuildMapRow(string name, int pc, string pcFormat)
+    private string BuildMapRow(string name, int pc, int size, string pcFormat)
     {
         var spc = pc.ToString(pcFormat);
-        return $"{name}: {spc}";
+        _totalSize += size;
+        return $"{name}: {spc} size {size}";
+    }
+
+    private string BuildUsage(string name, uint size)
+    {
+        var percent = _totalSize * 100 / size;
+        return $"{name} segment usage: {percent}% ({_totalSize} of {size})";
     }
     
     internal List<string> BuildMapFile(string pcFormat)
     {
         List<string> lines = ["code:"];
+        _totalSize = 0;
         lines.AddRange(_wordAddresses
             .OrderBy(wa => wa.Value)
-            .Select(wa => BuildMapRow(wa.Key, wa.Value, pcFormat)));
+            .Select(wa => BuildMapRow(wa.Key, wa.Value, _words[wa.Key].Sum(i => i.Size), pcFormat)));
+        _totalSize += 8; // 2 jmps at the start
+        lines.Add(BuildUsage("code", Config.Code.Size));
+        _codeSegmentSize = _totalSize;
         if (Variables.Count != 0)
         {
+            _totalSize = 0;
             lines.Add("");
             lines.Add("data/bss:");
             lines.AddRange(Variables
                 .OrderBy(v => v.Value.Address)
-                .Select(v => BuildMapRow(v.Key, (int)v.Value.Address!, pcFormat)));
+                .Select(v => BuildMapRow(v.Key, (int)v.Value.Address!, v.Value.Size, pcFormat)));
+            lines.Add(BuildUsage("data", Config.Data.Size));
+            _dataSegmentSize = _totalSize;
         }
+        else
+            _dataSegmentSize = 0;
         if (RoDataConstants.Count != 0)
         {
+            _totalSize = 0;
             lines.Add("");
             lines.Add("rodata:");
             lines.AddRange(RoDataConstants
                 .OrderBy(v => v.Value.Address)
-                .Select(v => BuildMapRow(v.Key, (int)v.Value.Address!, pcFormat)));
+                .Select(v => BuildMapRow(v.Key, (int)v.Value.Address!, v.Value.Size, pcFormat)));
+            lines.Add(BuildUsage("rodata", Config.RoData.Size));
+            _roDataSegmentSize = _totalSize;
         }
+        else
+            _roDataSegmentSize = 0;
         return lines;
+    }
+
+    internal void CheckSizes()
+    {
+        if (_codeSegmentSize > Config.Code.Size)
+            throw new CompilerException("code segment size is too big");
+        if (_dataSegmentSize > Config.Data.Size)
+            throw new CompilerException("data segment size is too big");
+        if (_roDataSegmentSize > Config.RoData.Size)
+            throw new CompilerException("rodata segment size is too big");
     }
 }
 

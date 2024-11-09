@@ -80,6 +80,7 @@ void BuldMapFile(ParsedConfiguration config, ForthCompiler compiler, string pcFo
     {
         var contents = compiler.BuildMapFile(pcFormat);
         File.WriteAllLines(config.MapFileName, contents);
+        compiler.CheckSizes();
     }
 }
 
