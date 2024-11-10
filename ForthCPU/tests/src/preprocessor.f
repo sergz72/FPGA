@@ -9,5 +9,6 @@ ONE  [IF] 2 [ELSE] 4  [THEN] constant TEST2
 
 : main TEST1 TEST2 +
   12 != if hlt then
+  sp@ if hlt then
   wfi
 ;

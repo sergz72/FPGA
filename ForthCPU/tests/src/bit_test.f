@@ -9,6 +9,7 @@ hex
   FFFF F bit?
   1 != if hlt then
   7FFF F bit? if hlt then
+  sp@ if hlt then
   wfi
 ;
 decimal

@@ -8,5 +8,7 @@
   begin 3 + dup 20 > until0
   23 != if hlt then
 
+  sp@ if hlt then
+
   wfi
 ;

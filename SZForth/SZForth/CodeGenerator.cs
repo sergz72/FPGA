@@ -141,6 +141,9 @@ internal sealed class CodeGenerator
             case "mod":
                 i = new OpcodeInstruction((uint)InstructionCodes.AluOp + (uint)AluOperations.Rem, token.Word);
                 break;
+            case "sp@":
+                i = new OpcodeInstruction((uint)InstructionCodes.GetDataStackPointer, token.Word);
+                break;
             case "wfi":
                 i = new OpcodeInstruction((uint)InstructionCodes.Wfi, token.Word);
                 break;

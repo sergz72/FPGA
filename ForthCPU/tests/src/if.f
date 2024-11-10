@@ -15,5 +15,7 @@
   0 if0 2 else 4 then
   2 != if hlt then
 
+  sp@ if hlt then
+
   wfi
 ;

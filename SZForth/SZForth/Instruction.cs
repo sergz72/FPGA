@@ -26,6 +26,7 @@ internal enum InstructionCodes
     LocalSet,
     Locals,
     UpdatePstackPointer,
+    GetDataStackPointer,
     GetAluOut2,
     Mul = 0xE0,
     AluOp = 0xF0
@@ -181,7 +182,7 @@ internal class JmpInstruction: Instruction
     
     internal int Offset { get; set; }
 
-    internal string JmpTo { get; set; } = "";
+    internal string JmpTo { get; set; }
 
     internal JmpInstruction(InstructionCodes opCode, string name, int bits, string jmpTo) : base($"{name} {jmpTo}")
     {

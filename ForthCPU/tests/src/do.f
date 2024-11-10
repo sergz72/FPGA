@@ -24,5 +24,7 @@
   250076 != if hlt then
   10 != if hlt then
 
+  sp@ if hlt then
+
   wfi
 ;

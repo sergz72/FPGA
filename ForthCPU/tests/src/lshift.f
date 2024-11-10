@@ -4,5 +4,6 @@
 hex
 : main 10 3 lshift
   80 != if hlt then
+  sp@ if hlt then
   wfi
 ;

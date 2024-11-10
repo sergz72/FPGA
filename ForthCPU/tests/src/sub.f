@@ -3,5 +3,6 @@
 
 : main 5 2 -
   3 != if hlt then
+  sp@ if hlt then
   wfi
 ;

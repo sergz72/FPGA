@@ -63,7 +63,7 @@ module forth_cpu
     reg start = 0;
 
     wire push, dup, set, alu_op, jmp, get, call, ret, retn, br, br0, reti, drop, swap, rot, over, loop;
-    wire pstack_get, pstack_push, local_get, local_set, locals, update_pstack_pointer;
+    wire pstack_get, pstack_push, local_get, local_set, locals, update_pstack_pointer, get_data_stack_pointer;
 `ifdef MUL
     wire mul, get_alu_out2;
     reg [WIDTH - 1:0] alu_out2;
@@ -98,8 +98,9 @@ module forth_cpu
     assign local_set = current_instruction == 21;
     assign locals = current_instruction == 22;
     assign update_pstack_pointer = current_instruction == 23;
+    assign get_data_stack_pointer = current_instruction == 24;
 `ifdef MUL
-    assign get_alu_out2 = current_instruction == 24;
+    assign get_alu_out2 = current_instruction == 25;
     assign mul = current_instruction == 8'hE0;
 `endif
     assign alu_op = current_instruction[7:4] == 4'hF;
@@ -328,6 +329,12 @@ module forth_cpu
                             pc <= pc + 1;
                             state <= STATE_FETCH;
                         end
+                        get_data_stack_pointer: begin
+                            data_stack_nwr <= 0;
+                            data_stack_wr_data <= {{WIDTH-DATA_STACK_BITS{1'b0}}, data_stack_pointer};
+                            data_stack_pointer <= data_stack_pointer - 1;
+                            state <= STATE_FETCH;
+                        end
 `ifdef MUL
                         mul: begin
                             data_stack_nwr <= 0;
@@ -338,7 +345,7 @@ module forth_cpu
                         get_alu_out2: begin
                             data_stack_nwr <= 0;
                             data_stack_wr_data <= alu_out2;
-                            data_stack_pointer <= data_stack_pointer + 1;
+                            data_stack_pointer <= data_stack_pointer - 1;
                             state <= STATE_FETCH;
                         end
 `endif

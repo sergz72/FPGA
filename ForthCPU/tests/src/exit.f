@@ -11,5 +11,8 @@
   1 != if hlt then
   test_exit3
   221 != if hlt then
+
+  sp@ if hlt then
+
   wfi
 ;

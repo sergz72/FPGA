@@ -17,5 +17,6 @@
   1 != if hlt then
   2 3 word_with_locals
   1 != if hlt then
+  sp@ if hlt then
   wfi
 ;

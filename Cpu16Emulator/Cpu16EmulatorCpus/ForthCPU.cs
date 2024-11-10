@@ -29,7 +29,8 @@ public class ForthCPU(string[] code, int speed, int dataStackSize, int callStack
     private const byte LOCAL_SET   = 21;
     private const byte LOCALS      = 22;
     private const byte UPDATE_PSTACK_POINTER = 23;
-    private const byte GET_ALU_OUT2 = 24;
+    private const byte GET_DATA_STACK_POINTER = 24;
+    private const byte GET_ALU_OUT2 = 25;
     private const byte MUL         = 0xE0;
     private const byte ALU_OP      = 0xF0;
 
@@ -244,6 +245,9 @@ public class ForthCPU(string[] code, int speed, int dataStackSize, int callStack
                 Pc = (ushort)(Pc + 1); 
                 ParametersStack.DropN(data, Pc);
                 break;
+            case GET_DATA_STACK_POINTER:
+                DataStack.Push((ushort)DataStack.Sp, Pc);
+                break;
             case GET_ALU_OUT2:
                 if (_hardMul)
                     DataStack.Push(_aluOut2, Pc);
@@ -356,6 +360,8 @@ public sealed class ForthStack<T>(string name, int size)
     public readonly T[] Contents = new T[size];
 
     public int Pointer { get; private set; } = -1;
+    
+    public int Sp => ~Pointer;
 
     internal void Push(T value, ushort pc)
     {

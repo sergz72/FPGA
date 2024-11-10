@@ -8,5 +8,6 @@
   1C72 != if hlt then
   alu_out2 38E3 != if hlt then
   decimal 
+  sp@ if hlt then
   wfi
 ;
