@@ -1,0 +1,6 @@
+{
+  "code":   { "fileName": "asm/code.hex", "size": "1K", "entryPoint": "Main.main", "isrHandlers": ["Main.isr1","Main.isr2"] },
+  "data":   { "address": "0", "size": "1K" },
+  "roData": { "fileName": "asm/rodata.hex", "address": "2000", "size": "1K" },
+  "options": ["MUL", "DIV"]
+}
