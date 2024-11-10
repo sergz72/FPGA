@@ -1,4 +1,4 @@
-hex FFFF constant PORT
+hex FFFF constant PORT decimal
 
 (
   push 0
