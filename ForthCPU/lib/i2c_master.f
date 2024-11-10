@@ -86,12 +86,11 @@
     data@ 1 lshift or data!
   loop
   i2c_bit_send
-  2drop data@
+  drop drop data@
 ;
 
-\ channel address -> channel ack
+\ address channel -> channel ack
 : i2c_send_address
-  1 lshift swap
   dup i2c_start
   dup \ address channel channel
   rot \ channel channel address
@@ -99,36 +98,56 @@
   i2c_byte_send \ channel ack
 ;
 
+\ channel address -> ack
 : i2c_check
+  1 lshift swap
   i2c_send_address
   swap \ ack channel
   i2c_stop \ ack
 ;
 
+\ channel
+: i2c_restart
+  dup SDA i2c_channel_set
+  i2c_delay
+  dup SCLSDA i2c_channel_set
+  i2c_delay
+  i2c_start
+;
+
 \ read_address read_count write_address write_count channel address -> ack
+\ read_count and write_count > 0
 : i2c_transfer
-  locals channel, last
-  i2c_send_address
+  locals channel,address,last
+
+  dup address!
+  1 lshift
+  i2c_send_address \ ... write_count channel ack
   if
     i2c_stop
     2drop 2drop 1
   else
     channel!
     0 do
-      dup @ channel@ i2c_byte_send
-      if i2c_stop 2drop 1 exit then
+      dup @ channel@ i2c_byte_send \ ... write_address ack
+      if channel@ i2c_stop drop 2drop 1 exit then
       1 +
     loop
-    drop
-    dup 1 - last!
-    0 do
-      dup
-      I last@ = if 1 else 0 then \ ack/nack
-      channel@ i2c_byte_read
-      ! 1 +
-    loop
-    drop
-    channel@ i2c_stop
-    0
+    drop \ read_address read_count
+    channel@ dup i2c_restart address@ 1 + i2c_send_address
+    if
+      i2c_stop 2drop 1
+    else
+      dup 1 - last!
+      0 do
+        dup
+        I last@ = if 1 else 0 then \ ack/nack
+        channel@ i2c_byte_read
+        ! 1 +
+      loop
+      drop
+      channel@ i2c_stop
+      0
+    then
   then
 ;
