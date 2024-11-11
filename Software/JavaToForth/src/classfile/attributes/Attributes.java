@@ -10,7 +10,7 @@ public class Attributes extends ClassFileInfo<AttributesItem> {
     public Attributes(ConstantPool cp, ByteBuffer bb) throws ClassFileException {
         super(bb, 0, buffer -> {
             try {
-                return new ClassFileInfo.CreatorResult<>(AttributesItem.load(cp, buffer));
+                return new ClassFileInfo.CreatorResult<>(new AttributesItem[]{AttributesItem.load(cp, buffer)});
             } catch (ClassFileException e) {
                 return new ClassFileInfo.CreatorResult<>(e.getMessage());
             }

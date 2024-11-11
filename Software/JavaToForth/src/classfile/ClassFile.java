@@ -1,7 +1,7 @@
 package classfile;
 
 import classfile.attributes.Attributes;
-import classfile.constantpool.ConstantPool;
+import classfile.constantpool.*;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -31,7 +31,7 @@ public final class ClassFile {
         superClass = bb.getShort();
         interfaceInfo = new Interfaces(bb);
         fieldsInfo = new Fields(bb);
-        methodsInfo = new Methods(constantPoolInfo, bb);
+        methodsInfo = new Methods(thisClass, constantPoolInfo, bb);
         attributesInfo = new Attributes(constantPoolInfo, bb);
         if (bb.hasRemaining())
             throw new ClassFileException("class file contains unknown bytes");
@@ -58,5 +58,31 @@ public final class ClassFile {
 
     public Map<String, MethodsItem> getMethods() {
         return methodsInfo.methods;
+    }
+
+    public ConstantPoolItem getFromConstantPool(int index) {
+        return constantPoolInfo.get(index);
+    }
+
+    public String getUtf8Constant(int index) throws ClassFileException {
+        return constantPoolInfo.getUtf8Constant(index);
+    }
+
+    public String getMethodName(int index) throws ClassFileException {
+        var item = constantPoolInfo.get(index);
+        if (item instanceof MethodReferenceConstantPoolItem mr)
+            return mr.getName(constantPoolInfo);
+        throw new ClassFileException("wrong pool index for getMethodName");
+    }
+
+    public String getMethodClassName(int index) throws ClassFileException {
+        var item = constantPoolInfo.get(index);
+        if (item instanceof MethodReferenceConstantPoolItem mr)
+            return mr.getClassName(constantPoolInfo);
+        throw new ClassFileException("wrong pool index for getMethodClassName");
+    }
+
+    public int getMethodIndex(int index) {
+        throw new UnsupportedOperationException();
     }
 }

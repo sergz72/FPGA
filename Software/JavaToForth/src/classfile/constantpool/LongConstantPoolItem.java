@@ -8,4 +8,8 @@ public class LongConstantPoolItem extends ConstantPoolItem {
         super();
         value = bb.getLong();
     }
+
+    public long getValue() {
+        return value;
+    }
 }

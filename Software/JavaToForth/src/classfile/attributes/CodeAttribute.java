@@ -27,4 +27,8 @@ public class CodeAttribute extends AttributesItem {
     public byte[] getCode() {
         return code;
     }
+
+    public int getNumberOfLocals() {
+        return maxlocals;
+    }
 }

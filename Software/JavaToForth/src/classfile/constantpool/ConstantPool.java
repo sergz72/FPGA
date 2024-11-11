@@ -16,9 +16,13 @@ public class ConstantPool extends ClassFileInfo<ConstantPoolItem> {
         });
     }
 
+    public ConstantPoolItem get(int index) {
+        index -= 1;
+        return this.items.get(index);
+    }
+
     public String getUtf8Constant(int nameIndex) throws ClassFileException {
-        nameIndex -= 1;
-        var item = this.items.get(nameIndex);
+        var item = get(nameIndex);
         if (item instanceof Utf8ConstantPoolItem ui)
             return ui.value;
         else
@@ -26,11 +30,14 @@ public class ConstantPool extends ClassFileInfo<ConstantPoolItem> {
     }
 
     public String getClassName(int index) throws ClassFileException {
-        index -= 1;
-        var item = this.items.get(index);
+        var item = get(index);
         if (item instanceof ClassConstantPoolItem c)
             return getUtf8Constant(c.nameIndex);
         else
             throw new ClassFileException("Constant pool item " + index + " is not a ClassConstantPoolItem");
+    }
+
+    public String buildMethodName(int className, int name, int descriptor) throws ClassFileException {
+        return getClassName(className) + "." + getUtf8Constant(name) + getUtf8Constant(descriptor);
     }
 }

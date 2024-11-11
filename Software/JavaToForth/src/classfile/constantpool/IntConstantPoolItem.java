@@ -8,4 +8,8 @@ public class IntConstantPoolItem extends ConstantPoolItem {
         super();
         value = bb.getInt();
     }
+
+    public int getValue() {
+        return value;
+    }
 }

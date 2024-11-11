@@ -8,4 +8,6 @@ public class StringConstantPoolItem extends ConstantPoolItem {
         super();
         stringIndex = bb.getShort();
     }
+
+    public int getStringIndex() {return stringIndex;}
 }
