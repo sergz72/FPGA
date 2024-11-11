@@ -101,7 +101,7 @@ module forth_cpu
     assign get_data_stack_pointer = current_instruction == 24;
 `ifdef MUL
     assign get_alu_out2 = current_instruction == 25;
-    assign mul = current_instruction == 8'hE0;
+    assign mul = current_instruction == 'hE0;
 `endif
     assign alu_op = current_instruction[7:4] == 4'hF;
 
