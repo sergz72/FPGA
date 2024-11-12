@@ -28,11 +28,12 @@ internal static class AluOperations
     internal const uint Or = 3;
     internal const uint Xor = 4;
     internal const uint Shl = 5;
-    internal const uint LShr = 6;
-    internal const uint AShr = 7;
-    internal const uint BitTest = 8;
-    internal const uint Mul = 9;
-    internal const uint Cmp = 10;
+    internal const uint LLShr = 6;
+    internal const uint ILShr = 7;
+    internal const uint AShr = 8;
+    internal const uint BitTest = 9;
+    internal const uint Mul = 10;
+    internal const uint Cmp = 11;
 }
 
 internal static class InstructionCodes

@@ -127,12 +127,13 @@ module java_cpu
             2: alu = data_stack_value2 & data_stack_value1;
             3: alu = data_stack_value2 | data_stack_value1;
             4: alu = data_stack_value2 ^ data_stack_value1;
-            5: alu = data_stack_value2 << data_stack_value1;
-            6: alu = data_stack_value2 >> data_stack_value1;
-            7: alu = data_stack_value2 >>> data_stack_value1;
-            8: alu = {{63{1'b0}}, data_stack_value2[data_stack_value1[5:0]]};
-            9: alu = $signed(data_stack_value2) * $signed(data_stack_value1);
-            10: alu = {{63{lt}}, !eq}; // cmp
+            5: alu = data_stack_value2 << data_stack_value1[5:0];
+            6: alu = data_stack_value2 >> data_stack_value1[5:0]; // llshr
+            7: alu = {32'h0, data_stack_value2[31:0] >> data_stack_value1[4:0]}; // ilshr
+            8: alu = data_stack_value2 >>> data_stack_value1[5:0]; // ashr
+            9: alu = {{63{1'b0}}, data_stack_value2[data_stack_value1[5:0]]};
+            10: alu = $signed(data_stack_value2) * $signed(data_stack_value1);
+            11: alu = {{63{lt}}, !eq}; // cmp
             default: alu = {64{1'bx}};
         endcase
     endfunction
