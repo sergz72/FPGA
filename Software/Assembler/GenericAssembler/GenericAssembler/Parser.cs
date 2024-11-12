@@ -15,7 +15,7 @@ public enum TokenType
     String
 }
 
-public record Token(TokenType Type, string StringValue, int IntValue)
+public record Token(TokenType Type, string StringValue, long LongValue)
 {
     public Token(char charValue) : this(TokenType.Symbol, charValue.ToString(), 0)
     {
@@ -53,7 +53,8 @@ public class GenericParser: IParser
     protected ParserMode Mode;
     protected readonly List<Token> Result;
     protected readonly StringBuilder Builder;
-    protected int IntValue;
+    protected long LongValue;
+    protected bool Sign;
     
     public GenericParser()
     {
@@ -87,20 +88,20 @@ public class GenericParser: IParser
         switch (c)
         {
             case >= '0' and <= '9':
-                IntValue <<= 4;
-                IntValue |= c - '0';
+                LongValue <<= 4;
+                LongValue |= c - '0';
                 break;
             case >= 'a' and <= 'f':
-                IntValue <<= 4;
-                IntValue |= c - 'a' + 10;
+                LongValue <<= 4;
+                LongValue |= c - 'a' + 10;
                 break;
             case >= 'A' and <= 'F':
-                IntValue <<= 4;
-                IntValue |= c - 'A' + 10;
+                LongValue <<= 4;
+                LongValue |= c - 'A' + 10;
                 break;
             default:
                 Mode = ParserMode.None;
-                Result.Add(new Token(TokenType.Number, "", IntValue));
+                Result.Add(new Token(TokenType.Number, "", LongValue));
                 return ModeNoneHandler(c);
         }
         return false;
@@ -111,12 +112,12 @@ public class GenericParser: IParser
         switch (c)
         {
             case >= '0' and <= '9':
-                IntValue *= 10;
-                IntValue += c - '0';
+                LongValue *= 10;
+                LongValue += c - '0';
                 break;
             default:
                 Mode = ParserMode.None;
-                Result.Add(new Token(TokenType.Number, "", IntValue));
+                Result.Add(new Token(TokenType.Number, "", LongValue));
                 return ModeNoneHandler(c);
         }
         return false;
@@ -176,14 +177,14 @@ public class GenericParser: IParser
             Mode = ParserMode.Char3;
             return false;
         }
-        IntValue = c;
+        LongValue = c;
         Mode = ParserMode.Char2;
         return false;
     }
 
     protected bool ModeChar3Handler(char c)
     {
-        IntValue = c switch
+        LongValue = c switch
         {
             'n' => '\n',
             'r' => '\r',
@@ -199,7 +200,7 @@ public class GenericParser: IParser
     {
         if (c != '\'')
             throw new ParserException("' expected");
-        Result.Add(new Token(TokenType.Number, "", IntValue));
+        Result.Add(new Token(TokenType.Number, "", LongValue));
         Mode = ParserMode.None;
         return false;
     }
@@ -227,11 +228,12 @@ public class GenericParser: IParser
                 break;
             case '$':
                 Mode = ParserMode.HexNumber;
-                IntValue = 0;
+                LongValue = 0;
                 break;
             case >= '0' and <= '9':
                 Mode = ParserMode.Number;
-                IntValue = c - '0';
+                LongValue = c - '0';
+                Sign = false;
                 break;
             case >= 'a' and <= 'z':
             case >= 'A' and <= 'Z':
@@ -287,7 +289,7 @@ public class GenericParser: IParser
                 break;
             case ParserMode.Number:
             case ParserMode.HexNumber:
-                Result.Add(new Token(TokenType.Number, "", IntValue));
+                Result.Add(new Token(TokenType.Number, "", LongValue));
                 break;
             case ParserMode.Symbol:
                 Result.Add(new Token(TokenType.Symbol, Builder.ToString(), 0));

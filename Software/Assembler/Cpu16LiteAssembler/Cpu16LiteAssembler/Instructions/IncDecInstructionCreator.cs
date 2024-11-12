@@ -4,7 +4,7 @@ namespace Cpu16LiteAssembler.Instructions;
 
 public class IncInstructionCreator: InstructionCreator
 {
-    private readonly InstructionCreator _aluCreator = new AluImmediateInstructionCreator(AluOperations.Add, 1);
+    private readonly AluImmediateInstructionCreator _aluCreator = new(AluOperations.Add, 1);
     public override Instruction Create(ICompiler compiler, string line, string file, int lineNo, List<Token> parameters)
     {
         if (parameters.Count != 1 || parameters[0].Type != TokenType.Name)
@@ -17,7 +17,7 @@ public class IncInstructionCreator: InstructionCreator
 
 public class DecInstructionCreator: InstructionCreator
 {
-    private readonly InstructionCreator _aluCreator = new AluImmediateInstructionCreator(AluOperations.Add, 0xFFFF);
+    private readonly AluImmediateInstructionCreator _aluCreator = new(AluOperations.Add, 0xFFFF);
     public override Instruction Create(ICompiler compiler, string line, string file, int lineNo, List<Token> parameters)
     {
         if (parameters.Count != 1 || parameters[0].Type != TokenType.Name)

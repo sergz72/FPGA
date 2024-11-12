@@ -22,6 +22,7 @@ public sealed class ExpressionParser
         { "!=", 4 },
         
         { "~", 3 },
+        { "U-", 3 },
         
         { "&", 2 },
         { "^", 2 },
@@ -40,11 +41,11 @@ public sealed class ExpressionParser
         AllowedSymbols.Add(")");
     }
     
-    private record OutputItem(string? Op, int Value);
+    private record OutputItem(string? Op, long Value);
 
     private readonly OutputItem[] _output;
     private readonly string[] _opStack;
-    private readonly int[] _dataStack;
+    private readonly long[] _dataStack;
     private readonly ICompiler _compiler;
     private readonly int _stackSize;
     private int _outputPointer;
@@ -55,7 +56,7 @@ public sealed class ExpressionParser
     {
         _output = new OutputItem[stackSize];
         _opStack = new string[stackSize];
-        _dataStack = new int[stackSize];
+        _dataStack = new long[stackSize];
         _stackSize = stackSize;
         _compiler = compiler;
     }
@@ -74,7 +75,7 @@ public sealed class ExpressionParser
     
     private void SyntaxError() => _compiler.RaiseException("syntax error");
     
-    public int Parse(List<Token> tokens, ref int start)
+    public long Parse(List<Token> tokens, ref int start)
     {
         _outputPointer = _opStackPointer = 0;
         _prevOp = true;
@@ -85,7 +86,7 @@ public sealed class ExpressionParser
             switch (token.Type)
             {
                 case TokenType.Number:
-                    StoreNumber(token.IntValue);
+                    StoreNumber(token.LongValue);
                     break;
                 case TokenType.Name:
                     StoreNumber(_compiler.FindConstantValue(token.StringValue));
@@ -113,9 +114,9 @@ public sealed class ExpressionParser
                     }
                     else
                     {
-                        if (_prevOp && token.StringValue != "~")
+                        if (_prevOp && token.StringValue != "~" && token.StringValue != "-")
                             SyntaxError();
-                        Operation(token.StringValue);
+                        Operation(token.StringValue == "-" ? "U-" : token.StringValue);
                         _prevOp = true;
                     }
                     break;
@@ -130,7 +131,7 @@ public sealed class ExpressionParser
         return Finish();
     }
 
-    private int Finish()
+    private long Finish()
     {
         MoveToOutput(0);
         if (_opStackPointer > 0)
@@ -150,6 +151,9 @@ public sealed class ExpressionParser
                 case "~":
                     _dataStack[_opStackPointer - 1] = ~_dataStack[_opStackPointer - 1];
                     break;
+                case "U-":
+                    _dataStack[_opStackPointer - 1] = -_dataStack[_opStackPointer - 1];
+                    break;
                 case "+":
                     _opStackPointer--;
                     _dataStack[_opStackPointer - 1] += GetOperand();
@@ -168,11 +172,11 @@ public sealed class ExpressionParser
                     break;
                 case "<<":
                     _opStackPointer--;
-                    _dataStack[_opStackPointer - 1] <<= GetOperand();
+                    _dataStack[_opStackPointer - 1] <<= (int)GetOperand();
                     break;
                 case ">>":
                     _opStackPointer--;
-                    _dataStack[_opStackPointer - 1] >>= GetOperand();
+                    _dataStack[_opStackPointer - 1] >>= (int)GetOperand();
                     break;
                 case "&":
                     _opStackPointer--;
@@ -230,7 +234,7 @@ public sealed class ExpressionParser
         return _dataStack[0];
     }
 
-    private int GetOperand()
+    private long GetOperand()
     {
         if (_opStackPointer < 1)
             SyntaxError();
@@ -259,7 +263,7 @@ public sealed class ExpressionParser
         _opStack[_opStackPointer++] = opName;
     }
 
-    private void StoreNumber(int value)
+    private void StoreNumber(long value)
     {
         _prevOp = false;
         CheckOutputStack();

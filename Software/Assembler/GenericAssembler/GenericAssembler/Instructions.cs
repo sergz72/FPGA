@@ -40,7 +40,7 @@ public abstract class InstructionCreator
     {
         if (start == parameters.Count)
             throw new InstructionException("unexpected end of line");
-        return compiler.CalculateExpression(parameters, ref start);
+        return (int)compiler.CalculateExpression(parameters, ref start);
     }
 }
 
@@ -52,6 +52,7 @@ internal class DataInstruction : Instruction
     {
         RequiredLabel = labelName;
         _data = data;
+        Size = (uint)(data?.Count ?? 1);
     }
     public override uint[] BuildCode(uint labelAddress, uint pc)
     {

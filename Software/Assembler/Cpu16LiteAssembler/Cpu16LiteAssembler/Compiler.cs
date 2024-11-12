@@ -5,7 +5,7 @@ namespace Cpu16LiteAssembler;
 
 internal sealed class Cpu16Compiler: GenericCompiler
 {
-    internal Cpu16Compiler(List<string> sources, string outputFileName, OutputFormat outputFormat): base(sources, outputFileName, outputFormat, Creators, new GenericParser())
+    internal Cpu16Compiler(List<string> sources, OutputFormat outputFormat): base(sources, outputFormat, Creators, new GenericParser())
     {
     }
         

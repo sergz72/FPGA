@@ -1,0 +1,9 @@
+{
+  "TestsDir": "src",
+  "SearchPattern": "*.asm",
+  "BuildCommand": "build.sh",
+  "SimulatorCommand": "run_verilator.sh",
+  "Flag": "wfi=1",
+  "Error": "hlt=1",
+  "Ok": "wfi=1"
+}

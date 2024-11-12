@@ -59,7 +59,7 @@ internal sealed class MovInstructionCreator : InstructionCreator
                 if (!parameters[3].IsChar('+'))
                     throw new InstructionException("+ expected");
                 var start = 4;
-                adder = compiler.CalculateExpression(parameters, ref start);
+                adder = (int)compiler.CalculateExpression(parameters, ref start);
             }
 
             return new MovInstruction(line, file, lineNo, InstructionCodes.MovReg, regNo, regNo2, (uint)adder);
@@ -116,7 +116,7 @@ internal sealed class MovInstructionCreator : InstructionCreator
         {
             if (!parameters[idx++].IsChar('+'))
                 throw new InstructionException("+ expected");
-            adder = compiler.CalculateExpression(parameters, ref idx);
+            adder = (int)compiler.CalculateExpression(parameters, ref idx);
         }
         if (increment)
             return new MovInstruction(line, file, lineNo, InstructionCodes.MovRegisterRpRpInc, regNo, (uint)adder, 0);
@@ -141,7 +141,7 @@ internal sealed class MovInstructionCreator : InstructionCreator
                 if (!parameters[2].IsChar('+'))
                     throw new InstructionException("+ expected");
                 var start = 3;
-                adder = compiler.CalculateExpression(parameters, ref start);
+                adder = (int)compiler.CalculateExpression(parameters, ref start);
             }
 
             if (increment)

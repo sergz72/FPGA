@@ -115,9 +115,9 @@ internal static class InstructionsHelper
         if (parameters[start].Type == TokenType.Number)
         {
             if (memoryOp == null)
-                memoryOp = new MemoryOp(false, false, parameters[start].IntValue);
+                memoryOp = new MemoryOp(false, false, (int)parameters[start].LongValue);
             else
-                memoryOp = memoryOp with { Offset = parameters[start].IntValue};
+                memoryOp = memoryOp with { Offset = (int)parameters[start].LongValue};
             start++;
             if (start == parameters.Count)
                 throw new InstructionException("unexpected end of line");

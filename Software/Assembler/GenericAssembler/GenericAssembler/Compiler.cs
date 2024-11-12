@@ -8,10 +8,10 @@ public enum OutputFormat
 
 public interface ICompiler
 {
-    int CalculateExpression(List<Token> tokens, ref int start);
+    long CalculateExpression(List<Token> tokens, ref int start);
     string FindRegisterNumber(string registerName);
-    void AddConstant(string name, int value);
-    int FindConstantValue(string name);
+    void AddConstant(string name, long value);
+    long FindConstantValue(string name);
     uint? FindLabel(string name);
     void RaiseException(string errorMessage);
     Token GetNextToken(List<Token> tokens, ref int start);
@@ -29,10 +29,11 @@ public class GenericCompiler: ICompiler
     protected readonly IParser Parser;
     protected readonly List<string> Sources;
     protected readonly OutputFormat OutputFileFormat;
-    protected readonly Dictionary<string, int> Constants = [];
+    protected readonly Dictionary<string, long> Constants = [];
     protected readonly Dictionary<string, string> RegisterNames = [];
     protected readonly uint CodeSize;
     protected readonly uint PcSize;
+    protected readonly uint DataSize;
     protected readonly Dictionary<string, uint> Pc = [];
     protected readonly Dictionary<string, uint> StartAddress = [];
     protected readonly Linker L;
@@ -45,7 +46,7 @@ public class GenericCompiler: ICompiler
 
     public GenericCompiler(List<string> sources, OutputFormat outputFormat,
                             Dictionary<string, InstructionCreator> instructionCreators, IParser parser,
-                            uint codeSize = 8, uint pcSize = 4)
+                            uint codeSize = 8, uint pcSize = 4, uint dataSize = 8)
     {
         Sources = sources.Where(s => !s.EndsWith(".ld")).ToList();
         L = new Linker(sources.FirstOrDefault(s => s.EndsWith(".ld")));
@@ -54,6 +55,7 @@ public class GenericCompiler: ICompiler
         Parser = parser;
         CodeSize = codeSize;
         PcSize = pcSize;
+        DataSize = dataSize;
         EParser = new ExpressionParser(256, this);
     }
 
@@ -69,7 +71,7 @@ public class GenericCompiler: ICompiler
     
     public void RaiseException(string errorMessage) => throw new CompilerException(CurrentFileName, CurrentLineNo, errorMessage);
 
-    public int FindConstantValue(string name)
+    public long FindConstantValue(string name)
     {
         if (!Constants.TryGetValue(name, out var result))
             throw new CompilerException(CurrentFileName, CurrentLineNo, $"undefined constant name: {name}");
@@ -86,7 +88,7 @@ public class GenericCompiler: ICompiler
         return RegisterNames.GetValueOrDefault(registerName, registerName);
     }
 
-    public int CalculateExpression(List<Token> tokens, ref int start)
+    public long CalculateExpression(List<Token> tokens, ref int start)
     {
         return EParser.Parse(tokens, ref start);
     }
@@ -121,7 +123,7 @@ public class GenericCompiler: ICompiler
                     {
                         foreach (var code in data.Code)
                         {
-                            var codes = code.ToString("x" + CodeSize);
+                            var codes = code.ToString("x" + (instructions.Key == "code" ? CodeSize : DataSize));
                             var pcs = pc.ToString("x" + PcSize);
                             writer.Write($"{codes} // {pcs} {data.Line}\n");
                             pc++;
@@ -210,6 +212,18 @@ public class GenericCompiler: ICompiler
             var tokens = Parser.Parse(line);
             if (tokens.Count == 0)
                 continue;
+
+            if (tokens.Count >= 2 && tokens[1].IsChar(':')) // label
+            {
+                if (tokens[0].Type != TokenType.Name)
+                    throw new CompilerException(fileName, CurrentLineNo, "unexpected token " + tokens[0]);
+                if (!Labels.TryAdd(tokens[0].StringValue, Pc[CurrentSection]))
+                    throw new CompilerException(fileName, CurrentLineNo, "duplicate label");
+                if (tokens.Count == 2)
+                    continue;
+                tokens = tokens[2..];
+            }
+            
             if (tokens[0].Type != TokenType.Name)
                 throw new CompilerException(fileName, CurrentLineNo, "unexpected token " + tokens[0]);
             switch (tokens[0].StringValue)
@@ -261,15 +275,6 @@ public class GenericCompiler: ICompiler
                                 Pc[CurrentSection] += (uint)value;
                                 break;
                             default:
-                                if (tokens.Count >= 2 && tokens[1].IsChar(':')) // label
-                                {
-                                    if (!Labels.TryAdd(tokens[0].StringValue, Pc[CurrentSection]))
-                                        throw new CompilerException(fileName, CurrentLineNo, "duplicate label");
-                                    if (tokens.Count == 2)
-                                        continue;
-                                    tokens = tokens[2..];
-                                }
-
                                 var instruction = ParseInstruction(line, fileName, CurrentLineNo, tokens);
                                 if (instruction != null)
                                 {
@@ -302,6 +307,8 @@ public class GenericCompiler: ICompiler
             {
                 var value = CalculateExpression(tokens, ref start);
                 result.Add((uint)value);
+                if (start < tokens.Count && !tokens[start++].IsChar(','))
+                    throw new CompilerException(fileName, CurrentLineNo, ", expected");
             }
         }
         return new DataInstruction(line, fileName, CurrentLineNo, result);
@@ -339,7 +346,7 @@ public class GenericCompiler: ICompiler
         Skip = false;
     }
 
-    public void AddConstant(string name, int value)
+    public void AddConstant(string name, long value)
     {
         if (!Constants.TryAdd(name, value))
             throw new CompilerException(CurrentFileName, CurrentLineNo, $"constant with name {name} already defined");

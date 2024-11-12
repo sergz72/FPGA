@@ -14,7 +14,7 @@ internal sealed class ImmediateInstructionCreator(uint opCode) : InstructionCrea
             throw new InstructionException("register name expected");
         if (!compiler.GetNextToken(parameters, ref start).IsChar(','))
             throw new InstructionException("syntax error");
-        var immediate = compiler.CalculateExpression(parameters, ref start);
+        var immediate = (int)compiler.CalculateExpression(parameters, ref start);
         InstructionsHelper.ValidateOffset11(immediate);
         var o = (uint)immediate & 0x7FF;
         return new OpCodeInstruction(line, file, lineNo, o & 0x1FF, opCode, registerNumber, o >> 9);

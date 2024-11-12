@@ -105,14 +105,14 @@ internal static class InstructionsHelper
         switch (token.Type)
         {
             case TokenType.Number:
-                offset = token.IntValue;
+                offset = (int)token.LongValue;
                 break;
             case TokenType.Name:
                 var address = compiler.FindLabel(token.StringValue);
                 if (address != null)
                     offset = (int)address;
                 else
-                    offset = compiler.FindConstantValue(token.StringValue);
+                    offset = (int)compiler.FindConstantValue(token.StringValue);
                 break;
             case TokenType.Symbol:
                 if (token.StringValue != "-")
@@ -120,7 +120,7 @@ internal static class InstructionsHelper
                 token = compiler.GetNextToken(parameters, ref start);
                 if (token.Type != TokenType.Number)
                     throw new InstructionException("number expected");
-                offset = -token.IntValue;
+                offset = -(int)token.LongValue;
                 break;
             default:
                 throw new InstructionException("number or name expected");
@@ -131,7 +131,7 @@ internal static class InstructionsHelper
         if (!parameters[start++].IsChar('('))
             throw new InstructionException("( expected");
         token = compiler.GetNextToken(parameters, ref start);
-        if (token is { Type: TokenType.Number, IntValue: 0 })
+        if (token is { Type: TokenType.Number, LongValue: 0 })
             return 0;
         if (token.Type != TokenType.Name || !GetRegisterNumber(token.StringValue, out var registerNumber))
             throw new InstructionException("register name expected");

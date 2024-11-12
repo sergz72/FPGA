@@ -7,7 +7,7 @@ public sealed class Linker: ICompiler
     private readonly Dictionary<string, Section> _sections;
     private readonly ExpressionParser _eParser;
     private readonly string _currentFileName;
-    private readonly Dictionary<string, int> _constants = [];
+    private readonly Dictionary<string, long> _constants = [];
     private readonly IParser _parser;
     private int _currentLineNo;
     
@@ -132,7 +132,7 @@ public sealed class Linker: ICompiler
         return _sections[sectionName].FileName + (outputFileFormat == OutputFormat.Hex ? ".hex" : ".bin");
     }
     
-    public int CalculateExpression(List<Token> tokens, ref int start)
+    public long CalculateExpression(List<Token> tokens, ref int start)
     {
         return _eParser.Parse(tokens, ref start);
     }
@@ -142,14 +142,14 @@ public sealed class Linker: ICompiler
         throw new NotImplementedException();
     }
 
-    public void AddConstant(string name, int value)
+    public void AddConstant(string name, long value)
     {
         if (!_constants.TryAdd(name, value))
             throw new GenericCompiler.CompilerException(_currentFileName, _currentLineNo,
                                                         $"constant with name {name} already defined");
     }
 
-    public int FindConstantValue(string name)
+    public long FindConstantValue(string name)
     {
         if (!_constants.TryGetValue(name, out var result))
             throw new GenericCompiler.CompilerException(_currentFileName, _currentLineNo,

@@ -15,18 +15,24 @@ module java_cpu
     input wire [1:0] interrupt,
     output reg [1:0] interrupt_ack = 0
 );
-    localparam STATE_WIDTH          = 4;
-    localparam STATE_FETCH          = 0;
-    localparam STATE_DECODE         = 1;
-    localparam STATE_FETCH2         = 2;
-    localparam STATE_WAITREADY      = 3;
-    localparam STATE_WFI            = 4;
-    localparam STATE_INTERRUPT      = 5;
-    localparam STATE_PUSH_TEMP      = 6;
-    localparam STATE_PUSH_TEMP2     = 7;
-    localparam STATE_PUSH_TEMP22    = 8;
-    localparam STATE_PUSH_LOCAL     = 9;
-    localparam STATE_RET            = 10;
+    localparam STATE_WIDTH           = 5;
+    localparam STATE_FETCH           = 0;
+    localparam STATE_DECODE          = 1;
+    localparam STATE_FETCH2          = 2;
+    localparam STATE_FETCH3          = 3;
+    localparam STATE_FETCH4          = 4;
+    localparam STATE_WAITREADY       = 5;
+    localparam STATE_WAITREADY_LONG  = 6;
+    localparam STATE_WAITREADY_LONG2 = 7;
+    localparam STATE_WFI             = 8;
+    localparam STATE_INTERRUPT       = 9;
+    localparam STATE_PUSH_TEMP       = 10;
+    localparam STATE_PUSH_TEMP2      = 11;
+    localparam STATE_PUSH_TEMP22     = 12;
+    localparam STATE_PUSH_LOCAL      = 13;
+    localparam STATE_RET             = 14;
+    localparam STATE_INC_LOCAL       = 15;
+    localparam STATE_WAITNOTREADY    = 16;
 
     reg [63:0] data_stack[0:(1<<DATA_STACK_BITS)-1];
     reg [63:0] data_stack_wr_data, data_stack_value1, data_stack_value2;
@@ -42,44 +48,58 @@ module java_cpu
     reg [STATE_WIDTH - 1:0] state = STATE_FETCH;
 
     reg [15:0] rom[0:(1<<ROM_BITS)-1];
-    reg [15:0] immediate, pc_data, current_instruction = 0, address_data;
+    reg [15:0] immediate, immediate2, immediate3, pc_data, current_instruction = 0, address_data;
     wire [31:0] jmp_address, interrupt_address;
     reg [31:0] pc = 0, saved_pc;
     reg [63:0] temp, temp2;
+    reg [31:0] temp32;
     reg [31:0] address = 0;
     wire [1:0] interrupt_no;
+    wire [7:0] opcode;
 
     reg start = 0;
 
-    wire push, dup, set, alu_op, jmp, get, call, ret, retn, br, br0, reti, drop, swap, rot, over;
-    wire local_get, local_set, locals;
-    wire eq, gt, z;
+    wire push, push_long, dup, set, set_long, alu_op, get, get_long, call, call_indirect, jmp, ret, retn, reti;
+    wire neg, inc, nop, ifcmp, if_, drop, drop2, swap, rot, over, local_get, local_set, locals, get_data_stack_pointer;
+    wire eq, gt, lt, n, z, condition_neg, condition_cmp_pass, condition_pass;
+    wire [1:0] condition_flags, condition_cmp_temp, condition_temp;
     
     initial begin
         $readmemh("asm/code.hex", rom);
     end
 
-    assign push = current_instruction == 0;
-    assign dup = current_instruction == 1;
-    assign set = current_instruction == 2;
-    assign jmp = current_instruction == 3;
-    assign get = current_instruction == 4;
-    assign call = current_instruction == 5;
-    assign ret = current_instruction == 6;
-    assign retn = current_instruction == 7;
-    assign hlt = current_instruction == 8;
-    assign wfi = current_instruction == 9;
-    assign br = current_instruction == 10;
-    assign br0 = current_instruction == 11;
-    assign reti = current_instruction == 12;
-    assign drop = current_instruction == 13;
-    assign swap = current_instruction == 14;
-    assign rot = current_instruction == 15;
-    assign over = current_instruction == 16;
-    assign local_get = current_instruction == 17;
-    assign local_set = current_instruction == 18;
-    assign locals = current_instruction == 19;
-    assign alu_op = current_instruction[15:4] == 12'hF;
+    assign opcode = current_instruction[15:8];
+
+    assign push = opcode == 0;
+    assign push_long = opcode == 1;
+    assign dup = opcode == 2;
+    assign set = opcode == 3;
+    assign set_long = opcode == 4;
+    assign jmp = opcode == 5;
+    assign get = opcode == 6;
+    assign get_long = opcode == 7;
+    assign call = opcode == 8;
+    assign call_indirect = opcode == 9;
+    assign ret = opcode == 10;
+    assign retn = opcode == 11;
+    assign hlt = opcode == 12;
+    assign wfi = opcode == 13;
+    assign neg = opcode == 14;
+    assign inc = opcode == 15;
+    assign reti = opcode == 16;
+    assign drop = opcode == 17;
+    assign drop2 = opcode == 18;
+    assign swap = opcode == 19;
+    assign rot = opcode == 20;
+    assign over = opcode == 21;
+    assign local_get = opcode == 22;
+    assign local_set = opcode == 23;
+    assign locals = opcode == 24;
+    assign nop = opcode == 25;
+    assign get_data_stack_pointer = opcode == 26;
+    assign ifcmp = opcode == 27;
+    assign if_ = opcode == 28;
+    assign alu_op = opcode == 29;
 
     assign jmp_address = {pc_data, immediate};
     assign interrupt_no = interrupt[1] ? 2'b10 : {1'b0, interrupt[0]};
@@ -87,7 +107,18 @@ module java_cpu
 
     assign eq = data_stack_value2 == data_stack_value1;
     assign gt = $signed(data_stack_value2) > $signed(data_stack_value1);
+    assign lt = !eq & !gt;
     assign z = data_stack_value1 == 0;
+    assign n = data_stack_value1[63];
+
+    assign condition_neg = current_instruction[2];
+    assign condition_flags = current_instruction[1:0];
+
+    assign condition_cmp_temp = condition_flags & {gt, eq};
+    assign condition_cmp_pass = (condition_cmp_temp[0] | condition_cmp_temp[1]) ^ condition_neg;
+
+    assign condition_temp = condition_flags & {n, z};
+    assign condition_pass = (condition_temp[0] | condition_temp[1]) ^ condition_neg;
 
     function [63:0] alu(input [3:0] op);
         case (op)
@@ -96,17 +127,12 @@ module java_cpu
             2: alu = data_stack_value2 & data_stack_value1;
             3: alu = data_stack_value2 | data_stack_value1;
             4: alu = data_stack_value2 ^ data_stack_value1;
-            5: alu = {{63{1'b0}}, eq};
-            6: alu = {{63{1'b0}}, !eq};
-            7: alu = {{63{1'b0}}, gt};
-            8: alu = {{63{1'b0}}, eq | gt};
-            9: alu = {{63{1'b0}}, !gt};
-            10: alu = {{63{1'b0}}, !eq & !gt};
-            11: alu = data_stack_value2 << data_stack_value1;
-            12: alu = data_stack_value2 >> data_stack_value1;
-            13: alu = data_stack_value2 >>> data_stack_value1;
-            14: alu = {{63{1'b0}}, data_stack_value2[data_stack_value1[5:0]]};
-            15: alu = $signed(data_stack_value2) * $signed(data_stack_value1);
+            5: alu = data_stack_value2 << data_stack_value1;
+            6: alu = data_stack_value2 >> data_stack_value1;
+            7: alu = data_stack_value2 >>> data_stack_value1;
+            8: alu = {{63{1'b0}}, data_stack_value2[data_stack_value1[5:0]]};
+            9: alu = $signed(data_stack_value2) * $signed(data_stack_value1);
+            10: alu = {{63{lt}}, !eq}; // cmp
             default: alu = {64{1'bx}};
         endcase
     endfunction
@@ -173,26 +199,30 @@ module java_cpu
                     state <= STATE_DECODE;
                 end
                 STATE_DECODE: begin
-                    mem_address <= data_stack_value1[31:0];
+                    mem_address <= data_stack_value1[31:0] + (call_indirect ? {24'h0, current_instruction[7:0]} : 0);
                     mem_data_out <= data_stack_value2[31:0];
-                    mem_valid <= set | get;
-                    mem_nwr <= !set;
+                    mem_valid <= set | set_long | get_long | get | call_indirect;
+                    mem_nwr <= !set & !set_long;
                     case (1'b1)
-                        push | jmp | call | br | br0: begin
-                            if ((!z & br) | (z & br0) | jmp | call | push) begin
+                        if_ | ifcmp | jmp: begin
+                            pc <= pc + ((if_ & condition_pass) | (ifcmp & condition_cmp_pass) | jmp ? {{16{pc_data[15]}}, pc_data} : 1);
+                            state <= STATE_FETCH;
+                            data_stack_pointer <= data_stack_pointer + (ifcmp ? 2 : (if_ ? 1 : 0));
+                        end
+                        push | push_long | call | call_indirect: begin
+                            if (call | push | push_long) begin
                                 immediate <= pc_data;
                                 state <= STATE_FETCH2;
                                 pc <= pc + 1;
                             end
-                            else begin
-                                pc <= pc + 2;
-                                state <= STATE_FETCH;
-                            end
-                            if (br | br0)
+                            else begin // call_indirect
+                                error <= z; // null pointer check
                                 data_stack_pointer <= data_stack_pointer + 1;
-                            if (call) begin
+                                state <= STATE_WAITREADY;
+                            end
+                            if (call | call_indirect) begin
                                 call_stack_nwr <= 0;
-                                call_stack_wr_data <= {32'h0, pc + 2};
+                                call_stack_wr_data <= {32'h0, pc + (call ? 2 : 0)};
                                 call_stack_wr_address <= call_stack_pointer - 1;
                                 call_stack_pointer <= call_stack_pointer - 1;
                             end
@@ -211,6 +241,10 @@ module java_cpu
                         end
                         drop: begin
                             data_stack_pointer <= data_stack_pointer + 1;
+                            state <= STATE_FETCH;
+                        end
+                        drop2: begin
+                            data_stack_pointer <= data_stack_pointer + 2;
                             state <= STATE_FETCH;
                         end
                         swap: begin
@@ -236,9 +270,11 @@ module java_cpu
                             state <= STATE_WAITREADY;
                             data_stack_pointer <= data_stack_pointer + 2;
                         end
+                        set_long: state <= STATE_WAITREADY_LONG;
                         get: state <= STATE_WAITREADY;
+                        get_long: state <= STATE_WAITREADY_LONG;
                         retn: begin
-                            call_stack_pointer <= call_stack_pointer + pc_data[7:0];
+                            call_stack_pointer <= call_stack_pointer + current_instruction[7:0];
                             state <= STATE_RET;
                         end
                         ret: begin
@@ -250,26 +286,42 @@ module java_cpu
                         reti: begin
                             pc <= saved_pc;
                             interrupt_ack <= 0;
+                            call_stack_pointer <= call_stack_pointer + current_instruction[7:0];
                             state <= STATE_FETCH;
                         end
                         local_get: begin
-                            local_pointer <= call_stack_pointer + pc_data[7:0];
-                            pc <= pc + 1;
+                            local_pointer <= call_stack_pointer + current_instruction[7:0];
                             state <= STATE_PUSH_LOCAL;
                         end
                         local_set: begin
                             call_stack_nwr <= 0;
                             call_stack_wr_data <= data_stack_value1;
-                            call_stack_wr_address <= call_stack_pointer + pc_data[7:0];
+                            call_stack_wr_address <= call_stack_pointer + current_instruction[7:0];
                             data_stack_pointer <= data_stack_pointer + 1;
-                            pc <= pc + 1;
                             state <= STATE_FETCH;
                         end
                         locals: begin
-                            call_stack_pointer <= call_stack_pointer - pc_data[7:0];
-                            pc <= pc + 1;
+                            call_stack_pointer <= call_stack_pointer - current_instruction[7:0];
                             state <= STATE_FETCH;
                         end
+                        neg: begin
+                            data_stack_nwr <= 0;
+                            data_stack_wr_data <= -data_stack_value1;
+                            state <= STATE_FETCH;
+                        end
+                        inc: begin
+                            local_pointer <= call_stack_pointer + current_instruction[7:0];
+                            immediate <= pc_data;
+                            pc <= pc + 1;
+                            state <= STATE_INC_LOCAL;
+                        end
+                        get_data_stack_pointer: begin
+                            data_stack_nwr <= 0;
+                            data_stack_wr_data <= {{64-DATA_STACK_BITS{1'b0}}, data_stack_pointer};
+                            data_stack_pointer <= data_stack_pointer - 1;
+                            state <= STATE_FETCH;
+                        end
+                        nop: state <= STATE_FETCH;
                         default: error <= 1;
                     endcase
                 end
@@ -280,15 +332,36 @@ module java_cpu
                 end
                 STATE_FETCH2: begin
                     call_stack_nwr <= 1;
+                    case (1'b1)
+                        call: begin
+                            pc <= jmp_address;
+                            state <= STATE_FETCH;
+                        end
+                        push_long: begin
+                            immediate2 <= pc_data;
+                            pc <= pc + 1;
+                            state <= STATE_FETCH3;
+                        end
+                        default: begin
+                            pc <= pc + 1;
+                            data_stack_nwr <= 0;
+                            data_stack_wr_data <= {{32{jmp_address[31]}}, jmp_address};
+                            data_stack_pointer <= data_stack_pointer - 1;
+                            state <= STATE_FETCH;
+                        end
+                    endcase
+                end
+                STATE_FETCH3: begin
+                    immediate3 <= pc_data;
+                    pc <= pc + 1;
+                    state <= STATE_FETCH4;
+                end
+                STATE_FETCH4: begin
+                    pc <= pc + 1;
+                    data_stack_nwr <= 0;
+                    data_stack_wr_data <= {pc_data, immediate3, immediate2, immediate};
+                    data_stack_pointer <= data_stack_pointer - 1;
                     state <= STATE_FETCH;
-                    if (jmp | call | br | br0)
-                        pc <= jmp_address;
-                    else begin
-                        pc <= pc + 1;
-                        data_stack_nwr <= 0;
-                        data_stack_wr_data <= {{32{jmp_address[31]}}, jmp_address};
-                        data_stack_pointer <= data_stack_pointer - 1;
-                    end
                 end
                 STATE_PUSH_LOCAL: begin
                     data_stack_nwr <= 0;
@@ -296,14 +369,51 @@ module java_cpu
                     data_stack_pointer <= data_stack_pointer - 1;
                     state <= STATE_FETCH;
                 end
+                STATE_INC_LOCAL: begin
+                    call_stack_nwr <= 0;
+                    call_stack_wr_data <= local_value + {{48{immediate[15]}}, immediate};
+                    call_stack_wr_address <= local_pointer;
+                    state <= STATE_FETCH;
+                end
                 STATE_WAITREADY: begin
                     if (mem_ready) begin
+                        if (call_indirect)
+                            pc <= mem_data_in;
                         state <= STATE_FETCH;
                         mem_nwr <= 1;
                         mem_valid <= 0;
                         if (get) begin
                             data_stack_nwr <= 0;
                             data_stack_wr_data <= {{32{mem_data_in[31]}}, mem_data_in};
+                        end
+                    end
+                end
+                STATE_WAITREADY_LONG: begin
+                    if (mem_ready) begin
+                        if (get_long)
+                            temp32 <= mem_data_in;
+                        mem_valid <= 0;
+                        state <= STATE_WAITNOTREADY;
+                    end
+                end
+                STATE_WAITNOTREADY: begin
+                    if (!mem_ready) begin
+                        mem_valid <= 1;
+                        mem_address <= mem_address + 1;
+                        mem_data_out <= data_stack_value2[63:32];
+                        state <= STATE_WAITREADY_LONG2;
+                        if (set_long)
+                           data_stack_pointer <= data_stack_pointer + 2;
+                    end
+                end
+                STATE_WAITREADY_LONG2: begin
+                    if (mem_ready) begin
+                        state <= STATE_FETCH;
+                        mem_nwr <= 1;
+                        mem_valid <= 0;
+                        if (get_long) begin
+                            data_stack_nwr <= 0;
+                            data_stack_wr_data <= {mem_data_in, temp32};
                         end
                     end
                 end
