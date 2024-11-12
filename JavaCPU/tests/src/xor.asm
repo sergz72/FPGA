@@ -1,9 +1,7 @@
-	nop
-	nop
-	nop
-	ipush 1
-	neg
-	ipush -1
+	ipush $55555555
+	ipush $FFFFFFFF
+	xor
+	ipush $AAAAAAAA
 	ifcmpeq next1
 	hlt
 next1:

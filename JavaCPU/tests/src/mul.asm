@@ -1,9 +1,7 @@
-	nop
-	nop
-	nop
-	ipush 1
-	neg
-	ipush -1
+	ipush 12345
+	ipush 54321
+	mul
+	ipush 12345 * 54321
 	ifcmpeq next1
 	hlt
 next1:

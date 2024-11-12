@@ -1,9 +1,7 @@
-	nop
-	nop
-	nop
 	ipush 1
-	neg
-	ipush -1
+	ipush 2
+	add
+	ipush 3
 	ifcmpeq next1
 	hlt
 next1:
