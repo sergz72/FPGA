@@ -258,14 +258,17 @@ public class GenericCompiler: ICompiler
                             case "dw":
                                 i = CompileData(line, fileName, 2, tokens[1..]);
                                 Instructions[CurrentSection].Add(i);
+                                Pc[CurrentSection] += i.Size;
                                 break;
                             case "db":
                                 i = CompileData(line, fileName, 1, tokens[1..]);
                                 Instructions[CurrentSection].Add(i);
+                                Pc[CurrentSection] += i.Size;
                                 break;
                             case "dd":
                                 i = CompileData(line, fileName, 4, tokens[1..]);
                                 Instructions[CurrentSection].Add(i);
+                                Pc[CurrentSection] += i.Size;
                                 break;
                             case "resw":
                                 var start = 1;

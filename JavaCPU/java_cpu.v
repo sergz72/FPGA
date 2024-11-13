@@ -59,9 +59,10 @@ module java_cpu
 
     reg start = 0;
 
-    wire push, push_long, dup, set, set_long, alu_op, get, get_long, call, call_indirect, jmp, ret, retn, reti;
+    wire push, push_long, dup, set, set_long, alu_op, get, get_long, call, call_indirect, jmp, ret, retn, reti, fetch;
     wire neg, inc, nop, ifcmp, if_, drop, drop2, swap, rot, over, local_get, local_set, locals, get_data_stack_pointer;
-    wire eq, gt, lt, n, z, condition_neg, condition_cmp_pass, condition_pass;
+    wire arrayp, arrayp2, bipush, sipush;
+    wire eq, gt, lt, n, z, z2, condition_neg, condition_cmp_pass, condition_pass;
     wire [1:0] condition_flags, condition_cmp_temp, condition_temp;
     
     initial begin
@@ -100,6 +101,10 @@ module java_cpu
     assign ifcmp = opcode == 27;
     assign if_ = opcode == 28;
     assign alu_op = opcode == 29;
+    assign arrayp = opcode == 30;
+    assign arrayp2 = opcode == 31;
+    assign bipush = opcode == 32;
+    assign sipush = opcode == 33;
 
     assign jmp_address = {pc_data, immediate};
     assign interrupt_no = interrupt[1] ? 2'b10 : {1'b0, interrupt[0]};
@@ -109,6 +114,7 @@ module java_cpu
     assign gt = $signed(data_stack_value2) > $signed(data_stack_value1);
     assign lt = !eq & !gt;
     assign z = data_stack_value1 == 0;
+    assign z2 = data_stack_value2 == 0;
     assign n = data_stack_value1[63];
 
     assign condition_neg = current_instruction[2];
@@ -119,6 +125,8 @@ module java_cpu
 
     assign condition_temp = condition_flags & {n, z};
     assign condition_pass = (condition_temp[0] | condition_temp[1]) ^ condition_neg;
+
+    assign fetch = set | set_long | get_long | get | call_indirect;
 
     function [63:0] alu(input [3:0] op);
         case (op)
@@ -202,8 +210,10 @@ module java_cpu
                 STATE_DECODE: begin
                     mem_address <= data_stack_value1[31:0] + (call_indirect ? {24'h0, current_instruction[7:0]} : 0);
                     mem_data_out <= data_stack_value2[31:0];
-                    mem_valid <= set | set_long | get_long | get | call_indirect;
+                    mem_valid <= fetch;
                     mem_nwr <= !set & !set_long;
+                    if (fetch)
+                        error <= z; // null pointer check
                     case (1'b1)
                         if_ | ifcmp | jmp: begin
                             pc <= pc + ((if_ & condition_pass) | (ifcmp & condition_cmp_pass) | jmp ? {{16{pc_data[15]}}, pc_data} : 1);
@@ -217,7 +227,6 @@ module java_cpu
                                 pc <= pc + 1;
                             end
                             else begin // call_indirect
-                                error <= z; // null pointer check
                                 data_stack_pointer <= data_stack_pointer + 1;
                                 state <= STATE_WAITREADY;
                             end
@@ -323,6 +332,26 @@ module java_cpu
                             state <= STATE_FETCH;
                         end
                         nop: state <= STATE_FETCH;
+                        arrayp | arrayp2: begin
+                            error <= z2;
+                            data_stack_nwr <= 0;
+                            data_stack_wr_data <= data_stack_value2 + (arrayp ? data_stack_value1 : data_stack_value1 << 1);
+                            data_stack_pointer <= data_stack_pointer + 1;
+                            state <= STATE_FETCH;
+                        end
+                        bipush: begin
+                            data_stack_nwr <= 0;
+                            data_stack_wr_data <= {{56{current_instruction[7]}}, current_instruction[7:0]};
+                            data_stack_pointer <= data_stack_pointer - 1;
+                            state <= STATE_FETCH;
+                        end
+                        sipush: begin
+                            data_stack_nwr <= 0;
+                            data_stack_wr_data <= {{48{pc_data[15]}}, pc_data};
+                            data_stack_pointer <= data_stack_pointer - 1;
+                            pc <= pc + 1;
+                            state <= STATE_FETCH;
+                        end
                         default: error <= 1;
                     endcase
                 end

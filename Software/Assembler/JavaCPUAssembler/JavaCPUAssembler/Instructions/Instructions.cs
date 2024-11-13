@@ -68,6 +68,10 @@ internal static class InstructionCodes
     internal const uint IfCmp = 27;
     internal const uint If = 28;
     internal const uint AluOp = 29;
+    internal const uint Arrayp = 30;
+    internal const uint Arrayp2 = 31;
+    internal const uint BPush = 32;
+    internal const uint SPush = 33;
 }
 
 internal sealed class OpCodeInstruction(string line, string file, int lineNo, uint opCode, uint parameter = 0) :
@@ -75,7 +79,7 @@ internal sealed class OpCodeInstruction(string line, string file, int lineNo, ui
 {
     public override uint[] BuildCode(uint labelAddress, uint pc)
     {
-        return [(opCode << 8) | parameter];
+        return [(opCode << 8) | (parameter & 0xFF)];
     }
 }
 

@@ -25,6 +25,9 @@ internal sealed class JavaCPUCompiler : GenericCompiler
         {"mul", new OpCodeInstructionCreator(InstructionCodes.AluOp, AluOperations.Mul)},
         {"cmp", new OpCodeInstructionCreator(InstructionCodes.AluOp, AluOperations.Cmp)},
 
+        {"arrayp", new OpCodeInstructionCreator(InstructionCodes.Arrayp)},
+        {"arrayp2", new OpCodeInstructionCreator(InstructionCodes.Arrayp2)},
+        {"bpush", new OneParameterInstructionCreator(InstructionCodes.BPush)},
         {"call", new Label32InstructionCreator(InstructionCodes.Call)},
         {"dup", new OpCodeInstructionCreator(InstructionCodes.Dup)},
         {"drop", new OpCodeInstructionCreator(InstructionCodes.Drop)},
@@ -63,6 +66,7 @@ internal sealed class JavaCPUCompiler : GenericCompiler
         {"retn", new OneParameterInstructionCreator(InstructionCodes.Retn)},
         {"rot", new OpCodeInstructionCreator(InstructionCodes.Rot)},
         {"setlocal", new OneParameterInstructionCreator(InstructionCodes.LocalSet)},
+        {"spush", new PushShortInstructionCreator()},
         {"swap", new OpCodeInstructionCreator(InstructionCodes.Swap)},
         {"wfi", new OpCodeInstructionCreator(InstructionCodes.Wfi)},
     };

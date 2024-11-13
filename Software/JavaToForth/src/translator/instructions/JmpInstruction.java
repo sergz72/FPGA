@@ -3,15 +3,14 @@ package translator.instructions;
 import java.util.Map;
 
 public class JmpInstruction extends Instruction {
-    private int offset, opCode;
-    public JmpInstruction(int opCode, int to, String comment) {
-        super(null, 3, comment);
-        this.opCode = opCode;
-        this.offset = to;
+    public JmpInstruction(int opCode, int opCodeParameter, int to, String comment) {
+        super(null, 2, comment);
+        code[0] = (opCode << 8) | opCodeParameter;
+        code[1] = to;
     }
 
     public void updateOffset(int pc, Map<Integer, Integer> pcMapping) {
-        var jmpTo = pcMapping.get(offset);
-        offset = jmpTo - pc;
+        var jmpTo = pcMapping.get(code[1]);
+        code[1] = jmpTo - pc;
     }
 }

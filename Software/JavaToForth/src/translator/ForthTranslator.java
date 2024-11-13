@@ -13,6 +13,7 @@ import java.util.*;
 
 public final class ForthTranslator {
     private static final Set<String> builtInClasses = Set.of("java/lang/Object", "java/lang/String");
+    private static final Set<String> ignoreMethodCalls = Set.of("String.toCharArray");
 
     TranslatorConfiguration configuration;
     Map<String, ClassFile> classes;
@@ -141,9 +142,9 @@ public final class ForthTranslator {
                 instructionGenerator.addPush(5);
                 break;
             case 0x11: // sipush
-                index = code[pc++]<< 8;
+                index = code[pc++] << 8;
                 index |= code[pc++] & 0xFF;
-                instructionGenerator.addPush(index);
+                instructionGenerator.addSPush(index);
                 break;
             case 0x12: // ldc
                 translateLdc(code[pc++] & 0xFF);
@@ -209,7 +210,7 @@ public final class ForthTranslator {
                 instructionGenerator.addSetLocal(3);
                 break;
             case 0x10: // bipush
-                instructionGenerator.addPush(code[pc++]);
+                instructionGenerator.addBPush(code[pc++]);
                 break;
             case 0x57:
                 instructionGenerator.addDrop();
@@ -261,10 +262,10 @@ public final class ForthTranslator {
                 instructionGenerator.addAluOp(InstructionGenerator.ALU_OP_ASHR, "lshr");
                 break;
             case 0x7c: // iushr
-                instructionGenerator.addAluOp(InstructionGenerator.ALU_OP_LSHR, "iushr");
+                instructionGenerator.addAluOp(InstructionGenerator.ALU_OP_ILSHR, "iushr");
                 break;
             case 0x7d: // lushr
-                instructionGenerator.addAluOp(InstructionGenerator.ALU_OP_LSHR, "lushr");
+                instructionGenerator.addAluOp(InstructionGenerator.ALU_OP_LLSHR, "lushr");
                 break;
             case 0x7e: // iand
                 instructionGenerator.addAluOp(InstructionGenerator.ALU_OP_AND, "iand");
@@ -419,16 +420,16 @@ public final class ForthTranslator {
             case 0x5D: // dup2_x1
             case 0x5E: // dup2_x2
             case 0x6c: // idiv
-                instructionGenerator.addCall("System.idiv");
+                instructionGenerator.addDiv("idiv");
                 break;
             case 0x6d: // ldiv
-                instructionGenerator.addCall("System.ldiv");
+                instructionGenerator.addDiv("ldiv");
                 break;
             case 0x70: // irem
-                instructionGenerator.addCall("System.irem");
+                instructionGenerator.addRem("irem");
                 break;
             case 0x71: // lrem
-                instructionGenerator.addCall("System.lrem");
+                instructionGenerator.addRem("lrem");
                 break;
             case 0xaa: // tableswitch
                 throw new TranslatorException("tableswitch is not supported");
@@ -442,29 +443,66 @@ public final class ForthTranslator {
                 throw new TranslatorException("getfield is not supported");
             case 0xb5: // putfield
                 throw new TranslatorException("putfield is not supported");
+            case 0xbb: // new
+                index = code[pc++]<< 8;
+                index |= code[pc++] & 0xFF;
+                translateNew(index);
+                break;
+            case 0xbc: // newarray
+                translateNewArray(code[pc++]);
+                break;
             case 0xbd: // anewarray
-                throw new TranslatorException("anewarray is not supported");
+                index = code[pc++]<< 8;
+                index |= code[pc++] & 0xFF;
+                translateANewArray(index);
+                break;
             case 0xbf: // athrow
                 throw new TranslatorException("athrow is not supported");
+            case 0xc5: // multianewarray
+                throw new TranslatorException("multianewarray is not supported");
             default: throw new TranslatorException(String.format("unknown instruction %x", instruction));
         }
         return pc;
     }
 
+    private void translateNew(int index) throws TranslatorException {
+        throw new TranslatorException("new is not supported");
+    }
+
+    private void translateANewArray(int index) throws TranslatorException {
+        throw new TranslatorException("anewarray is not supported");
+    }
+
+    private void translateMultiANewArray(int index, int dimensions) throws TranslatorException {
+        throw new TranslatorException("multianewarray is not supported");
+    }
+
+    private void translateNewArray(int type) throws TranslatorException {
+        throw new TranslatorException("newarray is not supported");
+    }
+
     private void translateALoad() {
-        instructionGenerator.addCall("System.aload");
+        instructionGenerator.addArrayp();
+        instructionGenerator.addGet();
     }
 
     private void translateLALoad() {
-        instructionGenerator.addCall("System.laload");
+        instructionGenerator.addArrayp2();
+        instructionGenerator.addGetLong();
     }
 
     private void translateAStore() {
-        instructionGenerator.addCall("System.astore");
+        instructionGenerator.addRot();
+        instructionGenerator.addRot();
+        instructionGenerator.addArrayp();
+        instructionGenerator.addSet();
     }
 
     private void translateLAStore() {
-        instructionGenerator.addCall("System.lastore");
+        instructionGenerator.addRot();
+        instructionGenerator.addRot();
+        instructionGenerator.addArrayp2();
+        instructionGenerator.addSetLong();
     }
 
     private void translateReturn() throws ClassFileException {
@@ -480,6 +518,9 @@ public final class ForthTranslator {
     private void translateInvokeVirtual(int index) throws ClassFileException {
         var name = currentClassFile.getMethodClassName(index);
         addToTranslate(name);
+        name = currentClassFile.getMethodName(index);
+        if (ignoreMethodCalls.contains(name))
+            return;
         var idx = currentClassFile.getMethodIndex(index);
         instructionGenerator.addIndirectCall(idx, name);
     }
@@ -525,7 +566,7 @@ public final class ForthTranslator {
         for (char c : s.toCharArray()) {
             data[idx++] = c;
         }
-        roDataInstructions.add(new OpCodeInstruction(s.length(), data, "string " + s));
+        roDataInstructions.add(new OpCodeInstruction(0, s.length(), data, "string " + s));
         return address;
     }
 
