@@ -13,7 +13,7 @@ import java.util.*;
 
 public final class ForthTranslator {
     private static final Set<String> builtInClasses = Set.of("java/lang/Object", "java/lang/String");
-    private static final Set<String> ignoreMethodCalls = Set.of("String.toCharArray");
+    private static final Set<String> ignoreMethodCalls = Set.of("java/lang/String.toCharArray()[C");
 
     TranslatorConfiguration configuration;
     Map<String, ClassFile> classes;
@@ -211,7 +211,7 @@ public final class ForthTranslator {
             case 0x36: // istore
             case 0x37: // lstore
             case 0x3a: // astore
-                instructionGenerator.addGetLocal(code[pc++] & 0xFF);
+                instructionGenerator.addSetLocal(code[pc++] & 0xFF);
                 break;
             case 0x3b: // istore_0
             case 0x3f: // lstore_0

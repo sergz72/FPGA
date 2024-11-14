@@ -6,5 +6,12 @@ public final class Console {
         outChar('\n');
     }
 
-    public static native void outChar(char c);
+    public static void outChar(char c) {
+        while ((uartGet() & 0x100) != 0)
+          ;
+        uartOut(c);
+    }
+    
+    private static native void uartOut(char c);
+    private static native int uartGet();
 }

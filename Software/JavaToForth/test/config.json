@@ -7,6 +7,8 @@
     "Hal.timerStart(I)V": {"code": ["20FE","0300"], "comment": "bpush -2; set"},
     "Hal.wfi()V": {"code": ["0D00"], "comment": "wfi"},
     "Hal.hlt()V": {"code": ["0C00"], "comment": "hlt"},
+    "Console.uartOut(C)V": {"code": ["20FD", "0300"], "comment": "bpush -3; set"},
+    "Console.uartGet()I": {"code": ["20FD", "0300"], "comment": "bpush -3; get"},
     "java/lang/Object.<init>()V": {"code": ["1100"], "comment": "drop"}
   }
 }
