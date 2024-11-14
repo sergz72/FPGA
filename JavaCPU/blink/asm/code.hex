@@ -1,0 +1,40 @@
+0800 // 00000000       call Blink.main()V
+000A // 00000001       
+0000 // 00000002       
+0C00 // 00000003       hlt
+0500 // 00000004       jmp Blink.isr1()V
+0004 // 00000005       
+0C00 // 00000006       hlt
+0C00 // 00000007       hlt
+1000 // 00000008     0 reti 0 ; Blink.isr2()V
+1000 // 00000009     0 reti 0 ; Blink.isr1()V
+1801 // 0000000A     0 locals 1 ; Blink.main()V
+2000 // 0000000B     0 bpush 0 0 (iconst_0)
+1700 // 0000000C     1 local_set 0
+1600 // 0000000D     2 local_get 0
+20FF // 0000000E     3 bpush -1; set (Hal.ledSet(Z)V)
+0300 // 0000000F     3 
+0000 // 00000010     6 push 500000 7a120 (ldc int)
+0010 // 00000011     6 
+0000 // 00000012     6 
+20FE // 00000013     8 bpush -2; set (Hal.timerStart(I)V)
+0300 // 00000014     8 
+0D00 // 00000015    11 wfi (Hal.wfi()V)
+1600 // 00000016    14 local_get 0
+1C05 // 00000017    15 ifne 22
+0004 // 00000018    15 
+2001 // 00000019    18 bpush 1 1 (iconst_1)
+0500 // 0000001A    19 jmp 23
+0002 // 0000001B    19 
+2000 // 0000001C    22 bpush 0 0 (iconst_0)
+1700 // 0000001D    23 local_set 0
+0500 // 0000001E    24 jmp 2
+FFEE // 0000001F    24 
+1801 // 00000020     0 locals 1 ; Blink.<init>()V
+1600 // 00000021     0 local_get 0
+1100 // 00000022     1 drop (java/lang/Object.<init>()V)
+0B01 // 00000023     4 retn 1
+1801 // 00000024     0 locals 1 ; Hal.<init>()V
+1600 // 00000025     0 local_get 0
+1100 // 00000026     1 drop (java/lang/Object.<init>()V)
+0B01 // 00000027     4 retn 1

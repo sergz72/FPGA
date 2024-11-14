@@ -12,8 +12,8 @@ public final class ClassFile {
     ConstantPool constantPoolInfo;
     int accessFlags, thisClass, superClass;
     Interfaces interfaceInfo;
-    Fields fieldsInfo;
-    Methods methodsInfo;
+    MethodsOrFields fieldsInfo;
+    MethodsOrFields methodsInfo;
     Attributes attributesInfo;
 
     public ClassFile(byte[] data, String fileName) throws ClassFileException {
@@ -30,8 +30,8 @@ public final class ClassFile {
         thisClass = bb.getShort();
         superClass = bb.getShort();
         interfaceInfo = new Interfaces(bb);
-        fieldsInfo = new Fields(bb);
-        methodsInfo = new Methods(thisClass, constantPoolInfo, bb);
+        fieldsInfo = new MethodsOrFields(thisClass, constantPoolInfo, bb);
+        methodsInfo = new MethodsOrFields(thisClass, constantPoolInfo, bb);
         attributesInfo = new Attributes(constantPoolInfo, bb);
         if (bb.hasRemaining())
             throw new ClassFileException("class file contains unknown bytes");
@@ -56,8 +56,12 @@ public final class ClassFile {
         return constantPoolInfo.getClassName(this.thisClass);
     }
 
-    public Map<String, MethodsItem> getMethods() {
-        return methodsInfo.methods;
+    public Map<String, MethodOrField> getMethods() {
+        return methodsInfo.map;
+    }
+
+    public Map<String, MethodOrField> getFields() {
+        return fieldsInfo.map;
     }
 
     public ConstantPoolItem getFromConstantPool(int index) {

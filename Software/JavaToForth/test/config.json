@@ -1,6 +1,12 @@
 {
-  "code":   { "fileName": "asm/code.hex", "size": "1K", "entryPoint": "Main.main", "isrHandlers": ["Main.isr1","Main.isr2"] },
-  "data":   { "address": "0", "size": "1K" },
+  "code":   { "fileName": "asm/code.hex", "size": "1K", "entryPoint": "main", "isrHandlers": ["isr1","isr2"] },
+  "data":   { "fileName": "asm/data.hex", "address": "0", "size": "1K" },
   "roData": { "fileName": "asm/rodata.hex", "address": "2000", "size": "1K" },
-  "options": ["MUL", "DIV"]
+  "inlines": {
+    "Hal.ledSet(Z)V": {"code": ["20FF","0300"], "comment": "bpush -1; set"},
+    "Hal.timerStart(I)V": {"code": ["20FE","0300"], "comment": "bpush -2; set"},
+    "Hal.wfi()V": {"code": ["0D00"], "comment": "wfi"},
+    "Hal.hlt()V": {"code": ["0C00"], "comment": "hlt"},
+    "java/lang/Object.<init>()V": {"code": ["1100"], "comment": "drop"}
+  }
 }

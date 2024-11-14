@@ -15,6 +15,7 @@ public class AttributesItem {
             case "LineNumberTable" -> new LineNumberTableAttribute(bb, length);
             case "StackMapTable" -> new StackMapTableAttribute(bb, length);
             case "SourceFile" -> new SourceFileAttribute(bb, cp, length);
+            case "ConstantValue" -> new ConstantValueAttribute(bb, length);
             default -> throw new ClassFileException("Unknown attribute name: " + name);
         };
     }

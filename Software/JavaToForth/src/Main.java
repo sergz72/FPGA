@@ -12,12 +12,13 @@ import java.util.Objects;
 
 public final class Main {
     public static void main(String[] args) {
-        if (args.length < 2 || !args[0].endsWith(".json"))
+        if (args.length < 3 || !args[1].endsWith(".json"))
             Usage();
-        var configurationFileName = args[0];
+        var mainClassName = args[0];
+        var configurationFileName = args[1];
         var errors = new ArrayList<String>();
         var classes = Arrays.stream(args)
-                .skip(1)
+                .skip(2)
                 .map(arg -> {
                     try {
                         return new ClassFile(Files.readAllBytes(Paths.get(arg)), arg);
@@ -34,7 +35,7 @@ public final class Main {
             System.exit(2);
         }
         try {
-            new ForthTranslator(classes, configurationFileName).translate();
+            new ForthTranslator(mainClassName, classes, configurationFileName).translate();
         } catch (IOException | TranslatorException | ClassFileException e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
@@ -42,7 +43,7 @@ public final class Main {
     }
 
     private static void Usage() {
-        System.out.println("Usage: java -jar JavaToForth.jar config_file_name class_file_names");
+        System.out.println("Usage: java -jar JavaToForth.jar main_class_name config_file_name class_file_names");
         System.exit(1);
     }
 }

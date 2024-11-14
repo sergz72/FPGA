@@ -2,13 +2,13 @@ package translator;
 
 import classfile.ClassFile;
 import classfile.ClassFileException;
-import classfile.MethodsItem;
+import classfile.MethodOrField;
 import classfile.constantpool.*;
-import translator.instructions.Instruction;
-import translator.instructions.InstructionGenerator;
-import translator.instructions.OpCodeInstruction;
+import translator.instructions.*;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 public final class ForthTranslator {
@@ -24,7 +24,8 @@ public final class ForthTranslator {
     List<Instruction> roDataInstructions;
     List<Instruction> dataInstructions;
     Map<Integer, Integer> stringConstantAddresses;
-    MethodsItem currentMethod;
+    MethodOrField currentMethod;
+    String currentMethodName;
     Map<String, List<Instruction>> methodInstructons;
 
     public ForthTranslator(List<ClassFile> classes, TranslatorConfiguration configuration) throws ClassFileException {
@@ -39,9 +40,9 @@ public final class ForthTranslator {
         this.methodInstructons = new HashMap<>();
     }
 
-    public ForthTranslator(List<ClassFile> classes, String configurationFileName)
+    public ForthTranslator(String mainClassName, List<ClassFile> classes, String configurationFileName)
             throws IOException, TranslatorException, ClassFileException {
-        this(classes, TranslatorConfiguration.load(configurationFileName));
+        this(classes, TranslatorConfiguration.load(mainClassName, configurationFileName));
     }
 
     private static Map<String, ClassFile> buildClasses(List<ClassFile> classFiles) throws ClassFileException {
@@ -52,7 +53,7 @@ public final class ForthTranslator {
         return result;
     }
 
-    public void translate() throws TranslatorException, ClassFileException {
+    public void translate() throws TranslatorException, ClassFileException, IOException {
         buildInitialClassNames();
         var saved = new HashSet<>();
         while (saved.size() != toTranslate.size()) {
@@ -61,7 +62,9 @@ public final class ForthTranslator {
             for (var className : delta)
                 translate(className);
         }
-        var code = link();
+        var labels = new HashMap<Integer, String>();
+        var code = link(labels);
+        createOutputFiles(code, labels);
     }
 
     private void buildInitialClassNames() throws TranslatorException {
@@ -92,24 +95,39 @@ public final class ForthTranslator {
                 System.out.printf("  Skipping native method %s...\n", method.getKey());
             else {
                 currentMethod = method.getValue();
+                currentMethodName = method.getKey();
                 System.out.printf("  Translating %s...\n", method.getKey());
-                translateCurrentMethod(method.getKey());
+                translateCurrentMethod();
             }
         }
     }
 
-    private void translateCurrentMethod(String name) throws ClassFileException, TranslatorException {
-        instructionGenerator = new InstructionGenerator();
+    private void translateCurrentMethod() throws ClassFileException, TranslatorException {
+        instructionGenerator = new InstructionGenerator(0);
+        createProlog();
         int pc = 0;
         var code = currentMethod.getCode();
         while (pc < code.length)
             pc = translate(code, pc);
         instructionGenerator.finish();
-        methodInstructons.put(name, instructionGenerator.getInstructions());
+        methodInstructons.put(currentMethodName, instructionGenerator.getInstructions());
+    }
+
+    private void createProlog() throws ClassFileException {
+        var localsCount = currentMethod.getNumberOfLocals();
+        if (localsCount != 0)
+        {
+            instructionGenerator.addLocals(localsCount);
+            var parametersCount = currentMethod.getNumberOfParameters();
+            while (parametersCount != 0) {
+                parametersCount--;
+                instructionGenerator.addSetLocal(parametersCount);
+            }
+        }
     }
 
     private int translate(byte[] code, int pc) throws TranslatorException, ClassFileException {
-        instructionGenerator.addToPcMapping(pc);
+        instructionGenerator.setCurrentBytecodePc(pc);
         var instruction = code[pc++] & 0xFF;
         int index;
         switch (instruction)
@@ -118,33 +136,39 @@ public final class ForthTranslator {
                 instructionGenerator.addNop();
                 break;
             case 1: // aconst_null
+                instructionGenerator.addBPush(0, "aconst_null");
+                break;
             case 3: // iconst_0
+                instructionGenerator.addBPush(0, "iconst_0");
+                break;
             case 9: // lconst_0
-                instructionGenerator.addPush(0);
+                instructionGenerator.addBPush(0, "lconst_0");
                 break;
             case 2: // iconst_m1
-                instructionGenerator.addPush(-1);
+                instructionGenerator.addBPush(-1, "iconst_m1");
                 break;
             case 4: // iconst_1
+                instructionGenerator.addBPush(1, "iconst_1");
+                break;
             case 0x0A: // lconst_1
-                instructionGenerator.addPush(1);
+                instructionGenerator.addBPush(1, "lconst_1");
                 break;
             case 5: // iconst_2
-                instructionGenerator.addPush(2);
+                instructionGenerator.addBPush(2, "iconst_2");
                 break;
             case 6: // iconst_3
-                instructionGenerator.addPush(3);
+                instructionGenerator.addBPush(3, "iconst_3");
                 break;
             case 7: // iconst_4
-                instructionGenerator.addPush(4);
+                instructionGenerator.addBPush(4, "iconst_4");
                 break;
             case 8: // iconst_5
-                instructionGenerator.addPush(5);
+                instructionGenerator.addBPush(5, "iconst_5");
                 break;
             case 0x11: // sipush
                 index = code[pc++] << 8;
                 index |= code[pc++] & 0xFF;
-                instructionGenerator.addSPush(index);
+                instructionGenerator.addSPush(index, "sipush");
                 break;
             case 0x12: // ldc
                 translateLdc(code[pc++] & 0xFF);
@@ -210,7 +234,8 @@ public final class ForthTranslator {
                 instructionGenerator.addSetLocal(3);
                 break;
             case 0x10: // bipush
-                instructionGenerator.addBPush(code[pc++]);
+                index = code[pc++];
+                instructionGenerator.addBPush(index, "bipush");
                 break;
             case 0x57:
                 instructionGenerator.addDrop();
@@ -295,6 +320,11 @@ public final class ForthTranslator {
                 index |= code[pc++] & 0xFF;
                 instructionGenerator.addIf(InstructionGenerator.IF_EQ, "ifeq", index, pc - 3);
                 break;
+            case 0x9b: // iflt
+                index = code[pc++]<< 8;
+                index |= code[pc++] & 0xFF;
+                instructionGenerator.addIf(InstructionGenerator.IF_LT, "ifeq", index, pc - 3);
+                break;
             case 0xc6: // ifnull
                 index = code[pc++]<< 8;
                 index |= code[pc++] & 0xFF;
@@ -331,42 +361,42 @@ public final class ForthTranslator {
             case 0x9f: // if_icmpeq
                 index = code[pc++]<< 8;
                 index |= code[pc++] & 0xFF;
-                instructionGenerator.addIfcmp(InstructionGenerator.IF_EQ, "if_icmpeq", index, pc - 3);
+                instructionGenerator.addIfcmp(InstructionGenerator.IFCMP_EQ, "if_icmpeq", index, pc - 3);
                 break;
             case 0xa5: // if_acmpeq
                 index = code[pc++]<< 8;
                 index |= code[pc++] & 0xFF;
-                instructionGenerator.addIfcmp(InstructionGenerator.IF_EQ, "if_acmpeq", index, pc - 3);
+                instructionGenerator.addIfcmp(InstructionGenerator.IFCMP_EQ, "if_acmpeq", index, pc - 3);
                 break;
             case 0xa0: // if_icmpne
                 index = code[pc++]<< 8;
                 index |= code[pc++] & 0xFF;
-                instructionGenerator.addIfcmp(InstructionGenerator.IF_NE, "if_icmpne", index, pc - 3);
+                instructionGenerator.addIfcmp(InstructionGenerator.IFCMP_NE, "if_icmpne", index, pc - 3);
                 break;
             case 0xa6: // if_acmpne
                 index = code[pc++]<< 8;
                 index |= code[pc++] & 0xFF;
-                instructionGenerator.addIfcmp(InstructionGenerator.IF_NE, "if_acmpne", index, pc - 3);
+                instructionGenerator.addIfcmp(InstructionGenerator.IFCMP_NE, "if_acmpne", index, pc - 3);
                 break;
             case 0xa1: // if_icmplt
                 index = code[pc++]<< 8;
                 index |= code[pc++] & 0xFF;
-                instructionGenerator.addIfcmp(InstructionGenerator.IF_LT, "if_icmplt", index, pc - 3);
+                instructionGenerator.addIfcmp(InstructionGenerator.IFCMP_LT, "if_icmplt", index, pc - 3);
                 break;
             case 0xa2: // if_icmpge
                 index = code[pc++]<< 8;
                 index |= code[pc++] & 0xFF;
-                instructionGenerator.addIfcmp(InstructionGenerator.IF_GE, "if_icmpge", index, pc - 3);
+                instructionGenerator.addIfcmp(InstructionGenerator.IFCMP_GE, "if_icmpge", index, pc - 3);
                 break;
             case 0xa3: // if_icmpgt
                 index = code[pc++]<< 8;
                 index |= code[pc++] & 0xFF;
-                instructionGenerator.addIfcmp(InstructionGenerator.IF_GT, "if_icmpgt", index, pc - 3);
+                instructionGenerator.addIfcmp(InstructionGenerator.IFCMP_GT, "if_icmpgt", index, pc - 3);
                 break;
             case 0xa4: // if_icmple
                 index = code[pc++]<< 8;
                 index |= code[pc++] & 0xFF;
-                instructionGenerator.addIfcmp(InstructionGenerator.IF_LE, "if_icmple", index, pc - 3);
+                instructionGenerator.addIfcmp(InstructionGenerator.IFCMP_LE, "if_icmple", index, pc - 3);
                 break;
             case 0xa7: // goto
                 index = code[pc++]<< 8;
@@ -507,7 +537,10 @@ public final class ForthTranslator {
 
     private void translateReturn() throws ClassFileException {
         var locals = currentMethod.getNumberOfLocals();
-        instructionGenerator.addReturn(locals);
+        if (isIsr(currentMethodName))
+            instructionGenerator.addReti(locals);
+        else
+            instructionGenerator.addReturn(locals);
     }
 
     private void addToTranslate(String name) {
@@ -519,10 +552,26 @@ public final class ForthTranslator {
         var name = currentClassFile.getMethodClassName(index);
         addToTranslate(name);
         name = currentClassFile.getMethodName(index);
-        if (ignoreMethodCalls.contains(name))
+        if (shouldBeIgnored(name))
             return;
         var idx = currentClassFile.getMethodIndex(index);
         instructionGenerator.addIndirectCall(idx, name);
+    }
+
+    private boolean shouldBeIgnored(String name) {
+        var ignore = ignoreMethodCalls.contains(name);
+        if (ignore)
+            System.out.println("Ignoring call to " + name);
+        return ignore;
+    }
+
+    private boolean translateUsingInlines(String name) {
+        var canBeTranslated = configuration.inlines.containsKey(name);
+        if (canBeTranslated) {
+            var inline = configuration.inlines.get(name);
+            instructionGenerator.addOpcodes(inline.code, inline.comment + " (" + name + ")");
+        }
+        return canBeTranslated;
     }
 
     private void translateInvokeSpecial(int index) throws ClassFileException {
@@ -533,26 +582,45 @@ public final class ForthTranslator {
         var name = currentClassFile.getMethodClassName(index);
         addToTranslate(name);
         name = currentClassFile.getMethodName(index);
+        if (shouldBeIgnored(name) | translateUsingInlines(name))
+            return;
         instructionGenerator.addCall(name);
+    }
+
+    private void generatePush(long value, String comment) {
+        if (value <= Byte.MAX_VALUE && value >= Byte.MIN_VALUE)
+            instructionGenerator.addBPush((int)value, comment);
+        else if (value <= Short.MAX_VALUE && value >= Short.MIN_VALUE)
+            instructionGenerator.addSPush((int)value, comment);
+        else if (value <= Integer.MAX_VALUE && value >= Integer.MIN_VALUE)
+            instructionGenerator.addPush((int)value, comment);
+        else
+            instructionGenerator.addPushLong(value);
     }
 
     private void translateLdc(int index) throws ClassFileException {
         var item = currentClassFile.getFromConstantPool(index);
-        var value = switch(item) {
-            case IntConstantPoolItem i -> i.getValue();
-            case StringConstantPoolItem s -> buildStringConstant(s.getStringIndex());
-            default -> throw new ClassFileException("unsupported constant pool item type for ldc/lcd_w");
+        switch(item) {
+            case IntConstantPoolItem i:
+                generatePush(i.getValue(), "ldc int");
+                break;
+            case StringConstantPoolItem s:
+                generatePush(buildStringConstant(s.getStringIndex()), "ldc " + currentClassFile.getUtf8Constant(s.getStringIndex()));
+                break;
+            default:
+                throw new ClassFileException("unsupported constant pool item type for ldc/lcd_w");
         };
-        instructionGenerator.addPush(value);
     }
 
     private void translateLdc2(int index) throws ClassFileException {
         var item = currentClassFile.getFromConstantPool(index);
-        var value = switch(item) {
-            case LongConstantPoolItem l -> l.getValue();
-            default -> throw new ClassFileException("unsupported constant pool item type for ldc2_w");
+        switch(item) {
+            case LongConstantPoolItem l:
+                generatePush(l.getValue(), "ldc long");
+                break;
+            default:
+                throw new ClassFileException("unsupported constant pool item type for ldc2_w");
         };
-        instructionGenerator.addPushLong(value);
     }
 
     private int buildStringConstant(int stringIndex) throws ClassFileException {
@@ -561,16 +629,102 @@ public final class ForthTranslator {
         var address = nextRoDataAddress;
         stringConstantAddresses.put(stringIndex, address);
         var s = currentClassFile.getUtf8Constant(stringIndex);
-        var data = new int[s.length()];
-        int idx = 0;
+        var data = new int[s.length()+1];
+        data[0] = s.length();
+        int idx = 1;
         for (char c : s.toCharArray()) {
             data[idx++] = c;
         }
-        roDataInstructions.add(new OpCodeInstruction(0, s.length(), data, "string " + s));
+        roDataInstructions.add(new InlineInstruction(null, data, "string " + s));
         return address;
     }
 
-    private List<Instruction> link() {
-        throw new UnsupportedOperationException();
+    private List<Instruction> link(HashMap<Integer, String> labelMap) throws TranslatorException {
+        var labels = new HashMap<String, Integer>();
+        var instructions = new ArrayList<Instruction>();
+        var generator = new InstructionGenerator(null);
+        if (configuration.code.isrHandlers != null && configuration.code.isrHandlers.length > 0) {
+            generator.addCall(configuration.code.entryPoint);
+            generator.addHlt();
+            for (var i = 0; i < configuration.code.isrHandlers.length - 1; i++) {
+                generator.addJmpToLabel(configuration.code.isrHandlers[i]);
+                generator.addHlt();
+                generator.addHlt();
+            }
+        }
+        var ins = generator.getInstructions();
+        var pc = ins.stream().mapToInt(Instruction::getSize).sum();
+        instructions.addAll(ins);
+        if (configuration.code.isrHandlers.length > 0) {
+            labels.put(configuration.code.isrHandlers[configuration.code.isrHandlers.length - 1], pc);
+            ins = methodInstructons.get(configuration.code.isrHandlers[configuration.code.isrHandlers.length - 1]);
+            pc += ins.stream().mapToInt(Instruction::getSize).sum();
+            instructions.addAll(ins);
+            for (var i = 0; i < configuration.code.isrHandlers.length - 1; i++) {
+                labels.put(configuration.code.isrHandlers[i], pc);
+                ins = methodInstructons.get(configuration.code.isrHandlers[i]);
+                pc += ins.stream().mapToInt(Instruction::getSize).sum();
+                instructions.addAll(ins);
+            }
+            labels.put(configuration.code.entryPoint, pc);
+            ins = methodInstructons.get(configuration.code.entryPoint);
+            pc += ins.stream().mapToInt(Instruction::getSize).sum();
+            instructions.addAll(ins);
+            for (var entry: methodInstructons.entrySet()) {
+                if (entry.getKey().equals(configuration.code.entryPoint) || isIsr(entry.getKey()))
+                    continue;
+                labels.put(entry.getKey(), pc);
+                ins = entry.getValue();
+                pc += ins.stream().mapToInt(Instruction::getSize).sum();
+                instructions.addAll(ins);
+            }
+        }
+        link(instructions, labels);
+        for (var entry : labels.entrySet())
+            labelMap.put(entry.getValue(), entry.getKey());
+        return instructions;
+    }
+
+    private boolean isIsr(String key) {
+        if (configuration.code.isrHandlers != null) {
+            for (var handler : configuration.code.isrHandlers)
+                if (key.equals(handler))
+                    return true;
+        }
+        return false;
+    }
+
+    private void link(List<Instruction> instructions, Map<String, Integer> labels) throws TranslatorException {
+        var pc = 0;
+        for (var instruction : instructions) {
+            var label = instruction.getRequiredLabel();
+            if (label != null) {
+                if (!labels.containsKey(label))
+                    throw new TranslatorException("unknown label " + label);
+                instruction.buildCode(labels.get(label), pc);
+            }
+            else
+                instruction.buildCode(0, pc);
+            pc += instruction.getSize();
+        }
+    }
+
+    private void createOutputFiles(List<Instruction> code, Map<Integer, String> labels) throws IOException {
+        createFile(configuration.code.fileName, code, labels);
+        createFile(configuration.data.fileName, dataInstructions, labels);
+        createFile(configuration.roData.fileName, roDataInstructions, labels);
+    }
+
+    private static void createFile(String fileName, List<Instruction> instructions, Map<Integer, String> labels)
+            throws IOException {
+        var lines = new ArrayList<String>();
+        var pc = 0;
+        for (var instruction : instructions) {
+            var label = labels.getOrDefault(pc,"");
+            var text = instruction.toText(label, pc);
+            pc += instruction.getSize();
+            lines.addAll(Arrays.asList(text));
+        }
+        Files.write(Paths.get(fileName), lines);
     }
 }
