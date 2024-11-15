@@ -111,9 +111,9 @@ public class InstructionGenerator {
                 String.format("push_long %d %x", value, value)));
     }
 
-    public void addGet()
+    public void addGet(String comment)
     {
-        addInstruction(new OpCodeInstruction(bytecodePc, GET, 0, new int[0], "iget"));
+        addInstruction(new OpCodeInstruction(bytecodePc, GET, 0, new int[0], comment));
     }
 
     public void addGetLong()

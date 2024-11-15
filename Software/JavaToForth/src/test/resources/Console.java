@@ -13,5 +13,5 @@ public final class Console {
     }
     
     private static native void uartOut(char c);
-    private static native int uartGet();
+    public static native int uartGet();
 }

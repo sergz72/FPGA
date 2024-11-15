@@ -427,7 +427,7 @@ public final class ForthTranslator {
                 translateInvokeStatic(index);
                 break;
             case 0xbe: // arraylength
-                instructionGenerator.addGet();
+                instructionGenerator.addGet("get (arraylength)");
                 break;
             case 0x2f: // laload
                 translateLALoad();
@@ -447,10 +447,6 @@ public final class ForthTranslator {
             case 0x56: // sastore
                 translateAStore();
                 break;
-            case 0x5A: // dup_x1
-            case 0x5B: // dup_x2
-            case 0x5D: // dup2_x1
-            case 0x5E: // dup2_x2
             case 0x6c: // idiv
                 instructionGenerator.addDiv("idiv");
                 break;
@@ -468,9 +464,15 @@ public final class ForthTranslator {
             case 0xab: // lookupswitch
                 throw new TranslatorException("lookupswitch is not supported");
             case 0xb2: // getstatic
-                throw new TranslatorException("getstatic is not supported");
+                index = code[pc++] << 8;
+                index |= code[pc++] & 0xFF;
+                translateGetStatic(index);
+                break;
             case 0xb3: // putstatic
-                throw new TranslatorException("putstatic is not supported");
+                index = code[pc++] << 8;
+                index |= code[pc++] & 0xFF;
+                translatePutStatic(index);
+                break;
             case 0xb4: // getfield
                 throw new TranslatorException("getfield is not supported");
             case 0xb5: // putfield
@@ -491,10 +493,32 @@ public final class ForthTranslator {
             case 0xbf: // athrow
                 throw new TranslatorException("athrow is not supported");
             case 0xc5: // multianewarray
-                throw new TranslatorException("multianewarray is not supported");
+                index = code[pc++] << 8;
+                index |= code[pc++] & 0xFF;
+                var dimensions = code[pc++];
+                translateMultiANewArray(index, dimensions);
+                break;
+            case 0x85: //i2l
+            case 0x88: //l2i
+            case 0x91: //i2b
+            case 0x92: //i2c
+            case 0x93: //i2s
+                break;
+            case 0x5A: // dup_x1
+            case 0x5B: // dup_x2
+            case 0x5D: // dup2_x1
+            case 0x5E: // dup2_x2
             default: throw new TranslatorException(String.format("unknown instruction %x", instruction));
         }
         return pc;
+    }
+
+    private void translatePutStatic(int index) throws TranslatorException {
+        throw new TranslatorException("putstatic is not supported");
+    }
+
+    private void translateGetStatic(int index) throws TranslatorException {
+        throw new TranslatorException("getstatic is not supported");
     }
 
     private void translateNew(int index) throws TranslatorException {
@@ -515,7 +539,7 @@ public final class ForthTranslator {
 
     private void translateALoad() {
         instructionGenerator.addArrayp();
-        instructionGenerator.addGet();
+        instructionGenerator.addGet("get (aload)");
     }
 
     private void translateLALoad() {
