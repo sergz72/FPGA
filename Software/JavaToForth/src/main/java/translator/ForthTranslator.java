@@ -119,6 +119,8 @@ public final class ForthTranslator {
         {
             instructionGenerator.addLocals(localsCount);
             var parametersCount = currentMethod.getNumberOfParameters();
+            if (!currentMethod.isStatic())
+                parametersCount++;
             while (parametersCount != 0) {
                 parametersCount--;
                 instructionGenerator.addSetLocal(parametersCount);

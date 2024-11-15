@@ -38,18 +38,50 @@ public class MethodOrField {
     }
 
     public int getNumberOfParameters() throws ClassFileException {
-        var idx1 = descriptor.indexOf('(');
+        return getNumberOfParameters(descriptor);
+    }
+
+    public static int getNumberOfParameters(String descriptor) throws ClassFileException {
+        var idx = descriptor.indexOf('(');
         var idx2 = descriptor.indexOf(')');
-        if (idx1 < 0 || idx2 < 0)
+        if (idx < 0 || idx2 < 0 || idx > idx2)
             throw new ClassFileException("Invalid method descriptor" + descriptor);
-        var count = Arrays.stream(descriptor.substring(idx1 + 1, idx2)
-                .split(";"))
-                .filter(p -> !p.isEmpty())
-                .count();
-        return (int)count;
+        int count = 0;
+
+        idx++;
+
+        while (idx < idx2) {
+            var c = descriptor.charAt(idx);
+            switch (c) {
+                case 'L':
+                    idx = descriptor.indexOf(';', idx + 1);
+                    if (idx <= 0)
+                        throw new ClassFileException("Invalid method descriptor" + descriptor);
+                    break;
+                case 'C':
+                case 'I':
+                case 'J':
+                case 'Z':
+                    break;
+                default:
+                    throw new ClassFileException(String.format("Unsupported char in method descriptor: %c %s", c, descriptor));
+            }
+            count++;
+            idx++;
+        }
+
+        return count;
     }
 
     public boolean isNative() {
         return (accessFlags & 0x100) != 0;
+    }
+
+    public boolean isStatic() {
+        return (accessFlags & 8) != 0;
+    }
+
+    public boolean isVarargs() {
+        return (accessFlags & 0x80) != 0;
     }
 }

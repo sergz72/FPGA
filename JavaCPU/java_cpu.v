@@ -335,7 +335,7 @@ module java_cpu
                         arrayp | arrayp2: begin
                             error <= z2;
                             data_stack_nwr <= 0;
-                            data_stack_wr_data <= data_stack_value2 + (arrayp ? data_stack_value1 : data_stack_value1 << 1);
+                            data_stack_wr_data <= data_stack_value2 + (arrayp ? data_stack_value1 : data_stack_value1 << 1) + 1; // first element is array size
                             data_stack_pointer <= data_stack_pointer + 1;
                             state <= STATE_FETCH;
                         end

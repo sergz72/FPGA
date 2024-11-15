@@ -1,3 +1,19 @@
+	push ref
+	ipush 5
+	arrayp
+	iget
+	ipush 10
+	ifcmpeq next1
+	hlt
+next1:
+	push ref2
+	ipush 2
+	arrayp2
+	lget
+	lpush $1100000010
+	ifcmpeq next2
+	hlt
+next2:
 	ipush 15
 	push ref
 	ipush 5
@@ -15,17 +31,17 @@
 	arrayp
 	iget
 	ipush 15
-	ifcmpeq next1
+	ifcmpeq next3
 	hlt
-next1:
+next3:
 	push ref2
 	ipush 2
 	arrayp2
 	lget
 	ipush 5
-	ifcmpeq next2
+	ifcmpeq next4
 	hlt
-next2:
+next4:
 	getsp
 	ifeq ok
 	hlt
@@ -34,5 +50,5 @@ p1:	ipush 1
 	ret
 
 .segment data
-ref:	dd 0, 0, 0, 0, 0, 10
-ref2:	dd 0, 0, 0, 0, 10, 10
+ref:	dd 0, 0, 0, 0, 0, 0, 10
+ref2:	dd 0, 0, 0, 0, 0, $10, $11

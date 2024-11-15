@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Main-Class: Main
+Class-Path: gson-2.11.0.jar
+
