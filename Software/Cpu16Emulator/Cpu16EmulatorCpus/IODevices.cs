@@ -8,14 +8,14 @@ public class IODevices(Cpu cpu, IODevice[] devices, ILogger logger)
     {
         foreach (var d in devices)
             d.Device.IoRead(e);
-        logger.Info($"IO read, address = {e.Address:X4}, data = {e.Data:X4}");
+        logger.Info($"IO read, address = {e.Address:X8}, data = {e.Data:X8}");
         if (e.InterruptClearMask != null)
             cpu.Interrupt &= (uint)e.InterruptClearMask;
     }
 
     public void IoWrite(object? sender, IoEvent e)
     {
-        logger.Info($"IO write, address = {e.Address:X4}, data = {e.Data:X4}");
+        logger.Info($"IO write, address = {e.Address:X8}, data = {e.Data:X8}");
         foreach (var d in devices)
             d.Device.IoWrite(e);
         if (e.InterruptClearMask != null)

@@ -161,19 +161,35 @@ public class JavaCPU(string[] code, int speed, int dataStackSize, int callStackS
                 if (IoWriteEventHandler == null)
                     throw new CpuException("null IoWriteEventHandler");
                 address = DataStack.Pop(Pc);
-                data = DataStack.Pop(Pc);
-                ev = new IoEvent { Address = (uint)address, Data = (uint)data };
-                IoWriteEventHandler.Invoke(this, ev);
+                if (address == 0)
+                {
+                    Logger?.Error($"{Ticks}: ERROR {Pc:X8}");
+                    Error = true;
+                }
+                else
+                {
+                    data = DataStack.Pop(Pc);
+                    ev = new IoEvent { Address = (uint)address, Data = (uint)data };
+                    IoWriteEventHandler.Invoke(this, ev);
+                }
                 break;
             case SET_LONG:
                 if (IoWriteEventHandler == null)
                     throw new CpuException("null IoWriteEventHandler");
                 address = DataStack.Pop(Pc);
-                data = DataStack.Pop(Pc);
-                ev = new IoEvent { Address = (uint)address, Data = (uint)data };
-                IoWriteEventHandler.Invoke(this, ev);
-                ev = new IoEvent { Address = (uint)address+1, Data = (uint)(data >> 32) };
-                IoWriteEventHandler.Invoke(this, ev);
+                if (address == 0)
+                {
+                    Logger?.Error($"{Ticks}: ERROR {Pc:X8}");
+                    Error = true;
+                }
+                else
+                {
+                    data = DataStack.Pop(Pc);
+                    ev = new IoEvent { Address = (uint)address, Data = (uint)data };
+                    IoWriteEventHandler.Invoke(this, ev);
+                    ev = new IoEvent { Address = (uint)address + 1, Data = (uint)(data >> 32) };
+                    IoWriteEventHandler.Invoke(this, ev);
+                }
                 break;
             case JMP:
                 If(true);
@@ -182,22 +198,38 @@ public class JavaCPU(string[] code, int speed, int dataStackSize, int callStackS
                 if (IoReadEventHandler == null)
                     throw new CpuException("null IoReadEventHandler");
                 address = DataStack.Pop(Pc);
-                ev = new IoEvent { Address = (uint)address };
-                IoReadEventHandler.Invoke(this, ev);
-                var d = (int)ev.Data;
-                DataStack.Push(d, Pc);
+                if (address == 0)
+                {
+                    Logger?.Error($"{Ticks}: ERROR {Pc:X8}");
+                    Error = true;
+                }
+                else
+                {
+                    ev = new IoEvent { Address = (uint)address };
+                    IoReadEventHandler.Invoke(this, ev);
+                    var d = (int)ev.Data;
+                    DataStack.Push(d, Pc);
+                }
                 break;
             case GET_LONG:
                 if (IoReadEventHandler == null)
                     throw new CpuException("null IoReadEventHandler");
                 address = DataStack.Pop(Pc);
-                ev = new IoEvent { Address = (uint)address };
-                IoReadEventHandler.Invoke(this, ev);
-                var d1 = (long)ev.Data;
-                ev = new IoEvent { Address = (uint)address+1 };
-                IoReadEventHandler.Invoke(this, ev);
-                var d2 = (long)ev.Data;
-                DataStack.Push((d2 << 32) | d1, Pc);
+                if (address == 0)
+                {
+                    Logger?.Error($"{Ticks}: ERROR {Pc:X8}");
+                    Error = true;
+                }
+                else
+                {
+                    ev = new IoEvent { Address = (uint)address };
+                    IoReadEventHandler.Invoke(this, ev);
+                    var d1 = (long)ev.Data;
+                    ev = new IoEvent { Address = (uint)address + 1 };
+                    IoReadEventHandler.Invoke(this, ev);
+                    var d2 = (long)ev.Data;
+                    DataStack.Push((d2 << 32) | d1, Pc);
+                }
                 break;
             case CALL:
                 CallStack.Push(Pc + 2, Pc);
@@ -268,7 +300,8 @@ public class JavaCPU(string[] code, int speed, int dataStackSize, int callStackS
             case INC:
                 var n = instruction & 0xFF;
                 var v = CallStack.GetN(n, Pc);
-                CallStack.SetN(n, v + (Code[Pc++].Instruction & 0xFFFF), Pc);
+                var plus = (short)(Code[Pc++].Instruction & 0xFFFF);
+                CallStack.SetN(n, v + plus, Pc);
                 break;
             case IF:
                 data = DataStack.Pop(Pc);
@@ -328,11 +361,45 @@ public class JavaCPU(string[] code, int speed, int dataStackSize, int callStackS
                 }
                 break;
             case ARRAYP:
-                throw new NotImplementedException();
+                data = DataStack.Pop(Pc);
+                address = DataStack.Pop(Pc);
+                if (address == 0)
+                {
+                    Logger?.Error($"{Ticks}: ERROR {Pc:X8}");
+                    Error = true;
+                }
+                else
+                    DataStack.Push(address + data + 1, Pc);
+                break;
             case ARRAYP2:
-                throw new NotImplementedException();
+                data = DataStack.Pop(Pc);
+                address = DataStack.Pop(Pc);
+                if (address == 0)
+                {
+                    Logger?.Error($"{Ticks}: ERROR {Pc:X8}");
+                    Error = true;
+                }
+                else
+                    DataStack.Push(address + (data << 1) + 1, Pc);
+                break;
             case CALL_INDIRECT:
-                throw new NotImplementedException();
+                if (IoReadEventHandler == null)
+                    throw new CpuException("null IoReadEventHandler");
+                address = DataStack.Pop(Pc);
+                if (address == 0)
+                {
+                    Logger?.Error($"{Ticks}: ERROR {Pc:X8}");
+                    Error = true;
+                }
+                else
+                {
+                    CallStack.Push(Pc, Pc);
+                    address += instruction & 0xFF;
+                    ev = new IoEvent { Address = (uint)address };
+                    IoReadEventHandler.Invoke(this, ev);
+                    Pc = ev.Data;
+                }
+                break;
             case ALU_OP:
                 data2 = DataStack.Pop(Pc);
                 data = DataStack.Pop(Pc);
