@@ -26,6 +26,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODeviceBaseMemory", "IODev
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODeviceUart", "IODeviceUart\IODeviceUart.csproj", "{F00C04C0-1D5A-418D-B23C-DE96B9B98ADD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IODeviceBaseMemory32", "IODeviceBaseMemory32\IODeviceBaseMemory32.csproj", "{32274B32-8055-42E0-807A-67C9470832F3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -84,5 +86,9 @@ Global
 		{F00C04C0-1D5A-418D-B23C-DE96B9B98ADD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F00C04C0-1D5A-418D-B23C-DE96B9B98ADD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F00C04C0-1D5A-418D-B23C-DE96B9B98ADD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{32274B32-8055-42E0-807A-67C9470832F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32274B32-8055-42E0-807A-67C9470832F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32274B32-8055-42E0-807A-67C9470832F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32274B32-8055-42E0-807A-67C9470832F3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

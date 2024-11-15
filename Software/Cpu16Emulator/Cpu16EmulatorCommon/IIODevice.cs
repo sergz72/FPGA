@@ -49,6 +49,13 @@ public static class IODeviceParametersParser
         return ParseUShort(sValue);
     }
 
+    public static uint? ParseUInt(Dictionary<string, string> kv, string parameterName)
+    {
+        if (!kv.TryGetValue(parameterName, out var sValue))
+            return null;
+        return ParseUInt(sValue);
+    }
+    
     public static ushort? ParseUShort(string sValue)
     {
         if (sValue.StartsWith("0x"))
@@ -61,12 +68,25 @@ public static class IODeviceParametersParser
             return null;
         return value;
     }
+    
+    public static uint? ParseUInt(string sValue)
+    {
+        if (sValue.StartsWith("0x"))
+        {
+            if (!uint.TryParse(sValue[2..], NumberStyles.AllowHexSpecifier, null, out var hValue))
+                return null;
+            return hValue;
+        }
+        if (!uint.TryParse(sValue, out var value))
+            return null;
+        return value;
+    }
 }
 
 public sealed class IoEvent
 {
-    public ushort Address;
-    public ushort Data;
+    public uint Address;
+    public uint Data;
     public uint? InterruptClearMask;
 }
 

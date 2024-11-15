@@ -56,7 +56,7 @@ public class IODeviceLCD1: IIODevice
     public void IoWrite(IoEvent ev)
     {
         if (ev.Address >= _startAddress && ev.Address <= _endAddress)
-            _lcdDriver?.Write(ev.Address, (byte)ev.Data);
+            _lcdDriver?.Write((ushort)ev.Address, (byte)ev.Data);
     }
 
     public uint TicksUpdate(int cpuSped, int ticks, bool wfi, uint interruptAck, out uint interruptClearMask)

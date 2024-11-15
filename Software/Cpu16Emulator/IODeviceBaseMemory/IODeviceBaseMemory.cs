@@ -55,7 +55,7 @@ public sealed class IODeviceBaseMemory: IIODevice
             if (_readOnly)
                 _logger?.Error($"Readonly memory write {ev.Address}");
             else
-                _memory[ev.Address - _startAddress] = ev.Data;
+                _memory[ev.Address - _startAddress] = (ushort)ev.Data;
         }
     }
 

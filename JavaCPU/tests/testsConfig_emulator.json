@@ -1,0 +1,9 @@
+{
+  "TestsDir": "src",
+  "SearchPattern": "*.asm",
+  "BuildCommand": "build.sh",
+  "SimulatorCommand": "run_emulator.sh",
+  "Flag": "WFI",
+  "Error": "HLT",
+  "Ok": "WFI"
+}

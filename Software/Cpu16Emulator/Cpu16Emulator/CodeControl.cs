@@ -10,12 +10,12 @@ namespace Cpu16Emulator;
 public sealed class CodeControl: Control
 {
     public CodeLine[]? Lines { get; set; }
-    public HashSet<ushort>? Breakpoints { get; set; }
+    public HashSet<uint>? Breakpoints { get; set; }
     
     private Typeface _font;
     private double _fontHeight;
     private double _rowHeight;
-    private ushort _pc;
+    private uint _pc;
 
     public CodeControl()
     {
@@ -55,7 +55,7 @@ public sealed class CodeControl: Control
         return new Size(Width, h);
     }
 
-    internal void Update(ushort pc)
+    internal void Update(uint pc)
     {
         _pc = pc;
         if (Parent is ScrollViewer sv)

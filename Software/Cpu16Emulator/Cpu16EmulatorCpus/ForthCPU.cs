@@ -51,7 +51,8 @@ public class ForthCPU(string[] code, int speed, int dataStackSize, int callStack
     private const byte ALU_OP_DIV  = 14;
     private const byte ALU_OP_REM  = 15;
 
-    private ushort _savedPc, _aluOut2;
+    private uint _savedPc;
+    private ushort _aluOut2;
     
     private readonly bool _hardMul = cpuOptions?.Contains("MUL") ?? false;
     private readonly bool _hardDiv = cpuOptions?.Contains("DIV") ?? false;
@@ -71,7 +72,7 @@ public class ForthCPU(string[] code, int speed, int dataStackSize, int callStack
         ParametersStack.Clear();
     }
 
-    protected override ushort? IsCall(uint instruction)
+    protected override uint? IsCall(uint instruction)
     {
         return instruction == CALL ? (ushort)(Pc + 3) : null;
     }
@@ -107,7 +108,7 @@ public class ForthCPU(string[] code, int speed, int dataStackSize, int callStack
             return;
         
         var instruction = (byte)Code[Pc].Instruction;
-        Pc = (ushort)(Pc + 1);
+        Pc++;
 
         ushort address, data, data2;
         IoEvent ev;
@@ -136,7 +137,7 @@ public class ForthCPU(string[] code, int speed, int dataStackSize, int callStack
                 address = DataStack.Pop(Pc);
                 ev = new IoEvent { Address = address };
                 IoReadEventHandler.Invoke(this, ev);
-                DataStack.Push(ev.Data, Pc);
+                DataStack.Push((ushort)ev.Data, Pc);
                 break;
             case CALL:
                 CallStack.Push((ushort)(Pc + 2), Pc);
@@ -363,46 +364,46 @@ public sealed class ForthStack<T>(string name, int size)
     
     public int Sp => ~Pointer;
 
-    internal void Push(T value, ushort pc)
+    internal void Push(T value, uint pc)
     {
         Pointer++;
         if (Pointer >= size)
-            throw new CpuException($"{name} stack overflow at {pc:X4}");
+            throw new CpuException($"{name} stack overflow at {pc:X8}");
         Contents[Pointer] = value;
     }
 
-    internal T Peek(ushort pc)
+    internal T Peek(uint pc)
     {
         if (Pointer < 0)
-            throw new CpuException($"{name} stack underflow at {pc:X4}");
+            throw new CpuException($"{name} stack underflow at {pc:X8}");
         return Contents[Pointer];
     }
 
-    internal T Pop(ushort pc)
+    internal T Pop(uint pc)
     {
         if (Pointer < 0)
-            throw new CpuException($"{name} stack underflow at {pc:X4}");
+            throw new CpuException($"{name} stack underflow at {pc:X8}");
         return Contents[Pointer--];
     }
 
-    internal T GetN(int n, ushort pc)
+    internal T GetN(int n, uint pc)
     {
         if (Pointer < n)
-            throw new CpuException($"{name} stack underflow at {pc:X4}");
+            throw new CpuException($"{name} stack underflow at {pc:X8}");
         return Contents[Pointer - n];
     }
     
-    internal void SetN(int n, T value, ushort pc)
+    internal void SetN(int n, T value, uint pc)
     {
         if (Pointer < n)
-            throw new CpuException($"{name} stack underflow at {pc:X4}");
+            throw new CpuException($"{name} stack underflow at {pc:X8}");
         Contents[Pointer - n] = value;
     }
 
-    internal void DropN(int n, ushort pc)
+    internal void DropN(int n, uint pc)
     {
         if (Pointer < n - 1)
-            throw new CpuException($"{name} stack underflow at {pc:X4}");
+            throw new CpuException($"{name} stack underflow at {pc:X8}");
         Pointer -= n;
     }
     
@@ -411,10 +412,10 @@ public sealed class ForthStack<T>(string name, int size)
         Pointer = -1;
     }
 
-    public void IncrementPointer(ushort data, ushort pc)
+    public void IncrementPointer(int data, uint pc)
     {
         Pointer += data;
         if (Pointer >= size)
-            throw new CpuException($"{name} stack overflow at {pc:X4}");
+            throw new CpuException($"{name} stack overflow at {pc:X8}");
     }
 }

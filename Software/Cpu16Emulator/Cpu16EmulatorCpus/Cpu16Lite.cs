@@ -2,7 +2,7 @@
 
 namespace Cpu16EmulatorCpus;
 
-public sealed class Cpu16Lite(string[] code, int speed): Cpu(code, speed, 256)
+public sealed class Cpu16Lite: Cpu
 {
     private const int ALU_OP_TEST = 0;
     private const int ALU_OP_NEG = 1;
@@ -32,7 +32,14 @@ public sealed class Cpu16Lite(string[] code, int speed): Cpu(code, speed, 256)
     public bool Z { get; private set; }
     public bool N { get; private set; }
     
-    protected override ushort? IsCall(uint instruction)
+    public readonly ushort[] Registers;
+
+    public Cpu16Lite(string[] code, int speed): base(code, speed)
+    {
+        Registers = Cpu.BuildUShortRegisters(256);
+    }
+    
+    protected override uint? IsCall(uint instruction)
     {
         var opType = (instruction >> 4) & 0x0F;
         return opType is 2 or 3 ? (ushort)(Pc + 1) : null;
@@ -216,7 +223,7 @@ public sealed class Cpu16Lite(string[] code, int speed): Cpu(code, speed, 256)
                             throw new CpuException("null IoReadEventHandler");
                         ev = new IoEvent { Address = ioAddress };
                         IoReadEventHandler(this, ev);
-                        Registers[regNo1] = ev.Data;
+                        Registers[regNo1] = (ushort)ev.Data;
                         Pc = (ushort)(Pc + 1);
                         break;
                     case 1: //in io->@rp
@@ -224,7 +231,7 @@ public sealed class Cpu16Lite(string[] code, int speed): Cpu(code, speed, 256)
                             throw new CpuException("null IoReadEventHandler");
                         ev = new IoEvent { Address = ioAddress };
                         IoReadEventHandler(this, ev);
-                        Registers[Rp] = ev.Data;
+                        Registers[Rp] = (ushort)ev.Data;
                         Pc = (ushort)(Pc + 1);
                         break;
                     case 2: //in io->@rp++
@@ -232,7 +239,7 @@ public sealed class Cpu16Lite(string[] code, int speed): Cpu(code, speed, 256)
                             throw new CpuException("null IoReadEventHandler");
                         ev = new IoEvent { Address = ioAddress };
                         IoReadEventHandler(this, ev);
-                        Registers[Rp] = ev.Data;
+                        Registers[Rp] = (ushort)ev.Data;
                         IncRp();
                         Pc = (ushort)(Pc + 1);
                         break;
@@ -242,7 +249,7 @@ public sealed class Cpu16Lite(string[] code, int speed): Cpu(code, speed, 256)
                         ev = new IoEvent { Address = ioAddress };
                         IoReadEventHandler(this, ev);
                         DecRp();
-                        Registers[Rp] = ev.Data;
+                        Registers[Rp] = (ushort)ev.Data;
                         Pc = (ushort)(Pc + 1);
                         break;
                     case 4: //out register->io

@@ -1,0 +1,7 @@
+{
+  "Cpu": "JavaCPU",
+  "CpuSpeed": 100,
+  "IODevices": [
+    { "FileName": "../../../../../Rider/Cpu16Emulator/IODeviceBaseMemory32/bin/Debug/net8.0/IODeviceBaseMemory32.dll", "Parameters": "address=0x20000000 size=1024 readonly=false" }
+  ]
+}

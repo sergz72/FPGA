@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Numerics;
 using System.Reflection;
 using System.Text.Json;
 using Cpu16EmulatorCommon;
@@ -36,17 +37,15 @@ public abstract class Cpu
 {
     public readonly CodeLine[] Code;
     
-    public readonly HashSet<ushort> Breakpoints = [];
+    public readonly HashSet<uint> Breakpoints = [];
 
-    public ushort Pc { get; protected set; }
-    public ushort Sp { get; protected set; }
+    public uint Pc { get; protected set; }
+    public uint Sp { get; protected set; }
     
-    public readonly ushort[] Registers;
-
     public readonly int Speed;
     public int Ticks { get; private set; }
 
-    protected readonly ushort StartPc;
+    protected readonly uint StartPc;
     
     public bool Hlt { get; protected set; }
 
@@ -61,14 +60,10 @@ public abstract class Cpu
     public EventHandler<IoEvent>? IoWriteEventHandler;
     public EventHandler<IoEvent>? IoReadEventHandler;
     public EventHandler<int>? TicksEventHandler;
-    
-    public Cpu(string[] code, int speed, int registerCount, ushort startPc = 0)
+
+    public Cpu(string[] code, int speed, uint startPc = 0)
     {
         Code = code.Select((c, i) => new CodeLine(c, (ushort)i)).ToArray();
-        Registers = new ushort[registerCount];
-        var r = new Random();
-        for (var i = 0; i < Registers.Length; i++)
-            Registers[i] = (ushort)r.Next(0xFFFF);
         Speed = speed;
         StartPc = startPc;
     }
@@ -81,7 +76,7 @@ public abstract class Cpu
         Interrupt = 0;
     }
 
-    protected abstract ushort? IsCall(uint instruction);
+    protected abstract uint? IsCall(uint instruction);
     
     public virtual void StepOver()
     {
@@ -133,6 +128,7 @@ public abstract class Cpu
             "Tiny16v4" => new Tiny16v4(code, config.CpuSpeed * 1000),
             "ForthCPU" => new ForthCPU(code, config.CpuSpeed * 1000, 256, 256, 16,
                                         config.CpuOptions),
+            "JavaCPU" => new JavaCPU(code, config.CpuSpeed * 1000, 256, 256, config.CpuOptions),
             _ => throw new CpuException("invalid cpu")
         };
         var ioDevices = LoadIODevices(config.IODevices);
@@ -166,5 +162,14 @@ public abstract class Cpu
                 Parameters = deviceFile.Parameters
             })
             .ToArray();
+    }
+
+    protected static ushort[] BuildUShortRegisters(int count)
+    {
+        var registers = new ushort[count];
+        var r = new Random();
+        for (var i = 0; i < count; i++)
+            registers[i] = (ushort)r.Next(0xFFFF);
+        return registers;
     }
 }
