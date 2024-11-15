@@ -5,16 +5,16 @@ namespace IODeviceUart;
 public class IODeviceUart: IIODevice
 {
     private ILogger? _logger;
-    private ushort _address;
-    private ushort _data;
+    private uint _address;
+    private uint _data;
     private uint _interrupt;
     
     public object? Init(string parameters, ILogger logger)
     {
         var kv = IODeviceParametersParser.ParseParameters(parameters);
-        _address = IODeviceParametersParser.ParseUShort(kv, "address") ?? 
+        _address = IODeviceParametersParser.ParseUInt(kv, "address") ?? 
                         throw new IODeviceException("uart: missing or wrong address parameter");
-        _interrupt = IODeviceParametersParser.ParseUShort(kv, "interrupt") ?? 
+        _interrupt = IODeviceParametersParser.ParseUInt(kv, "interrupt") ?? 
                    throw new IODeviceException("uart: missing or wrong address parameter");
         _logger = logger;
         return null;
@@ -38,7 +38,7 @@ public class IODeviceUart: IIODevice
         {
             if (Console.KeyAvailable)
             {
-                _data = (ushort)(Console.ReadKey(true).KeyChar & 0x7F);
+                _data = (uint)(Console.ReadKey(true).KeyChar & 0x7F);
                 interruptClearMask = 0;
                 return _interrupt;
             }
