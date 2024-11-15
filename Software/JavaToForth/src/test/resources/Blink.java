@@ -10,7 +10,7 @@ class Blink {
         while (true) {
             Hal.ledSet(ledState);
             Hal.timerStart(500 * Hal.MS);
-            Hal.wfi();
+            System.wfi();
             ledState = !ledState;
         }
     }

@@ -12,19 +12,17 @@ public class MethodOrField {
     Attributes attributes;
     public MethodOrField(short accessFlags, String name, String descriptor, Attributes attributes) {
         this.accessFlags = accessFlags;
-        this.name = name;
+        this.name = name + descriptor;
         this.attributes = attributes;
         this.descriptor = descriptor;
     }
 
-    static MethodOrField load(int thisClass, ConstantPool cp, ByteBuffer bb) throws ClassFileException {
+    static MethodOrField load(ConstantPool cp, ByteBuffer bb) throws ClassFileException {
         var accessFlags = bb.getShort();
-        var n = bb.getShort();
-        var descriptor = bb.getShort();
-        var descriptorName = cp.getUtf8Constant(descriptor);
-        var name = cp.buildMethodName(thisClass, n, descriptor);
+        var name = cp.getUtf8Constant(bb.getShort());
+        var descriptor = cp.getUtf8Constant(bb.getShort());
         var attributes = new Attributes(cp, bb);
-        return new MethodOrField(accessFlags, name, descriptorName, attributes);
+        return new MethodOrField(accessFlags, name, descriptor, attributes);
     }
 
     public byte[] getCode() throws ClassFileException {

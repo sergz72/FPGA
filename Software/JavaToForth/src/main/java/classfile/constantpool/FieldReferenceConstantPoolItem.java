@@ -15,4 +15,9 @@ public class FieldReferenceConstantPoolItem extends BaseReferenceConstantPoolIte
             return cp.buildFieldName(classIndex, nt.nameIndex);
         throw new ClassFileException("wrong nameAndType index for field reference");
     }
+
+    public boolean isLong(ConstantPool cp) throws ClassFileException {
+        var type = cp.getType(nameAndTypeIndex);
+        return type.equals("J") || type.equals("D"); // long or double
+    }
 }

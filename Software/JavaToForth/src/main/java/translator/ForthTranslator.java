@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 public final class ForthTranslator {
+    private static final String staticConstructor = "<clinit>()V";
     private static final Set<String> builtInClasses = Set.of("java/lang/Object", "java/lang/String");
     private static final Set<String> ignoreMethodCalls = Set.of("java/lang/String.toCharArray()[C");
 
@@ -20,24 +21,20 @@ public final class ForthTranslator {
     HashSet<String> toTranslate;
     ClassFile currentClassFile;
     InstructionGenerator instructionGenerator;
-    int nextRoDataAddress, nextDataAddress;
-    List<Instruction> roDataInstructions;
-    List<Instruction> dataInstructions;
-    Map<Integer, Integer> stringConstantAddresses;
+    Segment data, roData;
+    Map<String, Integer> dataSegmentMapping;
     MethodOrField currentMethod;
     String currentMethodName;
-    Map<String, List<Instruction>> methodInstructons;
+    Map<String, List<Instruction>> methodInstructions;
 
     public ForthTranslator(List<ClassFile> classes, TranslatorConfiguration configuration) throws ClassFileException {
         this.configuration = configuration;
         this.classes = buildClasses(classes);
         this.toTranslate = new HashSet<>();
-        this.nextRoDataAddress = configuration.roData.address;
-        this.nextDataAddress = configuration.data.address;
-        this.roDataInstructions = new ArrayList<>();
-        this.dataInstructions = new ArrayList<>();
-        this.stringConstantAddresses = new HashMap<>();
-        this.methodInstructons = new HashMap<>();
+        this.data = new Segment("data", configuration.data.address, configuration.data.size);
+        this.roData = new Segment("rodata", configuration.roData.address, configuration.roData.size);
+        this.methodInstructions = new HashMap<>();
+        this.dataSegmentMapping = new HashMap<>();
     }
 
     public ForthTranslator(String mainClassName, List<ClassFile> classes, String configurationFileName)
@@ -89,7 +86,6 @@ public final class ForthTranslator {
     }
 
     private void translateCurrentClassFile() throws ClassFileException, TranslatorException {
-        stringConstantAddresses.clear();
         for (var method : currentClassFile.getMethods().entrySet()) {
             if (method.getValue().isNative())
                 System.out.printf("  Skipping native method %s...\n", method.getKey());
@@ -110,7 +106,7 @@ public final class ForthTranslator {
         while (pc < code.length)
             pc = translate(code, pc);
         instructionGenerator.finish();
-        methodInstructons.put(currentMethodName, instructionGenerator.getInstructions());
+        methodInstructions.put(currentMethodName, instructionGenerator.getInstructions());
     }
 
     private void createProlog() throws ClassFileException {
@@ -513,10 +509,20 @@ public final class ForthTranslator {
         return pc;
     }
 
+    private int buildFieldAddress(String name, boolean isLong) {
+        if (dataSegmentMapping.containsKey(name))
+            return dataSegmentMapping.get(name);
+        var address = data.allocate(isLong ? 2 : 1);
+        dataSegmentMapping.put(name, address);
+        return address;
+    }
+
     private void translatePutStatic(int index) throws ClassFileException {
         var name = currentClassFile.getFieldName(index);
-        instructionGenerator.addPushLabel(name);
-        if (currentClassFile.isLongField(index))
+        var isLong = currentClassFile.isLongField(index);
+        var address = buildFieldAddress(name, isLong);
+        instructionGenerator.addPush(address, "push " + name);
+        if (isLong)
             instructionGenerator.addSetLong();
         else
             instructionGenerator.addSet();
@@ -524,8 +530,10 @@ public final class ForthTranslator {
 
     private void translateGetStatic(int index) throws TranslatorException, ClassFileException {
         var name = currentClassFile.getFieldName(index);
-        instructionGenerator.addPushLabel(name);
-        if (currentClassFile.isLongField(index))
+        var isLong = currentClassFile.isLongField(index);
+        var address = buildFieldAddress(name, isLong);
+        instructionGenerator.addPush(address, "push " + name);
+        if (isLong)
             instructionGenerator.addGetLong();
         else
             instructionGenerator.addGet("getstatic");
@@ -533,9 +541,19 @@ public final class ForthTranslator {
 
     private void translateNew(int index) throws ClassFileException {
         var name = currentClassFile.getName(index);
-        var size = classes.get(name).calculateSize(classes);
-        instructionGenerator.addPush(size, String.format("push %d (new %s)", size, name));
-        instructionGenerator.addCall("System.newObject(I)I");
+        var cls = classes.get(name);
+        var size = cls.calculateFieldsSize(classes);
+        var methods = cls.buildMethodsList(classes);
+        var address = buildMethodsTable(methods);
+        instructionGenerator.addPush(address, String.format("push %d (new %s methods table address)", address, name));
+        instructionGenerator.addPush(size, String.format("push %d (new %s fields size)", size, name));
+        instructionGenerator.addCall("System.newObject(II)I");
+        instructionGenerator.addDup();
+        instructionGenerator.addCall(name + ".<init>()");
+    }
+
+    private int buildMethodsTable(List<String> methods) {
+        throw new UnsupportedOperationException();
     }
 
     private void translateANewArray(int index) throws ClassFileException {
@@ -666,10 +684,9 @@ public final class ForthTranslator {
     }
 
     private int buildStringConstant(int stringIndex) throws ClassFileException {
-        if (stringConstantAddresses.containsKey(stringIndex))
-            return stringConstantAddresses.get(stringIndex);
-        var address = nextRoDataAddress;
-        stringConstantAddresses.put(stringIndex, address);
+        var name = currentClassFile.getFieldName(stringIndex);
+        if (dataSegmentMapping.containsKey(name))
+            return dataSegmentMapping.get(name);
         var s = currentClassFile.getUtf8Constant(stringIndex);
         var data = new int[s.length()+1];
         data[0] = s.length();
@@ -677,7 +694,8 @@ public final class ForthTranslator {
         for (char c : s.toCharArray()) {
             data[idx++] = c;
         }
-        roDataInstructions.add(new InlineInstruction(null, data, "string " + s));
+        var address = roData.addInstruction(new InlineInstruction(null, data, "string " + s));
+        dataSegmentMapping.put(name, address);
         return address;
     }
 
@@ -699,20 +717,21 @@ public final class ForthTranslator {
         instructions.addAll(ins);
         if (configuration.code.isrHandlers.length > 0) {
             labels.put(configuration.code.isrHandlers[configuration.code.isrHandlers.length - 1], pc);
-            ins = methodInstructons.get(configuration.code.isrHandlers[configuration.code.isrHandlers.length - 1]);
+            ins = methodInstructions.get(configuration.code.isrHandlers[configuration.code.isrHandlers.length - 1]);
             pc += ins.stream().mapToInt(Instruction::getSize).sum();
             instructions.addAll(ins);
             for (var i = 0; i < configuration.code.isrHandlers.length - 1; i++) {
                 labels.put(configuration.code.isrHandlers[i], pc);
-                ins = methodInstructons.get(configuration.code.isrHandlers[i]);
+                ins = methodInstructions.get(configuration.code.isrHandlers[i]);
                 pc += ins.stream().mapToInt(Instruction::getSize).sum();
                 instructions.addAll(ins);
             }
             labels.put(configuration.code.entryPoint, pc);
-            ins = methodInstructons.get(configuration.code.entryPoint);
+            pc += addClassInitCalls(instructions);
+            ins = methodInstructions.get(configuration.code.entryPoint);
             pc += ins.stream().mapToInt(Instruction::getSize).sum();
             instructions.addAll(ins);
-            for (var entry: methodInstructons.entrySet()) {
+            for (var entry: methodInstructions.entrySet()) {
                 if (entry.getKey().equals(configuration.code.entryPoint) || isIsr(entry.getKey()))
                     continue;
                 labels.put(entry.getKey(), pc);
@@ -725,6 +744,17 @@ public final class ForthTranslator {
         for (var entry : labels.entrySet())
             labelMap.put(entry.getValue(), entry.getKey());
         return instructions;
+    }
+
+    private int addClassInitCalls(ArrayList<Instruction> instructions) {
+        var generator = new InstructionGenerator(null);
+        for (var entry : classes.entrySet()) {
+            if (entry.getValue().hasMethod(staticConstructor))
+                generator.addCall(entry.getKey() + "." + staticConstructor);
+        }
+        var ins = generator.getInstructions();
+        instructions.addAll(ins);
+        return ins.stream().mapToInt(Instruction::getSize).sum();
     }
 
     private boolean isIsr(String key) {
@@ -753,8 +783,8 @@ public final class ForthTranslator {
 
     private void createOutputFiles(List<Instruction> code, Map<Integer, String> labels) throws IOException {
         createFile(configuration.code.fileName, code, labels);
-        createFile(configuration.data.fileName, dataInstructions, labels);
-        createFile(configuration.roData.fileName, roDataInstructions, labels);
+        createFile(configuration.data.fileName, data.getInstructions(), labels);
+        createFile(configuration.roData.fileName, roData.getInstructions(), labels);
     }
 
     private static void createFile(String fileName, List<Instruction> instructions, Map<Integer, String> labels)

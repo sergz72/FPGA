@@ -44,4 +44,17 @@ public class ConstantPool extends ClassFileInfo<ConstantPoolItem> {
     public String buildFieldName(int classIndex, int nameIndex) throws ClassFileException {
         return getClassName(classIndex) + "." + getUtf8Constant(nameIndex);
     }
+
+    public boolean isLongField(int index) throws ClassFileException {
+        if (get(index) instanceof FieldReferenceConstantPoolItem fr)
+            return fr.isLong(this);
+        throw new ClassFileException("Constant pool item " + index + " is not a FieldReferenceConstantPoolItem");
+    }
+
+    public String getType(int nameAndTypeIndex) throws ClassFileException {
+        if (get(nameAndTypeIndex) instanceof NameAndTypeConstantPoolItem nt) {
+            return getUtf8Constant(nt.descriptorIndex);
+        }
+        throw new ClassFileException("Constant pool item " + nameAndTypeIndex + " is not a NameAndTypeConstantPoolItem");
+    }
 }

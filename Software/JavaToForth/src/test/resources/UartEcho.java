@@ -13,7 +13,7 @@ class UartEcho {
     }
 
     public static void isr2() {
-        char c = (char)(Console.uartGet() & 0xFF);
+        char c = (char)(Hal.uartGet() & 0xFF);
         if (commandReady)
             return;
         if (c == '\n') {
@@ -27,7 +27,7 @@ class UartEcho {
 
     private static void uartEcho() {
         while (commandReadPointer < commandPointer)
-            Console.outChar(command[commandReadPointer++]);
+            Hal.outChar(command[commandReadPointer++]);
     }
 
     public static void main() {
@@ -38,7 +38,7 @@ class UartEcho {
         boolean ledState = false;
         Hal.timerStart(DELAY);
         while (true) {
-            Hal.wfi();
+            System.wfi();
             uartEcho();
             if (timerInterrupt) {
                 timerInterrupt = false;

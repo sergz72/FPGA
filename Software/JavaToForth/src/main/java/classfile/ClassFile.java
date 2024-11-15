@@ -4,6 +4,7 @@ import classfile.attributes.Attributes;
 import classfile.constantpool.*;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Map;
 
 public final class ClassFile {
@@ -101,11 +102,19 @@ public final class ClassFile {
         throw new UnsupportedOperationException();
     }
 
-    public int calculateSize(Map<String, ClassFile> classes) {
+    public int calculateFieldsSize(Map<String, ClassFile> classes) {
         throw new UnsupportedOperationException();
     }
 
-    public boolean isLongField(int index) {
+    public List<String> buildMethodsList(Map<String, ClassFile> classes) {
         throw new UnsupportedOperationException();
+    }
+
+    public boolean isLongField(int index) throws ClassFileException {
+        return constantPoolInfo.isLongField(index);
+    }
+
+    public boolean hasMethod(String name) {
+        return methodsInfo.hasMethod(name);
     }
 }

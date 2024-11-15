@@ -7,5 +7,6 @@ class Hello {
 
     public static void main() {  
          Console.println("Hello Java");
+         System.hlt();
     }
 }    

@@ -1,9 +1,10 @@
 public final class System {
-    private static int heapPointer = 0x60000000;
+    static int heapPointer = Hal.HEAP_START;
 
-    public static int newObject(int size) {
+    public static int newObject(int methodsTablePointer, int fieldsSize) {
         int p = heapPointer;
-        heapPointer += size;
+        heapPointer += fieldsSize + 1;
+        set(methodsTablePointer, p);
         return p;
     }
 
@@ -22,4 +23,6 @@ public final class System {
     }
 
     private native static void set(int v, int p);
+    public static native void wfi();
+    public static native void hlt();
 }
