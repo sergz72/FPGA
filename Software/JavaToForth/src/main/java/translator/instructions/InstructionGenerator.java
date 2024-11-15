@@ -3,7 +3,7 @@ package translator.instructions;
 import java.util.*;
 
 public class InstructionGenerator {
-    private static final int PUSH = 0;
+    static final int PUSH = 0;
     private static final int PUSH_LONG = 1;
     private static final int DUP = 2;
     private static final int SET = 3;
@@ -261,6 +261,10 @@ public class InstructionGenerator {
 
     public void addJmpToLabel(String name) {
         addInstruction(new JmpLabelInstruction(bytecodePc, name));
+    }
+
+    public void addPushLabel(String name) {
+        addInstruction(new PushLabelInstruction(bytecodePc, name));
     }
 
     public void addLocals(int localsCount) {

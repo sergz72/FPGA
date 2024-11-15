@@ -48,7 +48,7 @@ public final class ForthTranslator {
     private static Map<String, ClassFile> buildClasses(List<ClassFile> classFiles) throws ClassFileException {
         var result = new HashMap<String, ClassFile>();
         for (ClassFile classFile : classFiles) {
-            result.put(classFile.GetName(), classFile);
+            result.put(classFile.getName(), classFile);
         }
         return result;
     }
@@ -513,20 +513,33 @@ public final class ForthTranslator {
         return pc;
     }
 
-    private void translatePutStatic(int index) throws TranslatorException {
-        throw new TranslatorException("putstatic is not supported");
+    private void translatePutStatic(int index) throws ClassFileException {
+        var name = currentClassFile.getFieldName(index);
+        instructionGenerator.addPushLabel(name);
+        if (currentClassFile.isLongField(index))
+            instructionGenerator.addSetLong();
+        else
+            instructionGenerator.addSet();
     }
 
-    private void translateGetStatic(int index) throws TranslatorException {
-        throw new TranslatorException("getstatic is not supported");
+    private void translateGetStatic(int index) throws TranslatorException, ClassFileException {
+        var name = currentClassFile.getFieldName(index);
+        instructionGenerator.addPushLabel(name);
+        if (currentClassFile.isLongField(index))
+            instructionGenerator.addGetLong();
+        else
+            instructionGenerator.addGet("getstatic");
     }
 
-    private void translateNew(int index) throws TranslatorException {
-        throw new TranslatorException("new is not supported");
+    private void translateNew(int index) throws ClassFileException {
+        var name = currentClassFile.getName(index);
+        var size = classes.get(name).calculateSize(classes);
+        instructionGenerator.addPush(size, String.format("push %d (new %s)", size, name));
+        instructionGenerator.addCall("System.newObject(I)I");
     }
 
-    private void translateANewArray(int index) throws TranslatorException {
-        throw new TranslatorException("anewarray is not supported");
+    private void translateANewArray(int index) throws ClassFileException {
+        instructionGenerator.addCall("System.newArray(I)I");
     }
 
     private void translateMultiANewArray(int index, int dimensions) throws TranslatorException {
@@ -534,7 +547,10 @@ public final class ForthTranslator {
     }
 
     private void translateNewArray(int type) throws TranslatorException {
-        throw new TranslatorException("newarray is not supported");
+        if (type == 7 || type == 11) // double or long
+            instructionGenerator.addCall("System.newLongArray(I)I");
+        else
+            instructionGenerator.addCall("System.newArray(I)I");
     }
 
     private void translateALoad() {

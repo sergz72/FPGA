@@ -52,8 +52,12 @@ public final class ClassFile {
         return fileName;
     }
 
-    public String GetName() throws ClassFileException {
-        return constantPoolInfo.getClassName(this.thisClass);
+    public String getName() throws ClassFileException {
+        return getName(this.thisClass);
+    }
+
+    public String getName(int index) throws ClassFileException {
+        return constantPoolInfo.getClassName(index);
     }
 
     public Map<String, MethodOrField> getMethods() {
@@ -79,6 +83,13 @@ public final class ClassFile {
         throw new ClassFileException("wrong pool index for getMethodName");
     }
 
+    public String getFieldName(int index) throws ClassFileException {
+        var item = constantPoolInfo.get(index);
+        if (item instanceof FieldReferenceConstantPoolItem fr)
+            return fr.getName(constantPoolInfo);
+        throw new ClassFileException("wrong pool index for getFieldName");
+    }
+
     public String getMethodClassName(int index) throws ClassFileException {
         var item = constantPoolInfo.get(index);
         if (item instanceof MethodReferenceConstantPoolItem mr)
@@ -87,6 +98,14 @@ public final class ClassFile {
     }
 
     public int getMethodIndex(int index) {
+        throw new UnsupportedOperationException();
+    }
+
+    public int calculateSize(Map<String, ClassFile> classes) {
+        throw new UnsupportedOperationException();
+    }
+
+    public boolean isLongField(int index) {
         throw new UnsupportedOperationException();
     }
 }
