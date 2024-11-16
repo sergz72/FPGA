@@ -29,6 +29,8 @@ public class IODevices(Cpu cpu, IODevice[] devices, ILogger logger)
             uint interruptAck = 0;
             if (cpu is ForthCPU fcpu)
                 interruptAck = fcpu.InterruptAck;
+            if (cpu is JavaCPU jcpu)
+                interruptAck = jcpu.InterruptAck;
             var setMask = d.Device.TicksUpdate(cpu.Speed, ticks, cpu.Wfi, interruptAck, out var clearMask);
             cpu.Interrupt |= setMask;
             cpu.Interrupt &= ~clearMask;

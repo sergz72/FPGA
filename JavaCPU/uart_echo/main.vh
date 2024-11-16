@@ -1,0 +1,6 @@
+`define CPU_CLOCK_BIT 0
+`define RESET_BIT 3
+`define UART_CLOCK_DIV 8
+`define UART_CLOCK_COUNTER_BITS 4
+`define MHZ_TIMER_BITS 1
+`define MHZ_TIMER_VALUE 1

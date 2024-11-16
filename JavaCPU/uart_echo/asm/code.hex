@@ -1,0 +1,318 @@
+0800 // 00000000       call UartEcho.main()V
+0046 // 00000001       
+0000 // 00000002       
+0C00 // 00000003       hlt
+0500 // 00000004       jmp UartEcho.isr1()V
+003B // 00000005       
+0C00 // 00000006       hlt
+0C00 // 00000007       hlt
+1801 // 00000008     0 locals 1 ; UartEcho.isr2()V
+20FD // 00000009     0 bpush -3; get (Hal.uartGet()I)
+0600 // 0000000A     0 
+2100 // 0000000B     3 spush 255 ff (sipush)
+00FF // 0000000C     3 
+1D02 // 0000000D     6 iand
+1700 // 0000000E     8 local_set 0
+0000 // 0000000F     9 push 536870913 20000001 (push UartEcho.commandReady)
+0001 // 00000010     9 
+2000 // 00000011     9 
+0600 // 00000012     9 getstatic
+1C01 // 00000013    12 ifeq 16
+0002 // 00000014    12 
+1001 // 00000015    15 reti 1
+1600 // 00000016    16 local_get 0
+200D // 00000017    17 bpush 13 d (bipush)
+1B05 // 00000018    19 if_icmpne 27
+0007 // 00000019    19 
+2001 // 0000001A    22 bpush 1 1 (iconst_1)
+0000 // 0000001B    23 push 536870913 20000001 (push UartEcho.commandReady)
+0001 // 0000001C    23 
+2000 // 0000001D    23 
+0300 // 0000001E    23 iset
+1001 // 0000001F    26 reti 1
+0000 // 00000020    27 push 536870916 20000004 (push UartEcho.commandPointer)
+0004 // 00000021    27 
+2000 // 00000022    27 
+0600 // 00000023    27 getstatic
+0000 // 00000024    30 push 536870912 20000000 (push UartEcho.command)
+0000 // 00000025    30 
+2000 // 00000026    30 
+0600 // 00000027    30 getstatic
+0600 // 00000028    33 get (arraylength)
+1B03 // 00000029    34 if_icmpge 51
+0015 // 0000002A    34 
+0000 // 0000002B    37 push 536870912 20000000 (push UartEcho.command)
+0000 // 0000002C    37 
+2000 // 0000002D    37 
+0600 // 0000002E    37 getstatic
+0000 // 0000002F    40 push 536870916 20000004 (push UartEcho.commandPointer)
+0004 // 00000030    40 
+2000 // 00000031    40 
+0600 // 00000032    40 getstatic
+0200 // 00000033    43 dup
+2001 // 00000034    44 bpush 1 1 (iconst_1)
+1D00 // 00000035    45 iadd
+0000 // 00000036    46 push 536870916 20000004 (push UartEcho.commandPointer)
+0004 // 00000037    46 
+2000 // 00000038    46 
+0300 // 00000039    46 iset
+1600 // 0000003A    49 local_get 0
+1400 // 0000003B    50 dup
+1400 // 0000003C    50 dup
+1E00 // 0000003D    50 arrayp
+0300 // 0000003E    50 iset
+1001 // 0000003F    51 reti 1
+2001 // 00000040     0 bpush 1 1 (iconst_1) ; UartEcho.isr1()V
+0000 // 00000041     1 push 536870914 20000002 (push UartEcho.timerInterrupt)
+0002 // 00000042     1 
+2000 // 00000043     1 
+0300 // 00000044     1 iset
+1000 // 00000045     4 reti 0
+0800 // 00000046       call System.<clinit>()V ; UartEcho.main()V
+0118 // 00000047       
+0000 // 00000048       
+1801 // 00000049     0 locals 1
+2100 // 0000004A     0 spush 128 80 (sipush)
+0080 // 0000004B     0 
+0800 // 0000004C     3 call System.newArray(I)I
+00FB // 0000004D     3 
+0000 // 0000004E     3 
+0000 // 0000004F     5 push 536870912 20000000 (push UartEcho.command)
+0000 // 00000050     5 
+2000 // 00000051     5 
+0300 // 00000052     5 iset
+2000 // 00000053     8 bpush 0 0 (iconst_0)
+0000 // 00000054     9 push 536870913 20000001 (push UartEcho.commandReady)
+0001 // 00000055     9 
+2000 // 00000056     9 
+0300 // 00000057     9 iset
+2000 // 00000058    12 bpush 0 0 (iconst_0)
+0000 // 00000059    13 push 536870914 20000002 (push UartEcho.timerInterrupt)
+0002 // 0000005A    13 
+2000 // 0000005B    13 
+0300 // 0000005C    13 iset
+2000 // 0000005D    16 bpush 0 0 (iconst_0)
+0200 // 0000005E    17 dup
+0000 // 0000005F    18 push 536870915 20000003 (push UartEcho.commandReadPointer)
+0003 // 00000060    18 
+2000 // 00000061    18 
+0300 // 00000062    18 iset
+0000 // 00000063    21 push 536870916 20000004 (push UartEcho.commandPointer)
+0004 // 00000064    21 
+2000 // 00000065    21 
+0300 // 00000066    21 iset
+2000 // 00000067    24 bpush 0 0 (iconst_0)
+1700 // 00000068    25 local_set 0
+0000 // 00000069    26 push 500000 7a120 (ldc int)
+A120 // 0000006A    26 
+0007 // 0000006B    26 
+20FE // 0000006C    28 bpush -2; set (Hal.timerStart(I)V)
+0300 // 0000006D    28 
+0D00 // 0000006E    31 wfi (System.wfi()V)
+0000 // 0000006F    34 push 536870914 20000002 (push UartEcho.timerInterrupt)
+0002 // 00000070    34 
+2000 // 00000071    34 
+0600 // 00000072    34 getstatic
+1C01 // 00000073    37 ifeq 31
+FFFA // 00000074    37 
+2000 // 00000075    40 bpush 0 0 (iconst_0)
+0000 // 00000076    41 push 536870914 20000002 (push UartEcho.timerInterrupt)
+0002 // 00000077    41 
+2000 // 00000078    41 
+0300 // 00000079    41 iset
+0800 // 0000007A    44 call UartEcho.uartEcho()V
+00BB // 0000007B    44 
+0000 // 0000007C    44 
+0000 // 0000007D    47 push 500000 7a120 (ldc int)
+A120 // 0000007E    47 
+0007 // 0000007F    47 
+20FE // 00000080    49 bpush -2; set (Hal.timerStart(I)V)
+0300 // 00000081    49 
+1600 // 00000082    52 local_get 0
+20FF // 00000083    53 bpush -1; set (Hal.ledSet(Z)V)
+0300 // 00000084    53 
+1600 // 00000085    56 local_get 0
+1C05 // 00000086    57 ifne 64
+0004 // 00000087    57 
+2001 // 00000088    60 bpush 1 1 (iconst_1)
+0500 // 00000089    61 jmp 65
+0002 // 0000008A    61 
+2000 // 0000008B    64 bpush 0 0 (iconst_0)
+1700 // 0000008C    65 local_set 0
+0000 // 0000008D    66 push 536870913 20000001 (push UartEcho.commandReady)
+0001 // 0000008E    66 
+2000 // 0000008F    66 
+0600 // 00000090    66 getstatic
+1C01 // 00000091    69 ifeq 31
+FFDC // 00000092    69 
+200D // 00000093    72 bpush 13 d (bipush)
+0800 // 00000094    74 call Hal.outChar(C)V
+00AC // 00000095    74 
+0000 // 00000096    74 
+200A // 00000097    77 bpush 10 a (bipush)
+0800 // 00000098    79 call Hal.outChar(C)V
+00AC // 00000099    79 
+0000 // 0000009A    79 
+2000 // 0000009B    82 bpush 0 0 (iconst_0)
+0200 // 0000009C    83 dup
+0000 // 0000009D    84 push 536870915 20000003 (push UartEcho.commandReadPointer)
+0003 // 0000009E    84 
+2000 // 0000009F    84 
+0300 // 000000A0    84 iset
+0000 // 000000A1    87 push 536870916 20000004 (push UartEcho.commandPointer)
+0004 // 000000A2    87 
+2000 // 000000A3    87 
+0300 // 000000A4    87 iset
+2000 // 000000A5    90 bpush 0 0 (iconst_0)
+0000 // 000000A6    91 push 536870913 20000001 (push UartEcho.commandReady)
+0001 // 000000A7    91 
+2000 // 000000A8    91 
+0300 // 000000A9    91 iset
+0500 // 000000AA    94 jmp 31
+FFC3 // 000000AB    94 
+1801 // 000000AC     0 locals 1 ; Hal.outChar(C)V
+1700 // 000000AD     0 local_set 0
+20FD // 000000AE     0 bpush -3; get (Hal.uartGet()I)
+0600 // 000000AF     0 
+2100 // 000000B0     3 spush 256 100 (sipush)
+0100 // 000000B1     3 
+1D02 // 000000B2     6 iand
+1C01 // 000000B3     7 ifeq 13
+0003 // 000000B4     7 
+0500 // 000000B5    10 jmp 0
+FFF8 // 000000B6    10 
+1600 // 000000B7    13 local_get 0
+20FD // 000000B8    14 bpush -3; set (Hal.uartOut(C)V)
+0300 // 000000B9    14 
+0B01 // 000000BA    17 retn 1
+0000 // 000000BB     0 push 536870915 20000003 (push UartEcho.commandReadPointer) ; UartEcho.uartEcho()V
+0003 // 000000BC     0 
+2000 // 000000BD     0 
+0600 // 000000BE     0 getstatic
+0000 // 000000BF     3 push 536870916 20000004 (push UartEcho.commandPointer)
+0004 // 000000C0     3 
+2000 // 000000C1     3 
+0600 // 000000C2     3 getstatic
+1B03 // 000000C3     6 if_icmpge 28
+0017 // 000000C4     6 
+0000 // 000000C5     9 push 536870912 20000000 (push UartEcho.command)
+0000 // 000000C6     9 
+2000 // 000000C7     9 
+0600 // 000000C8     9 getstatic
+0000 // 000000C9    12 push 536870915 20000003 (push UartEcho.commandReadPointer)
+0003 // 000000CA    12 
+2000 // 000000CB    12 
+0600 // 000000CC    12 getstatic
+0200 // 000000CD    15 dup
+2001 // 000000CE    16 bpush 1 1 (iconst_1)
+1D00 // 000000CF    17 iadd
+0000 // 000000D0    18 push 536870915 20000003 (push UartEcho.commandReadPointer)
+0003 // 000000D1    18 
+2000 // 000000D2    18 
+0300 // 000000D3    18 iset
+1E00 // 000000D4    21 arrayp
+0600 // 000000D5    21 get (aload)
+0800 // 000000D6    22 call Hal.outChar(C)V
+00AC // 000000D7    22 
+0000 // 000000D8    22 
+0500 // 000000D9    25 jmp 0
+FFE1 // 000000DA    25 
+0A00 // 000000DB    28 ret
+1802 // 000000DC     0 locals 2 ; System.newLongArray(I)I
+1700 // 000000DD     0 local_set 0
+0000 // 000000DE     0 push 536870917 20000005 (push System.heapPointer)
+0005 // 000000DF     0 
+2000 // 000000E0     0 
+0600 // 000000E1     0 getstatic
+1701 // 000000E2     3 local_set 1
+1600 // 000000E3     4 local_get 0
+1601 // 000000E4     5 local_get 1
+0300 // 000000E5     6 set (System.set(II)V)
+0000 // 000000E6     9 push 536870917 20000005 (push System.heapPointer)
+0005 // 000000E7     9 
+2000 // 000000E8     9 
+0600 // 000000E9     9 getstatic
+1600 // 000000EA    12 local_get 0
+2001 // 000000EB    13 bpush 1 1 (iconst_1)
+1D05 // 000000EC    14 ishl
+2001 // 000000ED    15 bpush 1 1 (iconst_1)
+1D00 // 000000EE    16 iadd
+1D00 // 000000EF    17 iadd
+0000 // 000000F0    18 push 536870917 20000005 (push System.heapPointer)
+0005 // 000000F1    18 
+2000 // 000000F2    18 
+0300 // 000000F3    18 iset
+1601 // 000000F4    21 local_get 1
+0B02 // 000000F5    22 retn 2
+1801 // 000000F6     0 locals 1 ; System.<init>()V
+1700 // 000000F7     0 local_set 0
+1600 // 000000F8     0 local_get 0
+1100 // 000000F9     1 drop (java/lang/Object.<init>()V)
+0B01 // 000000FA     4 retn 1
+1802 // 000000FB     0 locals 2 ; System.newArray(I)I
+1700 // 000000FC     0 local_set 0
+0000 // 000000FD     0 push 536870917 20000005 (push System.heapPointer)
+0005 // 000000FE     0 
+2000 // 000000FF     0 
+0600 // 00000100     0 getstatic
+1701 // 00000101     3 local_set 1
+1600 // 00000102     4 local_get 0
+1601 // 00000103     5 local_get 1
+0300 // 00000104     6 set (System.set(II)V)
+0000 // 00000105     9 push 536870917 20000005 (push System.heapPointer)
+0005 // 00000106     9 
+2000 // 00000107     9 
+0600 // 00000108     9 getstatic
+1600 // 00000109    12 local_get 0
+2001 // 0000010A    13 bpush 1 1 (iconst_1)
+1D00 // 0000010B    14 iadd
+1D00 // 0000010C    15 iadd
+0000 // 0000010D    16 push 536870917 20000005 (push System.heapPointer)
+0005 // 0000010E    16 
+2000 // 0000010F    16 
+0300 // 00000110    16 iset
+1601 // 00000111    19 local_get 1
+0B02 // 00000112    20 retn 2
+1801 // 00000113     0 locals 1 ; Hal.<init>()V
+1700 // 00000114     0 local_set 0
+1600 // 00000115     0 local_get 0
+1100 // 00000116     1 drop (java/lang/Object.<init>()V)
+0B01 // 00000117     4 retn 1
+0000 // 00000118     0 push 1610612736 60000000 (ldc int) ; System.<clinit>()V
+0000 // 00000119     0 
+6000 // 0000011A     0 
+0000 // 0000011B     2 push 536870917 20000005 (push System.heapPointer)
+0005 // 0000011C     2 
+2000 // 0000011D     2 
+0300 // 0000011E     2 iset
+0A00 // 0000011F     5 ret
+1801 // 00000120     0 locals 1 ; UartEcho.<init>()V
+1700 // 00000121     0 local_set 0
+1600 // 00000122     0 local_get 0
+1100 // 00000123     1 drop (java/lang/Object.<init>()V)
+0B01 // 00000124     4 retn 1
+1803 // 00000125     0 locals 3 ; System.newObject(II)I
+1701 // 00000126     0 local_set 1
+1700 // 00000127     0 local_set 0
+0000 // 00000128     0 push 536870917 20000005 (push System.heapPointer)
+0005 // 00000129     0 
+2000 // 0000012A     0 
+0600 // 0000012B     0 getstatic
+1702 // 0000012C     3 local_set 2
+0000 // 0000012D     4 push 536870917 20000005 (push System.heapPointer)
+0005 // 0000012E     4 
+2000 // 0000012F     4 
+0600 // 00000130     4 getstatic
+1601 // 00000131     7 local_get 1
+2001 // 00000132     8 bpush 1 1 (iconst_1)
+1D00 // 00000133     9 iadd
+1D00 // 00000134    10 iadd
+0000 // 00000135    11 push 536870917 20000005 (push System.heapPointer)
+0005 // 00000136    11 
+2000 // 00000137    11 
+0300 // 00000138    11 iset
+1600 // 00000139    14 local_get 0
+1602 // 0000013A    15 local_get 2
+0300 // 0000013B    16 set (System.set(II)V)
+1602 // 0000013C    19 local_get 2
+0B03 // 0000013D    20 retn 3
