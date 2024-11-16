@@ -1,3 +1,10 @@
+	lpush -1
+	lpush 2
+	add
+	lpush 1
+	ifcmpeq next0
+	hlt
+next0:
 	lpush 1
 	lpush 1
 	ifcmpeq next1

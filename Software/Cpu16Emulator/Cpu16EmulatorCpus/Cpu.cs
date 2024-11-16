@@ -17,13 +17,12 @@ public sealed class CodeLine
     internal CodeLine(string line, uint pc)
     {
         var parts = line.Split("//");
-        if (parts.Length != 2 || !uint.TryParse(parts[0], NumberStyles.HexNumber, null, out Instruction)
-                              || parts[1][0] != ' ' || !char.IsAsciiHexDigit(parts[1][1]) || !char.IsAsciiHexDigit(parts[1][2]) ||
-                              !char.IsAsciiHexDigit(parts[1][3]) || !char.IsAsciiHexDigit(parts[1][4]))
+        if (parts.Length != 2 || !uint.TryParse(parts[0], NumberStyles.HexNumber, null, out Instruction))
             throw new CpuException($"invalid code line: {line}");
-        if (parts[1].Length >= 6 && parts[1][5] != ' ')
+        var pcAndCode = parts[1].Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        if (pcAndCode.Length != 2 || !uint.TryParse(pcAndCode[0], NumberStyles.HexNumber, null, out _))
             throw new CpuException($"invalid code line: {line}");
-        SourceCode = parts[1].Length >= 7 ? parts[1][6..].Replace("\t", "") : "";
+        SourceCode = pcAndCode[1].Trim();
         Pc = pc;
     }
 

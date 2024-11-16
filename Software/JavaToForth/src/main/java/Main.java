@@ -12,10 +12,10 @@ import java.util.Objects;
 
 public final class Main {
     public static void main(String[] args) {
-        if (args.length < 3 || !args[1].endsWith(".json"))
+        if (args.length < 3 || !args[0].endsWith(".json"))
             Usage();
-        var mainClassName = args[0];
-        var configurationFileName = args[1];
+        var mainClassName = args[1];
+        var configurationFileName = args[0];
         var errors = new ArrayList<String>();
         var classes = Arrays.stream(args)
                 .skip(2)
@@ -43,7 +43,7 @@ public final class Main {
     }
 
     private static void Usage() {
-        System.out.println("Usage: java -jar JavaToForth.jar main_class_name config_file_name class_file_names");
+        System.out.println("Usage: java -jar JavaToForth.jar config_file_name main_class_name class_file_names");
         System.exit(1);
     }
 }

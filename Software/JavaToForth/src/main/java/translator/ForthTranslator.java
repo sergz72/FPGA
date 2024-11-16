@@ -31,8 +31,8 @@ public final class ForthTranslator {
         this.configuration = configuration;
         this.classes = buildClasses(classes);
         this.toTranslate = new HashSet<>();
-        this.data = new Segment("data", configuration.data.address, configuration.data.size);
-        this.roData = new Segment("rodata", configuration.roData.address, configuration.roData.size);
+        this.data = new Segment("data", configuration.data.address);
+        this.roData = new Segment("rodata", configuration.roData.address);
         this.methodInstructions = new HashMap<>();
         this.dataSegmentMapping = new HashMap<>();
     }
@@ -684,10 +684,10 @@ public final class ForthTranslator {
     }
 
     private int buildStringConstant(int stringIndex) throws ClassFileException {
-        var name = currentClassFile.getFieldName(stringIndex);
+        var s = currentClassFile.getUtf8Constant(stringIndex);
+        var name = "@" + s;
         if (dataSegmentMapping.containsKey(name))
             return dataSegmentMapping.get(name);
-        var s = currentClassFile.getUtf8Constant(stringIndex);
         var data = new int[s.length()+1];
         data[0] = s.length();
         int idx = 1;
@@ -783,7 +783,6 @@ public final class ForthTranslator {
 
     private void createOutputFiles(List<Instruction> code, Map<Integer, String> labels) throws IOException {
         createFile(configuration.code.fileName, code, labels);
-        createFile(configuration.data.fileName, data.getInstructions(), labels);
         createFile(configuration.roData.fileName, roData.getInstructions(), labels);
     }
 

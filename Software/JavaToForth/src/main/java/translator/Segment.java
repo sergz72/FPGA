@@ -8,13 +8,12 @@ import java.util.List;
 
 public final class Segment {
     private String name;
-    private int nextAddress, nextAddressFromEnd;
+    private int nextAddress;
     private final List<Instruction> instructions;
 
-    Segment(String name, int address, int size) {
+    Segment(String name, int address) {
         this.name = name;
         nextAddress = address;
-        nextAddressFromEnd = address + size - 1;
         instructions = new ArrayList<>();
     }
 
@@ -26,14 +25,9 @@ public final class Segment {
     }
 
     int allocate(int size) {
-        var address = nextAddressFromEnd;
-        nextAddressFromEnd -= size;
+        var address = nextAddress;
+        nextAddress += size;
         return address;
-    }
-
-    void finish() throws TranslatorException {
-        if (nextAddress >= nextAddressFromEnd)
-            throw new TranslatorException(name + " segment overflow");
     }
 
     public List<Instruction> getInstructions() {

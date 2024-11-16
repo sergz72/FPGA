@@ -6,7 +6,7 @@ namespace JavaCPUAssembler;
 internal sealed class JavaCPUCompiler : GenericCompiler
 {
     internal JavaCPUCompiler(List<string> sources) :
-        base(sources, OutputFormat.Hex, Creators, new GenericParser(), 4)
+        base(sources, OutputFormat.Hex, Creators, new GenericParser(), 4, 8)
     {
     }
     
