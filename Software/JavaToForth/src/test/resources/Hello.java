@@ -1,3 +1,6 @@
+import JavaCPU.Console;
+import JavaCPU.System;
+
 class Hello {  
     public static void isr1() {
     }

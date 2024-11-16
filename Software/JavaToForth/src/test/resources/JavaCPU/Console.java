@@ -1,3 +1,5 @@
+package JavaCPU;
+
 public final class Console {
     public static void println(String text) {
         for (char c: text.toCharArray())

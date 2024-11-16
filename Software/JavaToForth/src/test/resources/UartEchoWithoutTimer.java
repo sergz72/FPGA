@@ -1,3 +1,6 @@
+import JavaCPU.Hal;
+import JavaCPU.System;
+
 class UartEchoWithoutTimer {
     private static final int DELAY = 500 * Hal.MS;
     private static final int UART_BUFFER_SIZE = 128;

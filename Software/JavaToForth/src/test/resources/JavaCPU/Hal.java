@@ -1,3 +1,5 @@
+package JavaCPU;
+
 public final class Hal {
     static final int HEAP_START = 0x60000000;
     public static final int MS = 1000;

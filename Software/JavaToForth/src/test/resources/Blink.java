@@ -1,3 +1,6 @@
+import JavaCPU.Hal;
+import JavaCPU.System;
+
 class Blink {  
     public static void isr1() {
     }

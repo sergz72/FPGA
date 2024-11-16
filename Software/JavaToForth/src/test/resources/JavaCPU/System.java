@@ -1,3 +1,5 @@
+package JavaCPU;
+
 public final class System {
     static int heapPointer = Hal.HEAP_START;
 

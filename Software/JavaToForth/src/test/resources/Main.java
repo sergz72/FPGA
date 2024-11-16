@@ -1,3 +1,5 @@
+import JavaCPU.Console;
+
 class Main {  
     public static void main(String args[], int ii, long ii2) {  
          Console.println("Hello Java");

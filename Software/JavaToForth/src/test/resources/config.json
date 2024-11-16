@@ -3,13 +3,13 @@
   "data":   { "address": "20000000", "size": "1K" },
   "roData": { "fileName": "asm/rodata.hex", "address": "40000000", "size": "1K" },
   "inlines": {
-    "Hal.uartOut(C)V": {"code": ["20FD", "0300"], "comment": "bpush -3; set"},
-    "Hal.uartGet()I": {"code": ["20FD", "0600"], "comment": "bpush -3; get"},
-    "Hal.ledSet(Z)V": {"code": ["20FF","0300"], "comment": "bpush -1; set"},
-    "Hal.timerStart(I)V": {"code": ["20FE","0300"], "comment": "bpush -2; set"},
-    "System.hlt()V": {"code": ["0C00"], "comment": "hlt"},
-    "System.set(II)V": {"code": ["0300"], "comment": "set"},
-    "System.wfi()V": {"code": ["0D00"], "comment": "wfi"},
+    "JavaCPU/Hal.uartOut(C)V": {"code": ["20FD", "0300"], "comment": "bpush -3; set"},
+    "JavaCPU/Hal.uartGet()I": {"code": ["20FD", "0600"], "comment": "bpush -3; get"},
+    "JavaCPU/Hal.ledSet(Z)V": {"code": ["20FF","0300"], "comment": "bpush -1; set"},
+    "JavaCPU/Hal.timerStart(I)V": {"code": ["20FE","0300"], "comment": "bpush -2; set"},
+    "JavaCPU/System.hlt()V": {"code": ["0C00"], "comment": "hlt"},
+    "JavaCPU/System.set(II)V": {"code": ["0300"], "comment": "set"},
+    "JavaCPU/System.wfi()V": {"code": ["0D00"], "comment": "wfi"},
     "java/lang/Object.<init>()V": {"code": ["1100"], "comment": "drop"}
   }
 }

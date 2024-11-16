@@ -547,7 +547,7 @@ public final class ForthTranslator {
         var address = buildMethodsTable(methods);
         instructionGenerator.addPush(address, String.format("push %d (new %s methods table address)", address, name));
         instructionGenerator.addPush(size, String.format("push %d (new %s fields size)", size, name));
-        instructionGenerator.addCall("System.newObject(II)I");
+        instructionGenerator.addCall("JavaCPU/System.newObject(II)I");
         instructionGenerator.addDup();
         instructionGenerator.addCall(name + ".<init>()");
     }
@@ -557,7 +557,7 @@ public final class ForthTranslator {
     }
 
     private void translateANewArray(int index) throws ClassFileException {
-        instructionGenerator.addCall("System.newArray(I)I");
+        instructionGenerator.addCall("JavaCPU/System.newArray(I)I");
     }
 
     private void translateMultiANewArray(int index, int dimensions) throws TranslatorException {
@@ -566,9 +566,9 @@ public final class ForthTranslator {
 
     private void translateNewArray(int type) throws TranslatorException {
         if (type == 7 || type == 11) // double or long
-            instructionGenerator.addCall("System.newLongArray(I)I");
+            instructionGenerator.addCall("JavaCPU/System.newLongArray(I)I");
         else
-            instructionGenerator.addCall("System.newArray(I)I");
+            instructionGenerator.addCall("JavaCPU/System.newArray(I)I");
     }
 
     private void translateALoad() {
