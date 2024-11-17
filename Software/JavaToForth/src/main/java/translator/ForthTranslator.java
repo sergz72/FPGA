@@ -51,6 +51,7 @@ public final class ForthTranslator {
     }
 
     public void translate() throws TranslatorException, ClassFileException, IOException {
+        createBuiltInMethods();
         buildInitialClassNames();
         var saved = new HashSet<>();
         while (saved.size() != toTranslate.size()) {
@@ -62,6 +63,14 @@ public final class ForthTranslator {
         var labels = new HashMap<Integer, String>();
         var code = link(labels);
         createOutputFiles(code, labels);
+    }
+
+    private void createBuiltInMethods() {
+        var generator = new InstructionGenerator(0);
+        generator.addReturn(0);
+        methodInstructions.put("java/lang/Object.hashCode()I", generator.getInstructions());
+        methodInstructions.put("java/lang/String.toString()Ljava/lang/String;", generator.getInstructions());
+        methodInstructions.put("java/lang/Object.getClass()Ljava/lang/Class;", generator.getInstructions());
     }
 
     private void buildInitialClassNames() throws TranslatorException {
@@ -726,19 +735,19 @@ public final class ForthTranslator {
                 pc += ins.stream().mapToInt(Instruction::getSize).sum();
                 instructions.addAll(ins);
             }
-            labels.put(configuration.code.entryPoint, pc);
-            pc += addClassInitCalls(instructions);
-            ins = methodInstructions.get(configuration.code.entryPoint);
+        }
+        labels.put(configuration.code.entryPoint, pc);
+        pc += addClassInitCalls(instructions);
+        ins = methodInstructions.get(configuration.code.entryPoint);
+        pc += ins.stream().mapToInt(Instruction::getSize).sum();
+        instructions.addAll(ins);
+        for (var entry: methodInstructions.entrySet()) {
+            if (entry.getKey().equals(configuration.code.entryPoint) || isIsr(entry.getKey()))
+                continue;
+            labels.put(entry.getKey(), pc);
+            ins = entry.getValue();
             pc += ins.stream().mapToInt(Instruction::getSize).sum();
             instructions.addAll(ins);
-            for (var entry: methodInstructions.entrySet()) {
-                if (entry.getKey().equals(configuration.code.entryPoint) || isIsr(entry.getKey()))
-                    continue;
-                labels.put(entry.getKey(), pc);
-                ins = entry.getValue();
-                pc += ins.stream().mapToInt(Instruction::getSize).sum();
-                instructions.addAll(ins);
-            }
         }
         link(instructions, labels);
         for (var entry : labels.entrySet())
