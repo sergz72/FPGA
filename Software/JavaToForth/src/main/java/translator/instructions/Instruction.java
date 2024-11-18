@@ -15,14 +15,18 @@ public abstract class Instruction {
     public int getSize() { return code.length; }
     public void buildCode(int labelAddress, int pc) {}
 
-    public String[] toText(String label, int pc) {
+    public String[] toText(String label, int pc, boolean w32) {
         var result = new String[code.length];
         for (int i = 0; i < code.length; i++) {
-            if (bytecodePc != null)
-                result[i] = String.format("%04X // %08X %5d %s", code[i], pc++, bytecodePc,
-                                            i == 0 ? buildComment(comment, label) : "");
-            else
-                result[i] = String.format("%04X // %08X       %s", code[i], pc++, i == 0 ? buildComment(comment, label) : "");
+            if (bytecodePc != null) {
+                var format = w32 ? "%08X // %08X %5d %s" : "%04X // %08X %5d %s";
+                result[i] = String.format(format, code[i], pc++, bytecodePc,
+                        i == 0 ? buildComment(comment, label) : "");
+            }
+            else {
+                var format = w32 ? "%08X // %08X       %s" : "%04X // %08X       %s";
+                result[i] = String.format(format, code[i], pc++, i == 0 ? buildComment(comment, label) : "");
+            }
         }
         return result;
     }

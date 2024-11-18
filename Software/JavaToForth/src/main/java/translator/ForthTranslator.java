@@ -13,7 +13,6 @@ import java.util.*;
 
 public final class ForthTranslator {
     private static final String staticConstructor = "<clinit>()V";
-    private static final Set<String> builtInClasses = Set.of("java/lang/String");
     private static final Set<String> ignoreMethodCalls = Set.of("java/lang/String.toCharArray()[C");
 
     TranslatorConfiguration configuration;
@@ -497,6 +496,14 @@ public final class ForthTranslator {
                 break;
             case 0xbf: // athrow
                 throw new TranslatorException("athrow is not supported");
+            case 0xc0: // checkcast
+                index = code[pc++]<< 8;
+                index |= code[pc++] & 0xFF;
+                throw new TranslatorException("checkcast is not supported");
+            case 0xc1: // instanceof
+                index = code[pc++]<< 8;
+                index |= code[pc++] & 0xFF;
+                throw new TranslatorException("instanceof is not supported");
             case 0xc5: // multianewarray
                 index = code[pc++] << 8;
                 index |= code[pc++] & 0xFF;
@@ -556,8 +563,6 @@ public final class ForthTranslator {
         instructionGenerator.addPush(address, String.format("push %d (new %s methods table address)", address, name));
         instructionGenerator.addPush(size, String.format("push %d (new %s fields size)", size, name));
         instructionGenerator.addCall("JavaCPU/System.newObject(II)I");
-        instructionGenerator.addDup();
-        instructionGenerator.addCall(name + ".<init>()V");
     }
 
     private int buildClass(String name, ClassFile cls) throws ClassFileException {
@@ -638,8 +643,7 @@ public final class ForthTranslator {
     }
 
     private void addToTranslate(String name) {
-        if (!builtInClasses.contains(name))
-            toTranslate.add(name);
+        toTranslate.add(name);
     }
 
     private void translateInvokeVirtual(int index) throws ClassFileException {

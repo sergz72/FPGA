@@ -1,7 +1,5 @@
-test_to_string/Main.class
-test_to_string/A.class
-test_to_string/B.class
-test_to_string/C.class
+test_string_equals/Main.class
+test_string_equals/A.class
 JavaCPU/Console.class
 JavaCPU/Hal.class
 JavaCPU/System.class

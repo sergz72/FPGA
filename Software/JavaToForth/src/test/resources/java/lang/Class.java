@@ -1,6 +1,6 @@
 package java.lang;
 
-public class Class<T> {
+public final class Class<T> {
     private native Class[] getParents();
 
     private boolean isInstance(Class c) {
