@@ -3,6 +3,7 @@ package classfile;
 import classfile.constantpool.ConstantPool;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -23,5 +24,16 @@ public final class MethodsOrFields extends ClassFileInfo<MethodOrField> {
 
     public boolean hasMethod(String name) {
         return items.stream().anyMatch(i -> i.name.equals(name));
+    }
+
+    public List<String> getList() {
+        return items.stream()
+                .filter(m -> !m.isStatic() && !m.name.equals("<init>()V") && !m.name.equals("<clinit>()V"))
+                .map(m -> m.name)
+                .collect(Collectors.toList());
+    }
+
+    public int getSize() {
+        return map.values().stream().mapToInt(f -> f.getSize()).sum();
     }
 }

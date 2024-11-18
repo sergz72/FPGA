@@ -9,21 +9,27 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public final class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         if (args.length < 3 || !args[0].endsWith(".json"))
             Usage();
+        var fileNames = args.length == 3 && args[2].startsWith("@")
+                ? buildFileNames(args[2].substring(1))
+                : Arrays.stream(args).skip(2);
         var mainClassName = args[1];
         var configurationFileName = args[0];
         var errors = new ArrayList<String>();
-        var classes = Arrays.stream(args)
-                .skip(2)
+        var classes = fileNames
                 .map(arg -> {
                     try {
                         return new ClassFile(Files.readAllBytes(Paths.get(arg)), arg);
-                    } catch (ClassFileException|IOException e) {
-                        errors.add(arg + ": " + e.getMessage());
+                    } catch (ClassFileException e) {
+                        errors.add(arg + ": ClassFileException: " + e.getMessage());
+                        return null;
+                    } catch (IOException e) {
+                        errors.add(arg + ": file error: " + e.getMessage());
                         return null;
                     }
                 })
@@ -40,6 +46,10 @@ public final class Main {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    private static Stream<String> buildFileNames(String listFileName) throws IOException {
+        return Files.readAllLines(Paths.get(listFileName)).stream();
     }
 
     private static void Usage() {

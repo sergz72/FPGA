@@ -16,6 +16,7 @@ public class AttributesItem {
             case "StackMapTable" -> new StackMapTableAttribute(bb, length);
             case "SourceFile" -> new SourceFileAttribute(bb, cp, length);
             case "ConstantValue" -> new ConstantValueAttribute(bb, length);
+            case "Signature" -> new SignatureAttribute(bb, length);
             default -> throw new ClassFileException("Unknown attribute name: " + name);
         };
     }

@@ -20,9 +20,9 @@ public sealed class CodeLine
         if (parts.Length != 2 || !uint.TryParse(parts[0], NumberStyles.HexNumber, null, out Instruction))
             throw new CpuException($"invalid code line: {line}");
         var pcAndCode = parts[1].Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
-        if (pcAndCode.Length != 2 || !uint.TryParse(pcAndCode[0], NumberStyles.HexNumber, null, out _))
+        if (!uint.TryParse(pcAndCode[0], NumberStyles.HexNumber, null, out _))
             throw new CpuException($"invalid code line: {line}");
-        SourceCode = pcAndCode[1].Trim();
+        SourceCode = pcAndCode.Length == 2 ? pcAndCode[1].Trim() : "";
         Pc = pc;
     }
 

@@ -13,7 +13,7 @@ import java.util.*;
 
 public final class ForthTranslator {
     private static final String staticConstructor = "<clinit>()V";
-    private static final Set<String> builtInClasses = Set.of("java/lang/Object", "java/lang/String");
+    private static final Set<String> builtInClasses = Set.of("java/lang/String");
     private static final Set<String> ignoreMethodCalls = Set.of("java/lang/String.toCharArray()[C");
 
     TranslatorConfiguration configuration;
@@ -551,18 +551,43 @@ public final class ForthTranslator {
     private void translateNew(int index) throws ClassFileException {
         var name = currentClassFile.getName(index);
         var cls = classes.get(name);
+        var address = buildClass(name, cls);
         var size = cls.calculateFieldsSize(classes);
-        var methods = cls.buildMethodsList(classes);
-        var address = buildMethodsTable(methods);
         instructionGenerator.addPush(address, String.format("push %d (new %s methods table address)", address, name));
         instructionGenerator.addPush(size, String.format("push %d (new %s fields size)", size, name));
         instructionGenerator.addCall("JavaCPU/System.newObject(II)I");
         instructionGenerator.addDup();
-        instructionGenerator.addCall(name + ".<init>()");
+        instructionGenerator.addCall(name + ".<init>()V");
     }
 
-    private int buildMethodsTable(List<String> methods) {
-        throw new UnsupportedOperationException();
+    private int buildClass(String name, ClassFile cls) throws ClassFileException {
+        var key = "$" + name;
+        if (dataSegmentMapping.containsKey(key))
+            return dataSegmentMapping.get(key);
+        var methods = cls.buildMethodsList(classes);
+        var parentsList = cls.buildParentsList(classes);
+        return buildClass(key, parentsList, methods);
+    }
+
+    private int buildClass(String key, List<String> parents, List<String> methods) throws ClassFileException {
+        for (var parent : parents) {
+            var pkey = "$" + parent;
+            if (!dataSegmentMapping.containsKey(parent))
+                buildClass(parent, classes.get(parent));
+        }
+        var address = roData.getNextAddress();
+        roData.addInstruction(new InlineInstruction(null, new int[]{parents.size()}, "parents length"));
+        for (var parent : parents) {
+            var pkey = "$" + parent;
+            roData.addInstruction(new LabelInstruction(pkey));
+        }
+        var classAddress = roData.getNextAddress();
+        dataSegmentMapping.put(key, classAddress);
+        roData.addInstruction(new InlineInstruction(null, new int[]{address}, "parents array reference"));
+        for (var method : methods) {
+            roData.addInstruction(new LabelInstruction(method));
+        }
+        return classAddress;
     }
 
     private void translateANewArray(int index) throws ClassFileException {
@@ -623,8 +648,10 @@ public final class ForthTranslator {
         name = currentClassFile.getMethodName(index);
         if (shouldBeIgnored(name))
             return;
-        var idx = currentClassFile.getMethodIndex(index);
-        instructionGenerator.addIndirectCall(idx, name);
+        var idx = currentClassFile.getMethodIndex(index, classes);
+        instructionGenerator.addDup();
+        instructionGenerator.addGet("get class info for " + name);
+        instructionGenerator.addIndirectCall(idx+1, name);
     }
 
     private boolean shouldBeIgnored(String name) {
@@ -752,6 +779,7 @@ public final class ForthTranslator {
         link(instructions, labels);
         for (var entry : labels.entrySet())
             labelMap.put(entry.getValue(), entry.getKey());
+        link(roData.getInstructions(), labels);
         return instructions;
     }
 
@@ -780,9 +808,12 @@ public final class ForthTranslator {
         for (var instruction : instructions) {
             var label = instruction.getRequiredLabel();
             if (label != null) {
-                if (!labels.containsKey(label))
+                if (labels.containsKey(label))
+                    instruction.buildCode(labels.get(label), pc);
+                else if (dataSegmentMapping.containsKey(label))
+                    instruction.buildCode(dataSegmentMapping.get(label), pc);
+                else
                     throw new TranslatorException("unknown label " + label);
-                instruction.buildCode(labels.get(label), pc);
             }
             else
                 instruction.buildCode(0, pc);
@@ -791,17 +822,18 @@ public final class ForthTranslator {
     }
 
     private void createOutputFiles(List<Instruction> code, Map<Integer, String> labels) throws IOException {
-        createFile(configuration.code.fileName, code, labels);
-        createFile(configuration.roData.fileName, roData.getInstructions(), labels);
+        createFile(configuration.code.fileName, code, labels, false);
+        createFile(configuration.roData.fileName, roData.getInstructions(), labels, true);
     }
 
-    private static void createFile(String fileName, List<Instruction> instructions, Map<Integer, String> labels)
+    private static void createFile(String fileName, List<Instruction> instructions, Map<Integer, String> labels,
+                                   boolean w32)
             throws IOException {
         var lines = new ArrayList<String>();
         var pc = 0;
         for (var instruction : instructions) {
             var label = labels.getOrDefault(pc,"");
-            var text = instruction.toText(label, pc);
+            var text = instruction.toText(label, pc, w32);
             pc += instruction.getSize();
             lines.addAll(Arrays.asList(text));
         }

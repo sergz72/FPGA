@@ -82,4 +82,9 @@ public class MethodOrField {
     public boolean isVarargs() {
         return (accessFlags & 0x80) != 0;
     }
+
+    public int getSize() {
+        // long or double
+        return descriptor.equals("L") || descriptor.equals("D") ? 2 : 1;
+    }
 }

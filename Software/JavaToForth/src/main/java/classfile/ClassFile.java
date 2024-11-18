@@ -2,10 +2,14 @@ package classfile;
 
 import classfile.attributes.Attributes;
 import classfile.constantpool.*;
+import translator.TranslatorException;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
+import java.util.stream.Collectors;
 
 public final class ClassFile {
     String fileName;
@@ -16,6 +20,7 @@ public final class ClassFile {
     MethodsOrFields fieldsInfo;
     MethodsOrFields methodsInfo;
     Attributes attributesInfo;
+    List<MethodName> methods;
 
     public ClassFile(byte[] data, String fileName) throws ClassFileException {
         this.fileName = fileName;
@@ -36,6 +41,7 @@ public final class ClassFile {
         attributesInfo = new Attributes(constantPoolInfo, bb);
         if (bb.hasRemaining())
             throw new ClassFileException("class file contains unknown bytes");
+        methods = null;
     }
 
     @Override
@@ -98,16 +104,31 @@ public final class ClassFile {
         throw new ClassFileException("wrong pool index for getMethodClassName");
     }
 
-    public int getMethodIndex(int index) {
-        throw new UnsupportedOperationException();
+    public int getMethodIndex(int index, Map<String, ClassFile> classes) throws ClassFileException {
+        var name = getMethodName(index);
+        buildMethodNameList(classes);
+        for (var i = 0; i < methods.size(); i++) {
+            var m = methods.get(i);
+            if (m.toString().equals(name))
+                return i;
+        }
+        throw new ClassFileException("method " + name + " not found");
     }
 
-    public int calculateFieldsSize(Map<String, ClassFile> classes) {
-        throw new UnsupportedOperationException();
+    public int calculateFieldsSize(Map<String, ClassFile> classes) throws ClassFileException {
+        var size = calculateFieldsSize();
+        var parent = superClass;
+        while (parent != 0) {
+            var parentName = getName(parent);
+            var parentClass = classes.get(parentName);
+            parent = parentClass.superClass;
+            size += parentClass.calculateFieldsSize();
+        }
+        return size;
     }
 
-    public List<String> buildMethodsList(Map<String, ClassFile> classes) {
-        throw new UnsupportedOperationException();
+    private int calculateFieldsSize() {
+        return fieldsInfo.getSize();
     }
 
     public boolean isLongField(int index) throws ClassFileException {
@@ -116,5 +137,51 @@ public final class ClassFile {
 
     public boolean hasMethod(String name) {
         return methodsInfo.hasMethod(name);
+    }
+
+    public List<String> buildMethodsList(Map<String, ClassFile> classes) throws ClassFileException {
+        buildMethodNameList(classes);
+        return methods.stream().map(MethodName::toString).collect(Collectors.toList());
+    }
+
+    public void buildMethodNameList(Map<String, ClassFile> classes) throws ClassFileException {
+        if (methods != null)
+            return;
+        Stack<List<MethodName>> methods = new Stack<>();
+        methods.push(buildMethodsList());
+        var classId = superClass;
+        while (classId != 0) {
+            var className = getName(classId);
+            var classFile = classes.get(className);
+            methods.push(classFile.buildMethodsList());
+            classId = classFile.superClass;
+        }
+        this.methods = new ArrayList<MethodName>();
+        while (!methods.isEmpty()) {
+            var l = methods.pop();
+            for (var m : l) {
+                var existing = this.methods.stream().filter(r -> r.methodName.equals(m.methodName)).findFirst();
+                if (existing.isPresent())
+                    existing.get().className = m.className;
+                else
+                    this.methods.add(m);
+            }
+        }
+    }
+
+    private List<MethodName> buildMethodsList() throws ClassFileException {
+        var name = getName();
+        return methodsInfo.getList().stream().map(m -> new MethodName(name, m)).toList();
+    }
+
+    public List<String> buildParentsList(Map<String, ClassFile> classes) throws ClassFileException {
+        var result = new ArrayList<String>();
+        var parent = superClass;
+        while (parent != 0) {
+            var parentName = getName(parent);
+            result.add(parentName);
+            parent = classes.get(parentName).superClass;
+        }
+        return result;
     }
 }

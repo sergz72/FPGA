@@ -33,4 +33,8 @@ public final class Segment {
     public List<Instruction> getInstructions() {
         return instructions;
     }
+
+    public Integer getNextAddress() {
+        return nextAddress;
+    }
 }
