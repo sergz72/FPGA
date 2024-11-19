@@ -61,7 +61,7 @@ module java_cpu
 
     wire push, push_long, dup, set, set_long, alu_op, get, get_long, call, call_indirect, jmp, ret, retn, reti, fetch;
     wire neg, inc, nop, ifcmp, if_, drop, drop2, swap, rot, over, local_get, local_set, locals, get_data_stack_pointer;
-    wire arrayp, arrayp2, bipush, sipush;
+    wire arrayp, arrayp2, bipush, sipush, getn;
     wire eq, gt, lt, n, z, z2, condition_neg, condition_cmp_pass, condition_pass;
     wire [1:0] condition_flags, condition_cmp_temp, condition_temp;
     
@@ -105,6 +105,7 @@ module java_cpu
     assign arrayp2 = opcode == 31;
     assign bipush = opcode == 32;
     assign sipush = opcode == 33;
+    assign getn = opcode == 34;
 
     assign jmp_address = {pc_data, immediate};
     assign interrupt_no = interrupt[1] ? 2'b10 : {1'b0, interrupt[0]};
@@ -126,7 +127,7 @@ module java_cpu
     assign condition_temp = condition_flags & {n, z};
     assign condition_pass = (condition_temp[0] | condition_temp[1]) ^ condition_neg;
 
-    assign fetch = set | set_long | get_long | get | call_indirect;
+    assign fetch = set | set_long | get_long | get | call_indirect | getn;
 
     function [63:0] alu(input [3:0] op);
         case (op)
@@ -156,7 +157,7 @@ module java_cpu
         if (!data_stack_nwr)
             data_stack[data_stack_pointer] <= data_stack_wr_data;
         else begin
-            data_stack_value1 <= data_stack[data_stack_pointer];
+            data_stack_value1 <= data_stack[data_stack_pointer + (getn ? current_instruction[DATA_STACK_BITS-1:0] : 0)];
             data_stack_value2 <= data_stack[data_stack_pointer+1];
         end
     end
@@ -281,7 +282,7 @@ module java_cpu
                             data_stack_pointer <= data_stack_pointer + 2;
                         end
                         set_long: state <= STATE_WAITREADY_LONG;
-                        get: state <= STATE_WAITREADY;
+                        get | getn: state <= STATE_WAITREADY;
                         get_long: state <= STATE_WAITREADY_LONG;
                         retn: begin
                             call_stack_pointer <= call_stack_pointer + current_instruction[7:0];
@@ -412,9 +413,11 @@ module java_cpu
                         state <= STATE_FETCH;
                         mem_nwr <= 1;
                         mem_valid <= 0;
-                        if (get) begin
+                        if (get | getn) begin
                             data_stack_nwr <= 0;
                             data_stack_wr_data <= {{32{mem_data_in[31]}}, mem_data_in};
+                            if (getn)
+                                data_stack_pointer <= data_stack_pointer - 1;
                         end
                     end
                 end

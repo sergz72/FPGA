@@ -72,6 +72,7 @@ internal static class InstructionCodes
     internal const uint Arrayp2 = 31;
     internal const uint BPush = 32;
     internal const uint SPush = 33;
+    internal const uint Getn = 34;
 }
 
 internal sealed class OpCodeInstruction(string line, string file, int lineNo, uint opCode, uint parameter = 0) :

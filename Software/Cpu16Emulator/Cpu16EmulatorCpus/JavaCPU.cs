@@ -57,6 +57,7 @@ public class JavaCPU(string[] code, int speed, int dataStackSize, int callStackS
     private const byte ARRAYP2 = 31;
     private const byte BIPUSH = 32;
     private const byte SIPUSH = 33;
+    private const byte GETN = 34;
 
     private const byte ALU_OP_ADD  = 0;
     private const byte ALU_OP_SUB  = 1;
@@ -198,6 +199,23 @@ public class JavaCPU(string[] code, int speed, int dataStackSize, int callStackS
                 if (IoReadEventHandler == null)
                     throw new CpuException("null IoReadEventHandler");
                 address = DataStack.Pop(Pc);
+                if (address == 0)
+                {
+                    Logger?.Error($"{Ticks}: ERROR {Pc:X8}");
+                    Error = true;
+                }
+                else
+                {
+                    ev = new IoEvent { Address = (uint)address };
+                    IoReadEventHandler.Invoke(this, ev);
+                    var d = (int)ev.Data;
+                    DataStack.Push(d, Pc);
+                }
+                break;
+            case GETN:
+                if (IoReadEventHandler == null)
+                    throw new CpuException("null IoReadEventHandler");
+                address = DataStack.GetN(instruction & 0xFF, Pc);
                 if (address == 0)
                 {
                     Logger?.Error($"{Ticks}: ERROR {Pc:X8}");

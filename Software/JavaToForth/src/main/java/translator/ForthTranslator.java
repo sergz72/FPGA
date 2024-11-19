@@ -13,7 +13,11 @@ import java.util.*;
 
 public final class ForthTranslator {
     private static final String staticConstructor = "<clinit>()V";
-    private static final Set<String> ignoreMethodCalls = Set.of("java/lang/String.toCharArray()[C");
+    private static final Set<String> ignoreMethodCalls = Set.of(
+            "java/lang/String.toCharArray()[C",
+            "java/lang/Class.getParents()[Ljava/lang/Class;"
+    );
+    private static final Set<String> callAsSpecial = Set.of("java/lang/String", "java/lang/Object");
 
     TranslatorConfiguration configuration;
     Map<String, ClassFile> classes;
@@ -69,6 +73,9 @@ public final class ForthTranslator {
         generator.addReturn(0);
         methodInstructions.put("java/lang/Object.hashCode()I", generator.getInstructions());
         methodInstructions.put("java/lang/String.toString()Ljava/lang/String;", generator.getInstructions());
+        generator = new InstructionGenerator(0);
+        generator.addGet("getclass");
+        generator.addReturn(0);
         methodInstructions.put("java/lang/Object.getClass()Ljava/lang/Class;", generator.getInstructions());
     }
 
@@ -499,11 +506,13 @@ public final class ForthTranslator {
             case 0xc0: // checkcast
                 index = code[pc++]<< 8;
                 index |= code[pc++] & 0xFF;
-                throw new TranslatorException("checkcast is not supported");
+                translateCheckCast(index);
+                break;
             case 0xc1: // instanceof
                 index = code[pc++]<< 8;
                 index |= code[pc++] & 0xFF;
-                throw new TranslatorException("instanceof is not supported");
+                translateInstanceOf(index);
+                break;
             case 0xc5: // multianewarray
                 index = code[pc++] << 8;
                 index |= code[pc++] & 0xFF;
@@ -525,6 +534,19 @@ public final class ForthTranslator {
         return pc;
     }
 
+    private void translateInstanceOf(int index) throws ClassFileException {
+        addToTranslate("java/lang/Class");
+        var className = currentClassFile.getName(index);
+        var cls = classes.get(className);
+        buildClass(className, cls);
+        instructionGenerator.addPushLabel("$" + className);
+        instructionGenerator.addCall("java/lang/Class.isInstance(Ljava/lang/Object;)Z");
+    }
+
+    private void translateCheckCast(int index) {
+        //todo
+    }
+
     private int buildFieldAddress(String name, boolean isLong) {
         if (dataSegmentMapping.containsKey(name))
             return dataSegmentMapping.get(name);
@@ -544,7 +566,7 @@ public final class ForthTranslator {
             instructionGenerator.addSet();
     }
 
-    private void translateGetStatic(int index) throws TranslatorException, ClassFileException {
+    private void translateGetStatic(int index) throws ClassFileException {
         var name = currentClassFile.getFieldName(index);
         var isLong = currentClassFile.isLongField(index);
         var address = buildFieldAddress(name, isLong);
@@ -571,26 +593,30 @@ public final class ForthTranslator {
             return dataSegmentMapping.get(key);
         var methods = cls.buildMethodsList(classes);
         var parentsList = cls.buildParentsList(classes);
-        return buildClass(key, parentsList, methods);
+        return buildClass(key, name, parentsList, methods);
     }
 
-    private int buildClass(String key, List<String> parents, List<String> methods) throws ClassFileException {
+    private int buildClass(String key, String name, List<String> parents, List<String> methods) throws ClassFileException {
         for (var parent : parents) {
-            var pkey = "$" + parent;
+            var pkey = "%" + parent;
             if (!dataSegmentMapping.containsKey(parent))
                 buildClass(parent, classes.get(parent));
         }
         var address = roData.getNextAddress();
+        dataSegmentMapping.put("%" + name, address);
         roData.addInstruction(new InlineInstruction(null, new int[]{parents.size()}, "parents length"));
         for (var parent : parents) {
-            var pkey = "$" + parent;
+            var pkey = "%" + parent;
             roData.addInstruction(new LabelInstruction(pkey));
         }
         var classAddress = roData.getNextAddress();
         dataSegmentMapping.put(key, classAddress);
         roData.addInstruction(new InlineInstruction(null, new int[]{address}, "parents array reference"));
         for (var method : methods) {
-            roData.addInstruction(new LabelInstruction(method));
+            if (shouldBeIgnored(method))
+                roData.addInstruction(new InlineInstruction(null, new int[]{0}, method));
+            else
+                roData.addInstruction(new LabelInstruction(method));
         }
         return classAddress;
     }
@@ -648,14 +674,21 @@ public final class ForthTranslator {
 
     private void translateInvokeVirtual(int index) throws ClassFileException {
         var name = currentClassFile.getMethodClassName(index);
-        addToTranslate(name);
-        name = currentClassFile.getMethodName(index);
-        if (shouldBeIgnored(name))
+        if (callAsSpecial.contains(name)) {
+            translateInvokeSpecial(index);
             return;
-        var idx = currentClassFile.getMethodIndex(index, classes);
+        }
+        addToTranslate(name);
+        var fname = currentClassFile.getMethodFullName(index);
+        var mname = currentClassFile.getMethodName(index);
+        if (shouldBeIgnored(fname))
+            return;
+        var cls = classes.get(name);
+        var idx = cls.getMethodIndex(mname, classes);
+        var nparameters = cls.getNumberOfParameters(fname);
         instructionGenerator.addDup();
-        instructionGenerator.addGet("get class info for " + name);
-        instructionGenerator.addIndirectCall(idx+1, name);
+        instructionGenerator.addGetn(nparameters, "get class info for " + fname);
+        instructionGenerator.addIndirectCall(idx+1, fname);
     }
 
     private boolean shouldBeIgnored(String name) {
@@ -681,7 +714,7 @@ public final class ForthTranslator {
     private void translateInvokeStatic(int index) throws ClassFileException {
         var name = currentClassFile.getMethodClassName(index);
         addToTranslate(name);
-        name = currentClassFile.getMethodName(index);
+        name = currentClassFile.getMethodFullName(index);
         if (shouldBeIgnored(name) | translateUsingInlines(name))
             return;
         instructionGenerator.addCall(name);

@@ -37,8 +37,9 @@ public class InstructionGenerator {
     private static final int ARRAYP2 = 31;
     private static final int BPUSH = 32;
     private static final int SPUSH = 33;
-    private static final int DIV = 34;
-    private static final int REM = 35;
+    private static final int GETN = 34;
+    private static final int DIV = 35;
+    private static final int REM = 36;
 
     public static final int ALU_OP_ADD      = 0;
     public static final int ALU_OP_SUB      = 1;
@@ -109,6 +110,11 @@ public class InstructionGenerator {
         int v4 = (int)(value >> 48);
         addInstruction(new OpCodeInstruction(bytecodePc, PUSH_LONG, 0, new int[]{v1, v2, v3, v4},
                 String.format("push_long %d %x", value, value)));
+    }
+
+    public void addGetn(int n, String comment)
+    {
+        addInstruction(new OpCodeInstruction(bytecodePc, GETN, n, new int[0], comment));
     }
 
     public void addGet(String comment)

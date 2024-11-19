@@ -37,8 +37,12 @@ public class ConstantPool extends ClassFileInfo<ConstantPoolItem> {
             throw new ClassFileException("Constant pool item " + index + " is not a ClassConstantPoolItem");
     }
 
-    public String buildMethodName(int classIndex, int nameIndex, int descriptorIndex) throws ClassFileException {
+    public String buildMethodFullName(int classIndex, int nameIndex, int descriptorIndex) throws ClassFileException {
         return getClassName(classIndex) + "." + getUtf8Constant(nameIndex) + getUtf8Constant(descriptorIndex);
+    }
+
+    public String buildMethodName(int nameIndex, int descriptorIndex) throws ClassFileException {
+        return getUtf8Constant(nameIndex) + getUtf8Constant(descriptorIndex);
     }
 
     public String buildFieldName(int classIndex, int nameIndex) throws ClassFileException {

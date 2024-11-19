@@ -33,6 +33,7 @@ internal sealed class JavaCPUCompiler : GenericCompiler
         {"drop", new OpCodeInstructionCreator(InstructionCodes.Drop)},
         {"drop2", new OpCodeInstructionCreator(InstructionCodes.Drop2)},
         {"getlocal", new OneParameterInstructionCreator(InstructionCodes.LocalGet)},
+        {"getn", new OneParameterInstructionCreator(InstructionCodes.Getn)},
         {"getsp", new OpCodeInstructionCreator(InstructionCodes.GetDataStackPointer)},
         {"goto", new Label16InstructionCreator(InstructionCodes.Jmp, 0)},
         {"hlt", new OpCodeInstructionCreator(InstructionCodes.Hlt)},

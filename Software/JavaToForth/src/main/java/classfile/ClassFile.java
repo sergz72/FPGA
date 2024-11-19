@@ -2,7 +2,6 @@ package classfile;
 
 import classfile.attributes.Attributes;
 import classfile.constantpool.*;
-import translator.TranslatorException;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -83,6 +82,13 @@ public final class ClassFile {
         return constantPoolInfo.getUtf8Constant(index);
     }
 
+    public String getMethodFullName(int index) throws ClassFileException {
+        var item = constantPoolInfo.get(index);
+        if (item instanceof MethodReferenceConstantPoolItem mr)
+            return mr.getFullName(constantPoolInfo);
+        throw new ClassFileException("wrong pool index for getMethodName");
+    }
+
     public String getMethodName(int index) throws ClassFileException {
         var item = constantPoolInfo.get(index);
         if (item instanceof MethodReferenceConstantPoolItem mr)
@@ -104,12 +110,16 @@ public final class ClassFile {
         throw new ClassFileException("wrong pool index for getMethodClassName");
     }
 
-    public int getMethodIndex(int index, Map<String, ClassFile> classes) throws ClassFileException {
-        var name = getMethodName(index);
+    public int getNumberOfParameters(String name) throws ClassFileException {
+        var m = methodsInfo.get(name);
+        return m.getNumberOfParameters();
+    }
+
+    public int getMethodIndex(String name, Map<String, ClassFile> classes) throws ClassFileException {
         buildMethodNameList(classes);
         for (var i = 0; i < methods.size(); i++) {
             var m = methods.get(i);
-            if (m.toString().equals(name))
+            if (m.methodName.equals(name))
                 return i;
         }
         throw new ClassFileException("method " + name + " not found");
