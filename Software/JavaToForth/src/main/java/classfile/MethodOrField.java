@@ -60,11 +60,13 @@ public class MethodOrField {
                 case 'I':
                 case 'J':
                 case 'Z':
+                case '[': // array
                     break;
                 default:
                     throw new ClassFileException(String.format("Unsupported char in method descriptor: %c %s", c, descriptor));
             }
-            count++;
+            if (c != '[')
+                count++;
             idx++;
         }
 

@@ -443,6 +443,7 @@ public final class ForthTranslator {
             case 0x2f: // laload
                 translateLALoad();
                 break;
+            case 0x2e: // iaload
             case 0x32: // aaload
             case 0x33: // baload
             case 0x34: // caload
@@ -452,6 +453,7 @@ public final class ForthTranslator {
             case 0x50: // lastore
                 translateLAStore();
                 break;
+            case 0x4f: // iastore
             case 0x53: // aastore
             case 0x54: // bastore
             case 0x55: // castore
