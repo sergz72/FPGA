@@ -35,6 +35,7 @@ class UartEchoWithoutTimer {
         commandReady = false;
         commandPointer = commandReadPointer = 0;
         boolean ledState = false;
+        CommandInterpreter.setCommands(new Command[0]);
         Hal.timerStart(DELAY);
         while (true) {
             System.wfi();
@@ -45,6 +46,7 @@ class UartEchoWithoutTimer {
             if (commandReady) {
                 Hal.outChar('\r');
                 Hal.outChar('\n');
+                CommandInterpreter.run(command, commandPointer);
                 commandPointer = commandReadPointer = 0;
                 commandReady = false;
             }
