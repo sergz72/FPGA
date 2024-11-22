@@ -19,17 +19,24 @@ public final class MethodsOrFields extends ClassFileInfo<MethodOrField> {
             }
         });
         var className = cp.getClassName(thisClass);
-        map = this.items.stream().collect(Collectors.toMap(i -> className + "." + i.name, i -> i));
+        map = this.items.stream().collect(Collectors.toMap(i -> className + "." + i.nameWithDescriptor, i -> i));
     }
 
     public boolean hasMethod(String name) {
-        return items.stream().anyMatch(i -> i.name.equals(name));
+        return items.stream().anyMatch(i -> i.nameWithDescriptor.equals(name));
     }
 
-    public List<String> getList() {
+    public List<String> getMethodList() {
         return items.stream()
-                .filter(m -> !m.isStatic() && !m.name.equals("<init>()V") && !m.name.equals("<clinit>()V"))
-                .map(m -> m.name)
+                .filter(m -> !m.isStatic() && !m.nameWithDescriptor.startsWith("<init>") && !m.nameWithDescriptor.equals("<clinit>()V"))
+                .map(m -> m.nameWithDescriptor)
+                .collect(Collectors.toList());
+    }
+
+    public List<FieldInfo> getFieldList() {
+        return items.stream()
+                .filter(m -> !m.isStatic())
+                .map(m -> new FieldInfo(m.name, m.getSize()))
                 .collect(Collectors.toList());
     }
 

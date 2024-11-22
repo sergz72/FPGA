@@ -30,7 +30,7 @@ public final class Console {
         var l = 0;
         while (value != 0) {
             var v = value % 10;
-            integerBuffer[l++] = v > 9 ? (char)(v - 10 + 'A') : (char)(v + '0');
+            integerBuffer[l++] = (char)(v + '0');
             value /= 10;
         }
         while (l > 0)

@@ -8,5 +8,6 @@
     { "FileName": "../../../../../Rider/Cpu16Emulator/IODeviceBaseMemory32/bin/Debug/net8.0/IODeviceBaseMemory32.dll", "Parameters": "address=0x40000000 size=1024 readonly=true contents=asm/rodata.hex" },
     { "FileName": "../../../../../Rider/Cpu16Emulator/IODeviceBaseMemory32/bin/Debug/net8.0/IODeviceBaseMemory32.dll", "Parameters": "address=0x60000000 size=1024 readonly=false" },
     { "FileName": "../../../../../Rider/Cpu16Emulator/IODeviceUart/bin/Debug/net8.0/IODeviceUart.dll", "Parameters": "address=0xFFFFFFFD interrupt=2" }
-  ]
+  ],
+  "CpuOptions": ["TRACE"]
 }

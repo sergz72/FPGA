@@ -25,10 +25,10 @@ public final class I2CTest implements ICommand {
     public boolean run() {
         for (var channel = 0; channel < channels; channel++) {
             var found = false;
+            Console.printDecimal(channel);
+            Hal.outChar(':');
+            Hal.outChar(' ');
             for (var d : knownDevices) {
-                Console.printDecimal(channel);
-                Hal.outChar(':');
-                Hal.outChar(' ');
                 if (i2c.check(channel, d)) {
                     Console.printHex(d);
                     Console.cr();

@@ -578,7 +578,7 @@ public final class ForthTranslator {
 
         for (var pcm : pcs.entrySet()) {
             instructionGenerator.addDup();
-            instructionGenerator.addPush(pcm.getKey(), "lookup for " + pcm.getKey());
+            generatePush(pcm.getKey(), "lookup for " + pcm.getKey());
             instructionGenerator.addIfcmp(InstructionGenerator.IF_NE, "ifcmp_ne", 4);
             instructionGenerator.addDrop();
             instructionGenerator.addJmp(pcm.getValue(), startPc);
@@ -643,7 +643,8 @@ public final class ForthTranslator {
         var name = currentClassFile.getFieldName(index);
         var isLong = currentClassFile.isLongField(index);
         var findex = getFieldIndex(index, name);
-        instructionGenerator.addPush(findex, "push field index " + name);
+        generatePush(findex, "push field index " + name);
+        instructionGenerator.addArrayp();
         if (isLong)
             instructionGenerator.addSetLong();
         else
@@ -654,7 +655,8 @@ public final class ForthTranslator {
         var name = currentClassFile.getFieldName(index);
         var isLong = currentClassFile.isLongField(index);
         var findex = getFieldIndex(index, name);
-        instructionGenerator.addPush(findex, "push field index " + name);
+        generatePush(findex, "push field index " + name);
+        instructionGenerator.addArrayp();
         if (isLong)
             instructionGenerator.addGetLong();
         else
@@ -667,7 +669,7 @@ public final class ForthTranslator {
         var address = buildClass(name, cls);
         var size = cls.calculateFieldsSize(classes);
         instructionGenerator.addPush(address, String.format("push %d (new %s methods table address)", address, name));
-        instructionGenerator.addPush(size, String.format("push %d (new %s fields size)", size, name));
+        generatePush(size, String.format("push %d (new %s fields size)", size, name));
         instructionGenerator.addCall("JavaCPU/System.newObject(II)I");
     }
 

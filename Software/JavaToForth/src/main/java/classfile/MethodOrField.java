@@ -4,15 +4,15 @@ import classfile.attributes.Attributes;
 import classfile.constantpool.ConstantPool;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 public class MethodOrField {
     int accessFlags;
-    String name, descriptor;
+    String  name, nameWithDescriptor, descriptor;
     Attributes attributes;
     public MethodOrField(short accessFlags, String name, String descriptor, Attributes attributes) {
         this.accessFlags = accessFlags;
-        this.name = name + descriptor;
+        this.name = name;
+        this.nameWithDescriptor = name + descriptor;
         this.attributes = attributes;
         this.descriptor = descriptor;
     }

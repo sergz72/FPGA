@@ -20,7 +20,7 @@ public final class ClassFile {
     MethodsOrFields methodsInfo;
     Attributes attributesInfo;
     List<MethodName> methods;
-    List<String> fields;
+    List<FieldInfo> fields;
 
     public ClassFile(byte[] data, String fileName) throws ClassFileException {
         this.fileName = fileName;
@@ -42,6 +42,7 @@ public final class ClassFile {
         if (bb.hasRemaining())
             throw new ClassFileException("class file contains unknown bytes");
         methods = null;
+        fields = null;
     }
 
     @Override
@@ -142,11 +143,16 @@ public final class ClassFile {
 
     public int getFieldIndex(String name, Map<String, ClassFile> classes) throws ClassFileException {
         buildFieldList(classes);
-        for (var i = 0; i < fields.size(); i++) {
-            var f = fields.get(i);
-            if (f.equals(name))
-                return i;
+        var idx = 0;
+        var offset = -1;
+        for (var f : fields) {
+            if (f.name.equals(name)) {
+                offset = idx;
+            }
+            idx += f.size;
         }
+        if (offset != -1)
+            return offset;
         throw new ClassFileException("field " + name + " not found");
     }
 
@@ -207,7 +213,7 @@ public final class ClassFile {
     public void buildFieldList(Map<String, ClassFile> classes) throws ClassFileException {
         if (fields != null)
             return;
-        Stack<List<String>> fields = new Stack<>();
+        Stack<List<FieldInfo>> fields = new Stack<>();
         fields.push(buildFieldsList());
         var classId = superClass;
         while (classId != 0) {
@@ -216,20 +222,20 @@ public final class ClassFile {
             fields.push(classFile.buildFieldsList());
             classId = classFile.superClass;
         }
-        this.fields = new ArrayList<String>();
+        this.fields = new ArrayList<>();
         while (!fields.isEmpty()) {
             var l = fields.pop();
             this.fields.addAll(l);
         }
     }
 
-    private List<String> buildFieldsList() {
-        return fieldsInfo.getList();
+    private List<FieldInfo> buildFieldsList() {
+        return fieldsInfo.getFieldList();
     }
 
     private List<MethodName> buildMethodsList() throws ClassFileException {
         var name = getName();
-        return methodsInfo.getList().stream().map(m -> new MethodName(name, m)).toList();
+        return methodsInfo.getMethodList().stream().map(m -> new MethodName(name, m)).toList();
     }
 
     public List<String> buildParentsList(Map<String, ClassFile> classes) throws ClassFileException {
