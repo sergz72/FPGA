@@ -1,4 +1,5 @@
-﻿using Cpu16EmulatorCommon;
+﻿using System.Text;
+using Cpu16EmulatorCommon;
 
 namespace Cpu16EmulatorCpus;
 
@@ -361,12 +362,15 @@ public sealed class ForthStack<T>(string name, int size)
     public readonly T[] Contents = new T[size];
 
     public int Pointer { get; private set; } = -1;
+    public int MaxPointer { get; private set; } = -1;
     
     public int Sp => ~Pointer;
 
     internal void Push(T value, uint pc)
     {
         Pointer++;
+        if (Pointer > MaxPointer)
+            MaxPointer = Pointer;
         if (Pointer >= size)
             throw new CpuException($"{name} stack overflow at {pc:X8}");
         Contents[Pointer] = value;
@@ -417,5 +421,24 @@ public sealed class ForthStack<T>(string name, int size)
         Pointer += data;
         if (Pointer >= size)
             throw new CpuException($"{name} stack overflow at {pc:X8}");
+    }
+
+    public string Dump(string name)
+    {
+        var p = Pointer;
+        var sb = new StringBuilder();
+        sb.Append($"{name} stack:");
+        while (p >= 0)
+        {
+            sb.Append(' ');
+            var c = Contents[p--];
+            if (c is int i)
+                sb.Append(i.ToString("X8"));
+            else if (c is long l)
+                sb.Append(l.ToString("X16"));
+            else
+                sb.Append(c);
+        }
+        return sb.ToString();
     }
 }

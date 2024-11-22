@@ -1,12 +1,15 @@
+package command_interpreter;
+
 import JavaCPU.Console;
+import JavaCPU.System;
 import JavaCPU.Hal;
 
 public final class CommandInterpreter {
-    private static Command[] commands;
+    private static ICommand[] commands;
     private static final int[] commandParts = new int[10];
     private static int partsCount;
 
-    public static void setCommands(Command[] commands) {
+    public static void setCommands(ICommand[] commands) {
         CommandInterpreter.commands = commands;
     }
 
@@ -14,15 +17,34 @@ public final class CommandInterpreter {
         if (length == 0)
             return;
         splitCommand(buffer, length);
-        printCommandParts(buffer);
+        if (partsCount == 0)
+            return;
+        //printCommandParts(buffer);
         for (var command: commands) {
-            if (command.run(buffer, commandParts, partsCount))
+            if (!System.stringEquals(command.getName(), buffer, commandParts[0] & 0xFFFF, commandParts[0] >> 16))
+                continue;
+            var pCount = partsCount - 1;
+            if (pCount < command.minParameters() || pCount > command.maxParameters()) {
+                Console.println("wrong number of parameters");
                 return;
+            }
+            command.init();
+            for (var i = 1; i < partsCount; i++) {
+                if (!command.validateParameter(i, buffer,  commandParts[i] & 0xFFFF, commandParts[i] >> 16)) {
+                    Console.print("incorrect parameter ");
+                    Console.printDecimal(i);
+                    Console.cr();
+                    return;
+                }
+            }
+            if (command.run())
+                Console.println("OK");
+            return;
         }
         Console.println("unknown command");
     }
 
-    private static void printCommandParts(char[] buffer) {
+    /*private static void printCommandParts(char[] buffer) {
         for (var i = 0; i < partsCount; i++) {
             var p = commandParts[i];
             printCommandPart(buffer, p & 0xFFFF, p >> 16);
@@ -34,7 +56,7 @@ public final class CommandInterpreter {
             Hal.outChar(buffer[index++]);
         Hal.outChar('\r');
         Hal.outChar('\n');
-    }
+    }*/
 
     private static void splitCommand(char[] buffer, int pos) {
         partsCount = 0;

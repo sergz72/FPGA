@@ -113,6 +113,11 @@ public abstract class Cpu
     {
         
     }
+
+    public virtual void Finish()
+    {
+        
+    }
     
     public static (Cpu, IODevice[], string?, LogLevel) Load(string configurationFileName, string codeFileName)
     {

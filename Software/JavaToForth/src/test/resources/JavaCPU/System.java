@@ -24,7 +24,23 @@ public final class System {
         return p;
     }
 
-    private native static void set(int v, int p);
+    public static boolean stringEquals(String s, char[] array, int pos, int l) {
+        if (array == null)
+            return false;
+        char[] ca = s.toCharArray();
+        if (ca.length != l)
+            return false;
+        for (int i = 0; i < l; i++) {
+            if (ca[i] != array[i+pos])
+                return false;
+        }
+        return true;
+    }
+
+    public native static void set(int v, int p);
+    public native static int get(int p);
     public static native void wfi();
     public static native void hlt();
+    public static native int getStackPointer();
+    public static native int bitTest(int v, int bit);
 }

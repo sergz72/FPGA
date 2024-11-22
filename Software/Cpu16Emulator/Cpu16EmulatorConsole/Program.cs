@@ -58,6 +58,12 @@ cpu.IoReadEventHandler = ioDevices.IoRead;
 cpu.IoWriteEventHandler = ioDevices.IoWrite;
 cpu.TicksEventHandler = ioDevices.TicksUpdate;
 
+Console.CancelKeyPress += delegate(object? sender, ConsoleCancelEventArgs e) {
+    e.Cancel = false;
+    cpu.Finish();
+    ioDevices.PrintStats();
+};
+
 if (limit != null)
 {
     while (cpu.Ticks < limit)

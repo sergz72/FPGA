@@ -34,7 +34,7 @@ public final class MethodsOrFields extends ClassFileInfo<MethodOrField> {
     }
 
     public int getSize() {
-        return map.values().stream().mapToInt(f -> f.getSize()).sum();
+        return map.values().stream().mapToInt(MethodOrField::getSize).sum();
     }
 
     public MethodOrField get(String name) {

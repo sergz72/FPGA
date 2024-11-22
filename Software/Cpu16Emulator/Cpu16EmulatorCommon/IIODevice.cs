@@ -23,6 +23,10 @@ public interface IIODevice
     void IoRead(IoEvent ev);
     void IoWrite(IoEvent ev);
     uint TicksUpdate(int cpuSped, int ticks, bool wfi, uint interruptAck, out uint interruptClearMask);
+
+    void PrintStats()
+    {
+    }
 }
 
 public static class IODeviceParametersParser

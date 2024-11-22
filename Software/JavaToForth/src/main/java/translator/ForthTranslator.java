@@ -115,7 +115,8 @@ public final class ForthTranslator {
 
     private void translateCurrentMethod() throws ClassFileException, TranslatorException {
         instructionGenerator = new InstructionGenerator(0);
-        createProlog();
+        if (!createProlog())
+            return;
         int pc = 0;
         var code = currentMethod.getCode();
         while (pc < code.length)
@@ -124,8 +125,10 @@ public final class ForthTranslator {
         methodInstructions.put(currentMethodName, instructionGenerator.getInstructions());
     }
 
-    private void createProlog() throws ClassFileException {
+    private boolean createProlog() throws ClassFileException {
         var localsCount = currentMethod.getNumberOfLocals();
+        if (localsCount < 0)
+            return false;
         if (localsCount != 0)
         {
             instructionGenerator.addLocals(localsCount);
@@ -137,6 +140,7 @@ public final class ForthTranslator {
                 instructionGenerator.addSetLocal(parametersCount);
             }
         }
+        return true;
     }
 
     private int translate(byte[] code, int pc) throws TranslatorException, ClassFileException {
@@ -437,6 +441,12 @@ public final class ForthTranslator {
                 index |= code[pc++] & 0xFF;
                 translateInvokeStatic(index);
                 break;
+            case 0xb9: // invokeinterface
+                index = (code[pc++] & 0xFF) << 8;
+                index |= code[pc++] & 0xFF;
+                pc += 2;
+                translateInvokeVirtual(index);
+                break;
             case 0xbe: // arraylength
                 instructionGenerator.addGet("get (arraylength)");
                 break;
@@ -475,7 +485,8 @@ public final class ForthTranslator {
             case 0xaa: // tableswitch
                 throw new TranslatorException("tableswitch is not supported");
             case 0xab: // lookupswitch
-                throw new TranslatorException("lookupswitch is not supported");
+                pc = translateLookupSwitch(code, pc);
+                break;
             case 0xb2: // getstatic
                 index = code[pc++] << 8;
                 index |= code[pc++] & 0xFF;
@@ -487,9 +498,15 @@ public final class ForthTranslator {
                 translatePutStatic(index);
                 break;
             case 0xb4: // getfield
-                throw new TranslatorException("getfield is not supported");
+                index = code[pc++] << 8;
+                index |= code[pc++] & 0xFF;
+                translateGetField(index);
+                break;
             case 0xb5: // putfield
-                throw new TranslatorException("putfield is not supported");
+                index = code[pc++] << 8;
+                index |= code[pc++] & 0xFF;
+                translatePutField(index);
+                break;
             case 0xbb: // new
                 index = code[pc++]<< 8;
                 index |= code[pc++] & 0xFF;
@@ -536,6 +553,43 @@ public final class ForthTranslator {
         return pc;
     }
 
+    private static int readInt(byte[] code, int pc) {
+        return (code[pc] << 24) | (code[pc+1] << 16) | (code[pc+2] << 8) | code[pc+3];
+    }
+
+    private int translateLookupSwitch(byte[] code, int pc) {
+        var startPc = pc - 1;
+        if ((pc & 3) != 0) {
+            pc += 4;
+            pc &= ~3;
+        }
+        var defaultPc = readInt(code, pc);
+        pc += 4;
+        var npairs = readInt(code, pc);
+        pc += 4;
+        var pcs = new HashMap<Integer, Integer>();
+        for (var i = 0; i < npairs; i++) {
+            var v = readInt(code, pc);
+            pc += 4;
+            var vpc = readInt(code, pc);
+            pc += 4;
+            pcs.put(v, vpc);
+        }
+
+        for (var pcm : pcs.entrySet()) {
+            instructionGenerator.addDup();
+            instructionGenerator.addPush(pcm.getKey(), "lookup for " + pcm.getKey());
+            instructionGenerator.addIfcmp(InstructionGenerator.IF_NE, "ifcmp_ne", 4);
+            instructionGenerator.addDrop();
+            instructionGenerator.addJmp(pcm.getValue(), startPc);
+        }
+
+        instructionGenerator.addDrop();
+        instructionGenerator.addJmp(defaultPc, startPc);
+
+        return pc;
+    }
+
     private void translateInstanceOf(int index) throws ClassFileException {
         addToTranslate("java/lang/Class");
         var className = currentClassFile.getName(index);
@@ -558,7 +612,7 @@ public final class ForthTranslator {
     }
 
     private void translatePutStatic(int index) throws ClassFileException {
-        var name = currentClassFile.getFieldName(index);
+        var name = currentClassFile.getFieldFullName(index);
         var isLong = currentClassFile.isLongField(index);
         var address = buildFieldAddress(name, isLong);
         instructionGenerator.addPush(address, "push " + name);
@@ -569,10 +623,38 @@ public final class ForthTranslator {
     }
 
     private void translateGetStatic(int index) throws ClassFileException {
-        var name = currentClassFile.getFieldName(index);
+        var name = currentClassFile.getFieldFullName(index);
         var isLong = currentClassFile.isLongField(index);
         var address = buildFieldAddress(name, isLong);
         instructionGenerator.addPush(address, "push " + name);
+        if (isLong)
+            instructionGenerator.addGetLong();
+        else
+            instructionGenerator.addGet("getstatic");
+    }
+
+    private int getFieldIndex(int index, String fname) throws ClassFileException {
+        var name = currentClassFile.getFieldClassName(index);
+        var cls = classes.get(name);
+        return cls.getFieldIndex(fname, classes);
+    }
+
+    private void translatePutField(int index) throws ClassFileException {
+        var name = currentClassFile.getFieldName(index);
+        var isLong = currentClassFile.isLongField(index);
+        var findex = getFieldIndex(index, name);
+        instructionGenerator.addPush(findex, "push field index " + name);
+        if (isLong)
+            instructionGenerator.addSetLong();
+        else
+            instructionGenerator.addSet();
+    }
+
+    private void translateGetField(int index) throws ClassFileException {
+        var name = currentClassFile.getFieldName(index);
+        var isLong = currentClassFile.isLongField(index);
+        var findex = getFieldIndex(index, name);
+        instructionGenerator.addPush(findex, "push field index " + name);
         if (isLong)
             instructionGenerator.addGetLong();
         else
@@ -688,7 +770,6 @@ public final class ForthTranslator {
         var cls = classes.get(name);
         var idx = cls.getMethodIndex(mname, classes);
         var nparameters = cls.getNumberOfParameters(fname);
-        instructionGenerator.addDup();
         instructionGenerator.addGetn(nparameters, "get class info for " + fname);
         instructionGenerator.addIndirectCall(idx+1, fname);
     }
@@ -825,7 +906,11 @@ public final class ForthTranslator {
     private int addClassInitCalls(ArrayList<Instruction> instructions) {
         var generator = new InstructionGenerator(null);
         for (var entry : classes.entrySet()) {
-            if (entry.getValue().hasMethod(staticConstructor))
+            if (entry.getKey().equals("JavaCPU/System") && entry.getValue().hasMethod(staticConstructor))
+                generator.addCall(entry.getKey() + "." + staticConstructor);
+        }
+        for (var entry : classes.entrySet()) {
+            if (!entry.getKey().equals("JavaCPU/System") && entry.getValue().hasMethod(staticConstructor))
                 generator.addCall(entry.getKey() + "." + staticConstructor);
         }
         var ins = generator.getInstructions();

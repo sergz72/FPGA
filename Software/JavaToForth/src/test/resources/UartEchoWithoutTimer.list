@@ -1,6 +1,8 @@
 UartEchoWithoutTimer.class
-CommandInterpreter.class
-Command.class
+command_interpreter/CommandInterpreter.class
+command_interpreter/ICommand.class
+commands/I2CTest.class
+i2c/I2CMaster.class
 JavaCPU/Hal.class
 JavaCPU/System.class
 JavaCPU/Console.class

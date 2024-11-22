@@ -9,7 +9,10 @@
     "JavaCPU/Hal.timerStart(I)V": {"code": ["20FE","0300"], "comment": "bpush -2; set"},
     "JavaCPU/System.hlt()V": {"code": ["0C00"], "comment": "hlt"},
     "JavaCPU/System.set(II)V": {"code": ["0300"], "comment": "set"},
+    "JavaCPU/System.get(I)I": {"code": ["0600"], "comment": "get"},
     "JavaCPU/System.wfi()V": {"code": ["0D00"], "comment": "wfi"},
+    "JavaCPU/System.getStackPointer()I": {"code": ["1A00"], "comment": "get_stack_pointer"},
+    "JavaCPU/System.bitTest(II)I": {"code": ["1d09"], "comment": "bit?"},
     "java/lang/Object.<init>()V": {"code": ["1100"], "comment": "drop"}
   }
 }

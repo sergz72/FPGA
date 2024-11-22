@@ -9,10 +9,17 @@ public class FieldReferenceConstantPoolItem extends BaseReferenceConstantPoolIte
         super(bb);
     }
 
-    public String getName(ConstantPool cp) throws ClassFileException {
+    public String getFullName(ConstantPool cp) throws ClassFileException {
         var nameAndType = cp.get(nameAndTypeIndex);
         if (nameAndType instanceof NameAndTypeConstantPoolItem nt)
             return cp.buildFieldName(classIndex, nt.nameIndex);
+        throw new ClassFileException("wrong nameAndType index for field reference");
+    }
+
+    public String getName(ConstantPool cp) throws ClassFileException {
+        var nameAndType = cp.get(nameAndTypeIndex);
+        if (nameAndType instanceof NameAndTypeConstantPoolItem nt)
+            return cp.getUtf8Constant(nt.nameIndex);
         throw new ClassFileException("wrong nameAndType index for field reference");
     }
 

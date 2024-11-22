@@ -169,13 +169,17 @@ public class InstructionGenerator {
         addInstruction(new JmpInstruction(bytecodePc, IFCMP, code, pc + index, comment + " " + to));
     }
 
+    public void addIfcmp(int code, String comment, int offset) {
+        addInstruction(new JmpOffsetInstruction(bytecodePc, IFCMP, code, offset, comment + " " + offset));
+    }
+
     public void addIf(int code, String comment, int index, int pc) {
         var to = pc + index;
         addInstruction(new JmpInstruction(bytecodePc, IF, code, to, comment + " " + to));
     }
 
     public void addInc(int index, int value) {
-        addInstruction(new OpCodeInstruction(bytecodePc, INC, index, new int[]{value}, String.format("inc %d %d", index, value)));
+        addInstruction(new OpCodeInstruction(bytecodePc, INC, index, new int[]{value&0xFFFF}, String.format("inc %d %d", index, value)));
     }
 
     public void addNeg() {

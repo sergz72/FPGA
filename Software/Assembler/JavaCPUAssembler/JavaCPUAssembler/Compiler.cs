@@ -24,6 +24,8 @@ internal sealed class JavaCPUCompiler : GenericCompiler
         {"bittest", new OpCodeInstructionCreator(InstructionCodes.AluOp, AluOperations.BitTest)},
         {"mul", new OpCodeInstructionCreator(InstructionCodes.AluOp, AluOperations.Mul)},
         {"cmp", new OpCodeInstructionCreator(InstructionCodes.AluOp, AluOperations.Cmp)},
+        {"div", new OpCodeInstructionCreator(InstructionCodes.Div)},
+        {"rem", new OpCodeInstructionCreator(InstructionCodes.Rem)},
 
         {"arrayp", new OpCodeInstructionCreator(InstructionCodes.Arrayp)},
         {"arrayp2", new OpCodeInstructionCreator(InstructionCodes.Arrayp2)},

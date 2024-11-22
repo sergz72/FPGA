@@ -9,6 +9,7 @@ public sealed class IODeviceBaseMemory32: IIODevice
     private uint[] _memory = [];
     private bool _readOnly;
     private ILogger? _logger;
+    private uint _maxAddress;
     
     public object? Init(string parameters, ILogger logger)
     {
@@ -23,6 +24,7 @@ public sealed class IODeviceBaseMemory32: IIODevice
         _readOnly = kv.TryGetValue("readonly", out var readOnly) && readOnly == "true";
 
         _endAddress = _startAddress + size - 1;
+        _maxAddress = _startAddress;
         _memory = new uint[size];
 
         var r = new Random();
@@ -45,7 +47,11 @@ public sealed class IODeviceBaseMemory32: IIODevice
     public void IoRead(IoEvent ev)
     {
         if (ev.Address >= _startAddress && ev.Address <= _endAddress)
+        {
+            if (ev.Address > _maxAddress)
+                _maxAddress = ev.Address;
             ev.Data = _memory[ev.Address - _startAddress];
+        }
     }
 
     public void IoWrite(IoEvent ev)
@@ -55,7 +61,11 @@ public sealed class IODeviceBaseMemory32: IIODevice
             if (_readOnly)
                 _logger?.Error($"Readonly memory write {ev.Address}");
             else
+            {
+                if (ev.Address > _maxAddress)
+                    _maxAddress = ev.Address;
                 _memory[ev.Address - _startAddress] = ev.Data;
+            }
         }
     }
 
@@ -63,5 +73,10 @@ public sealed class IODeviceBaseMemory32: IIODevice
     {
         clearMask = 0;
         return 0;
+    }
+
+    public void PrintStats()
+    {
+        Console.WriteLine($"MaxAddress = {_maxAddress:X8}");
     }
 }

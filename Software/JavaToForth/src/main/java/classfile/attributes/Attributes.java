@@ -22,8 +22,6 @@ public class Attributes extends ClassFileInfo<AttributesItem> {
                 .filter(i -> i instanceof CodeAttribute)
                 .map(i -> (CodeAttribute) i)
                 .findFirst();
-        if (ca.isEmpty())
-            throw new ClassFileException("code attribute not found");
-        return ca.get();
+        return ca.orElse(null);
     }
 }

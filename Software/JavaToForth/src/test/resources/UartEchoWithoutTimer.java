@@ -1,9 +1,15 @@
 import JavaCPU.Hal;
 import JavaCPU.System;
+import command_interpreter.CommandInterpreter;
+import command_interpreter.ICommand;
+import commands.I2CTest;
+import i2c.I2CMaster;
 
 class UartEchoWithoutTimer {
     private static final int DELAY = 500 * Hal.MS;
     private static final int UART_BUFFER_SIZE = 128;
+    private static final I2CMaster i2c = new I2CMaster(Hal.I2C_ADDRESS);
+    private static final ICommand[] commands = new ICommand[] {new I2CTest(i2c, new int[]{1,2}, 2)};
 
     private static volatile boolean commandReady;
     private static char[] command;
@@ -35,7 +41,7 @@ class UartEchoWithoutTimer {
         commandReady = false;
         commandPointer = commandReadPointer = 0;
         boolean ledState = false;
-        CommandInterpreter.setCommands(new Command[0]);
+        CommandInterpreter.setCommands(commands);
         Hal.timerStart(DELAY);
         while (true) {
             System.wfi();

@@ -33,6 +33,7 @@ module java_cpu
     localparam STATE_RET             = 14;
     localparam STATE_INC_LOCAL       = 15;
     localparam STATE_WAITNOTREADY    = 16;
+    localparam STATE_DIV_WAIT        = 17;
 
     reg [63:0] data_stack[0:(1<<DATA_STACK_BITS)-1];
     reg [63:0] data_stack_wr_data, data_stack_value1, data_stack_value2;
@@ -61,9 +62,16 @@ module java_cpu
 
     wire push, push_long, dup, set, set_long, alu_op, get, get_long, call, call_indirect, jmp, ret, retn, reti, fetch;
     wire neg, inc, nop, ifcmp, if_, drop, drop2, swap, rot, over, local_get, local_set, locals, get_data_stack_pointer;
-    wire arrayp, arrayp2, bipush, sipush, getn;
+    wire arrayp, arrayp2, bipush, sipush, getn, div, rem;
     wire eq, gt, lt, n, z, z2, condition_neg, condition_cmp_pass, condition_pass;
     wire [1:0] condition_flags, condition_cmp_temp, condition_temp;
+
+    reg div_start = 0;
+    wire div_ready;
+    wire [63:0] quotient, remainder;
+
+    div #(.DATA_WIDTH(64)) d(.clk(!clk), .nrst(nreset), .dividend(data_stack_value2), .divisor(data_stack_value1), .start(div_start), .signed_ope(1'b1),
+                             .quotient(quotient), .remainder(remainder), .ready(div_ready));
     
     initial begin
         $readmemh("asm/code.hex", rom);
@@ -106,6 +114,8 @@ module java_cpu
     assign bipush = opcode == 32;
     assign sipush = opcode == 33;
     assign getn = opcode == 34;
+    assign div = opcode == 35;
+    assign rem = opcode == 36;
 
     assign jmp_address = {pc_data, immediate};
     assign interrupt_no = interrupt[1] ? 2'b10 : {1'b0, interrupt[0]};
@@ -353,8 +363,21 @@ module java_cpu
                             pc <= pc + 1;
                             state <= STATE_FETCH;
                         end
+                        div | rem: begin
+                            div_start <= 1;
+                            state <= STATE_DIV_WAIT;
+                        end
                         default: error <= 1;
                     endcase
+                end
+                STATE_DIV_WAIT: begin
+                    if (div_ready) begin
+                        div_start <= 0;
+                        data_stack_nwr <= 0;
+                        data_stack_wr_data <= div ? quotient : remainder;
+                        data_stack_pointer <= data_stack_pointer + 1;
+                        state <= STATE_FETCH;
+                    end
                 end
                 STATE_RET: begin
                     pc <= call_stack_value[31:0];

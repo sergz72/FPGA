@@ -3,6 +3,7 @@ package JavaCPU;
 public final class Hal {
     static final int HEAP_START = 0x60000000;
     public static final int MS = 1000;
+    public static final int I2C_ADDRESS = 0xFFFFFF80;
     public static native void ledSet(boolean state);
     public static native void timerStart(int us);
 

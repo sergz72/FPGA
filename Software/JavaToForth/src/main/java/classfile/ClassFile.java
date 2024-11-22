@@ -20,6 +20,7 @@ public final class ClassFile {
     MethodsOrFields methodsInfo;
     Attributes attributesInfo;
     List<MethodName> methods;
+    List<String> fields;
 
     public ClassFile(byte[] data, String fileName) throws ClassFileException {
         this.fileName = fileName;
@@ -96,6 +97,13 @@ public final class ClassFile {
         throw new ClassFileException("wrong pool index for getMethodName");
     }
 
+    public String getFieldFullName(int index) throws ClassFileException {
+        var item = constantPoolInfo.get(index);
+        if (item instanceof FieldReferenceConstantPoolItem fr)
+            return fr.getFullName(constantPoolInfo);
+        throw new ClassFileException("wrong pool index for getFieldName");
+    }
+
     public String getFieldName(int index) throws ClassFileException {
         var item = constantPoolInfo.get(index);
         if (item instanceof FieldReferenceConstantPoolItem fr)
@@ -108,6 +116,13 @@ public final class ClassFile {
         if (item instanceof MethodReferenceConstantPoolItem mr)
             return mr.getClassName(constantPoolInfo);
         throw new ClassFileException("wrong pool index for getMethodClassName");
+    }
+
+    public String getFieldClassName(int index) throws ClassFileException {
+        var item = constantPoolInfo.get(index);
+        if (item instanceof FieldReferenceConstantPoolItem mr)
+            return mr.getClassName(constantPoolInfo);
+        throw new ClassFileException("wrong pool index for getFieldClassName");
     }
 
     public int getNumberOfParameters(String name) throws ClassFileException {
@@ -123,6 +138,16 @@ public final class ClassFile {
                 return i;
         }
         throw new ClassFileException("method " + name + " not found");
+    }
+
+    public int getFieldIndex(String name, Map<String, ClassFile> classes) throws ClassFileException {
+        buildFieldList(classes);
+        for (var i = 0; i < fields.size(); i++) {
+            var f = fields.get(i);
+            if (f.equals(name))
+                return i;
+        }
+        throw new ClassFileException("field " + name + " not found");
     }
 
     public int calculateFieldsSize(Map<String, ClassFile> classes) throws ClassFileException {
@@ -177,6 +202,29 @@ public final class ClassFile {
                     this.methods.add(m);
             }
         }
+    }
+
+    public void buildFieldList(Map<String, ClassFile> classes) throws ClassFileException {
+        if (fields != null)
+            return;
+        Stack<List<String>> fields = new Stack<>();
+        fields.push(buildFieldsList());
+        var classId = superClass;
+        while (classId != 0) {
+            var className = getName(classId);
+            var classFile = classes.get(className);
+            fields.push(classFile.buildFieldsList());
+            classId = classFile.superClass;
+        }
+        this.fields = new ArrayList<String>();
+        while (!fields.isEmpty()) {
+            var l = fields.pop();
+            this.fields.addAll(l);
+        }
+    }
+
+    private List<String> buildFieldsList() {
+        return fieldsInfo.getList();
     }
 
     private List<MethodName> buildMethodsList() throws ClassFileException {

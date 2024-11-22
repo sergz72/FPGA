@@ -36,4 +36,10 @@ public class IODevices(Cpu cpu, IODevice[] devices, ILogger logger)
             cpu.Interrupt &= ~clearMask;
         }
     }
+
+    public void PrintStats()
+    {
+        foreach (var d in devices)
+            d.Device.PrintStats();
+    }
 }

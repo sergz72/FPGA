@@ -32,6 +32,8 @@ public class MethodOrField {
 
     public int getNumberOfLocals() throws ClassFileException {
         var codeAttribute = attributes.getCodeAttribute();
+        if (codeAttribute == null)
+            return -1;
         return codeAttribute.getNumberOfLocals();
     }
 
