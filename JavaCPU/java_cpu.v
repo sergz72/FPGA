@@ -1,5 +1,5 @@
 module java_cpu
-#(parameter DATA_STACK_BITS = 6, CALL_STACK_BITS = 9, ROM_BITS = 10)
+#(parameter DATA_STACK_BITS = 5, CALL_STACK_BITS = 9, ROM_BITS = 10)
 (
     input wire clk,
     input wire nreset,
@@ -62,7 +62,7 @@ module java_cpu
 
     wire push, push_long, dup, set, set_long, alu_op, get, get_long, call, call_indirect, jmp, ret, retn, reti, fetch;
     wire neg, inc, nop, ifcmp, if_, drop, drop2, swap, rot, over, local_get, local_set, locals, get_data_stack_pointer;
-    wire arrayp, arrayp2, bipush, sipush, getn, div, rem;
+    wire arrayp, arrayp2, bipush, sipush, getn, div, rem, ijmp;
     wire eq, gt, lt, n, z, z2, condition_neg, condition_cmp_pass, condition_pass;
     wire [1:0] condition_flags, condition_cmp_temp, condition_temp;
 
@@ -114,8 +114,9 @@ module java_cpu
     assign bipush = opcode == 32;
     assign sipush = opcode == 33;
     assign getn = opcode == 34;
-    assign div = opcode == 35;
-    assign rem = opcode == 36;
+    assign ijmp = opcode == 35;
+    assign div = opcode == 36;
+    assign rem = opcode == 37;
 
     assign jmp_address = {pc_data, immediate};
     assign interrupt_no = interrupt[1] ? 2'b10 : {1'b0, interrupt[0]};
@@ -366,6 +367,11 @@ module java_cpu
                         div | rem: begin
                             div_start <= 1;
                             state <= STATE_DIV_WAIT;
+                        end
+                        ijmp: begin
+                            pc <= pc + (data_stack_value1[30:0] << 1);
+                            data_stack_pointer <= data_stack_pointer + 1;
+                            state <= STATE_FETCH;
                         end
                         default: error <= 1;
                     endcase

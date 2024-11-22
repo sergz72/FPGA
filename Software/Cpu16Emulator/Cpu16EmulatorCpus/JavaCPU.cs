@@ -58,8 +58,9 @@ public class JavaCPU(string[] code, int speed, int dataStackSize, int callStackS
     private const byte BIPUSH = 32;
     private const byte SIPUSH = 33;
     private const byte GETN = 34;
-    private const byte DIV = 35;
-    private const byte REM = 36;
+    private const byte JMP_INDIRECT = 35;
+    private const byte DIV = 36;
+    private const byte REM = 37;
 
     private const byte ALU_OP_ADD  = 0;
     private const byte ALU_OP_SUB  = 1;
@@ -432,6 +433,10 @@ public class JavaCPU(string[] code, int speed, int dataStackSize, int callStackS
                 data2 = DataStack.Pop(Pc);
                 data = DataStack.Pop(Pc);
                 DataStack.Push(data % data2, Pc);
+                break;
+            case JMP_INDIRECT:
+                var offset = (uint)DataStack.Pop(Pc);
+                Pc += offset << 1;
                 break;
             case ALU_OP:
                 data2 = DataStack.Pop(Pc);

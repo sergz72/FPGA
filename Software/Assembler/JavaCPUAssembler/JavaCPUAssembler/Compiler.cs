@@ -53,6 +53,7 @@ internal sealed class JavaCPUCompiler : GenericCompiler
         {"ifle", new Label16InstructionCreator(InstructionCodes.If,Conditions.LE)},
         {"iflt", new Label16InstructionCreator(InstructionCodes.If,Conditions.LT)},
         {"iget", new OpCodeInstructionCreator(InstructionCodes.Get)},
+        {"ijmp", new OpCodeInstructionCreator(InstructionCodes.JmpIndirect)},
         {"inc", new TwoParametersInstructionCreator(InstructionCodes.Inc)},
         {"ipush", new PushInstructionCreator()},
         {"iset", new OpCodeInstructionCreator(InstructionCodes.Set)},
