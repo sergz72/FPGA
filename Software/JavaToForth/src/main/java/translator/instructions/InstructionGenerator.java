@@ -4,7 +4,7 @@ import java.util.*;
 
 public class InstructionGenerator {
     static final int PUSH = 0;
-    private static final int PUSH_LONG = 1;
+    static final int PUSH_LONG = 1;
     private static final int DUP = 2;
     private static final int SET = 3;
     private static final int SET_LONG = 4;
@@ -25,7 +25,7 @@ public class InstructionGenerator {
     private static final int SWAP = 19;
     private static final int ROT = 20;
     private static final int OVER = 21;
-    private static final int LOCAL_GET = 22;
+    static final int LOCAL_GET = 22;
     private static final int LOCAL_SET = 23;
     private static final int LOCALS = 24;
     private static final int NOP = 25;
@@ -35,8 +35,8 @@ public class InstructionGenerator {
     private static final int ALU_OP = 29;
     private static final int ARRAYP = 30;
     private static final int ARRAYP2 = 31;
-    private static final int BPUSH = 32;
-    private static final int SPUSH = 33;
+    static final int BPUSH = 32;
+    static final int SPUSH = 33;
     private static final int GETN = 34;
     private static final int JMP_INDIRECT = 35;
     private static final int DIV = 36;
@@ -148,8 +148,9 @@ public class InstructionGenerator {
         addInstruction(new OpCodeInstruction(bytecodePc, OVER, 0, new int[]{OVER}, "dup2(over over)"));
     }
 
-    public void addRot()
+    public void add2Rot()
     {
+        addInstruction(new OpCodeInstruction(bytecodePc, ROT, 0, new int[0], "rot"));
         addInstruction(new OpCodeInstruction(bytecodePc, ROT, 0, new int[0], "rot"));
     }
 
@@ -192,7 +193,13 @@ public class InstructionGenerator {
     }
 
     public void addDrop() {
-        addInstruction(new OpCodeInstruction(bytecodePc, DROP, 0, new int[0], "drop"));
+        var i1 = instructions.getLast();
+        if (i1.isPush()) {
+            instructions.removeLast();
+            System.out.println("    Optimizing push drop at " + bytecodePc);
+        }
+        else
+            addInstruction(new OpCodeInstruction(bytecodePc, DROP, 0, new int[0], "drop"));
     }
 
     public void addDrop2() {
@@ -200,7 +207,20 @@ public class InstructionGenerator {
     }
 
     public void addSwap() {
-        addInstruction(new OpCodeInstruction(bytecodePc, SWAP, 0, new int[0], "swap"));
+        if (!canReorderToAvoidSwap())
+            addInstruction(new OpCodeInstruction(bytecodePc, SWAP, 0, new int[0], "swap"));
+    }
+
+    private boolean canReorderToAvoidSwap() {
+        var i1 = instructions.getLast();
+        var i2 = instructions.get(instructions.size() - 2);
+        var canReorder = i1.isPush() && i2.isPush();
+        if (canReorder) {
+            instructions.set(instructions.size() - 2, i1);
+            instructions.set(instructions.size() - 1, i2);
+            System.out.println("    Reordering swap at " + bytecodePc);
+        }
+        return canReorder;
     }
 
     public void addCall(String name) {
@@ -263,7 +283,10 @@ public class InstructionGenerator {
     }
 
     public void addOpcodes(int[] code, String comment) {
-        addInstruction(new InlineInstruction(bytecodePc, code, comment));
+        if (code.length == 1 && code[0] == InstructionGenerator.DROP << 8)
+            addDrop();
+        else
+            addInstruction(new InlineInstruction(bytecodePc, code, comment));
     }
 
     public void addHlt() {

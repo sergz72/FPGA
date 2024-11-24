@@ -34,4 +34,11 @@ public abstract class Instruction {
     private static String buildComment(String comment, String label) {
         return comment + (label.isEmpty() ? "" : " ; " + label);
     }
+
+    public boolean isPush() {
+        var opCode = code[0] >> 8;
+        return opCode == InstructionGenerator.PUSH || opCode == InstructionGenerator.PUSH_LONG ||
+                opCode == InstructionGenerator.LOCAL_GET || opCode == InstructionGenerator.BPUSH ||
+                opCode == InstructionGenerator.SPUSH;
+    }
 }

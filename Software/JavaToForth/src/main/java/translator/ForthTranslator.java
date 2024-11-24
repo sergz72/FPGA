@@ -737,17 +737,14 @@ public final class ForthTranslator {
 
     private void translateAStore() {
         //arrayref, index, value
-        instructionGenerator.addRot();
-        //index, value, arrayref
-        instructionGenerator.addRot();
+        instructionGenerator.add2Rot();
         //value, arrayref, index
         instructionGenerator.addArrayp();
         instructionGenerator.addSet();
     }
 
     private void translateLAStore() {
-        instructionGenerator.addRot();
-        instructionGenerator.addRot();
+        instructionGenerator.add2Rot();
         instructionGenerator.addArrayp2();
         instructionGenerator.addSetLong();
     }
