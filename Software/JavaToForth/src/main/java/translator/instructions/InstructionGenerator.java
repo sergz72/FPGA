@@ -38,8 +38,9 @@ public class InstructionGenerator {
     private static final int BPUSH = 32;
     private static final int SPUSH = 33;
     private static final int GETN = 34;
-    private static final int DIV = 35;
-    private static final int REM = 36;
+    private static final int JMP_INDIRECT = 35;
+    private static final int DIV = 36;
+    private static final int REM = 37;
 
     public static final int ALU_OP_ADD      = 0;
     public static final int ALU_OP_SUB      = 1;
@@ -149,7 +150,7 @@ public class InstructionGenerator {
 
     public void addRot()
     {
-        addInstruction(new OpCodeInstruction(bytecodePc, ROT, 0, new int[0], "dup"));
+        addInstruction(new OpCodeInstruction(bytecodePc, ROT, 0, new int[0], "rot"));
     }
 
     public void addGetLocal(int i) {

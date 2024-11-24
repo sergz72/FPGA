@@ -643,6 +643,9 @@ public final class ForthTranslator {
         var name = currentClassFile.getFieldName(index);
         var isLong = currentClassFile.isLongField(index);
         var findex = getFieldIndex(index, name);
+        //objectref, value
+        instructionGenerator.addSwap();
+        //value, objectref
         generatePush(findex, "push field index " + name);
         instructionGenerator.addArrayp();
         if (isLong)
@@ -660,7 +663,7 @@ public final class ForthTranslator {
         if (isLong)
             instructionGenerator.addGetLong();
         else
-            instructionGenerator.addGet("getstatic");
+            instructionGenerator.addGet("get field");
     }
 
     private void translateNew(int index) throws ClassFileException {
@@ -733,8 +736,11 @@ public final class ForthTranslator {
     }
 
     private void translateAStore() {
+        //arrayref, index, value
         instructionGenerator.addRot();
+        //index, value, arrayref
         instructionGenerator.addRot();
+        //value, arrayref, index
         instructionGenerator.addArrayp();
         instructionGenerator.addSet();
     }
