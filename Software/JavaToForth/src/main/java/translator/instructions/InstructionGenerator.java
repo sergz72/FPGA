@@ -279,35 +279,45 @@ public class InstructionGenerator {
     }
 
     private void optimizeLocalSetLocalGet() {
-        for (int i = 1; i < instructions.size(); i++) {
+        if (instructions.size() < 2)
+            return;
+        var pc = instructions.getFirst().getSize();
+        for (int i = 1; i < instructions.size();) {
             var i1 = instructions.get(i-1);
             var i2 = instructions.get(i);
             if (i2.isGetLocal() && i1.isSetLocal(i2.getParameter())) {
-                if (remove(i)) {
-                    System.out.println("    local_set local_get -> local_npset at " + i);
-                    i1.modifyOpCode(LOCAL_NPSET, String.format("local_npset %d", i));
-                } else
-                    System.out.println("    local_set local_get -> not optimizing due to existing references at " + i);
+                if (remove(i, pc)) {
+                    System.out.println("    local_set local_get -> local_npset at " + pc);
+                    i1.modifyOpCode(LOCAL_NPSET, String.format("local_npset %d", i2.getParameter()));
+                } else {
+                    System.out.println("    local_set local_get -> not optimizing due to existing references at " + pc);
+                    pc += i2.getSize();
+                    i++;
+                }
+            }
+            else {
+                pc += i2.getSize();
+                i++;
             }
         }
     }
 
-    private boolean remove(int index) {
-        var bytecodePcOpt = pcMapping.entrySet().stream().filter(e -> e.getValue() == index).findFirst();
+    private boolean remove(int index, int pc) {
+        var bytecodePcOpt = pcMapping.entrySet().stream().filter(e -> e.getValue() == pc).findFirst();
         var result = bytecodePcOpt
-                .map(integerIntegerEntry -> !referencesExists(integerIntegerEntry.getKey()))
+                .map(mapping -> !referencesExists(mapping.getKey()))
                 .orElse(true);
         if (result) {
             instructions.remove(index);
-            updatePcMapping(index);
+            updatePcMapping(pc);
         }
         return result;
     }
 
-    private void updatePcMapping(int index) {
+    private void updatePcMapping(int pc) {
         for (var m: pcMapping.entrySet()) {
             var v = m.getValue();
-            if (v >= index)
+            if (v >= pc)
                 pcMapping.put(m.getKey(), v - 1);
         }
     }
