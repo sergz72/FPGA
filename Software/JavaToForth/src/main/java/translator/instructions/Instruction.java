@@ -2,7 +2,7 @@ package translator.instructions;
 
 public abstract class Instruction {
     protected final String requiredLabel;
-    protected final String comment;
+    protected String comment;
     protected int[] code;
     private final Integer bytecodePc;
     protected Instruction(String requiredLabel, int size, Integer bytecodePc, String comment) {
@@ -40,5 +40,26 @@ public abstract class Instruction {
         return opCode == InstructionGenerator.PUSH || opCode == InstructionGenerator.PUSH_LONG ||
                 opCode == InstructionGenerator.LOCAL_GET || opCode == InstructionGenerator.BPUSH ||
                 opCode == InstructionGenerator.SPUSH;
+    }
+
+    public boolean isSetLocal(int i) {
+        var opCode = code[0] >> 8;
+        int n = getParameter();
+        return opCode == InstructionGenerator.LOCAL_SET && n == i;
+    }
+
+    public void modifyOpCode(int opCode, String comment) {
+        int parameter = getParameter();
+        code[0] = (opCode << 8) | parameter;
+        this.comment = comment;
+    }
+
+    public boolean isGetLocal() {
+        var opCode = code[0] >> 8;
+        return opCode == InstructionGenerator.LOCAL_GET;
+    }
+
+    public int getParameter() {
+        return code[0] & 0xFF;
     }
 }

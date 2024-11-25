@@ -26,7 +26,7 @@ public class InstructionGenerator {
     private static final int ROT = 20;
     private static final int OVER = 21;
     static final int LOCAL_GET = 22;
-    private static final int LOCAL_SET = 23;
+    static final int LOCAL_SET = 23;
     private static final int LOCALS = 24;
     private static final int NOP = 25;
     private static final int GET_DATA_STACK_POINTER = 26;
@@ -41,6 +41,7 @@ public class InstructionGenerator {
     private static final int JMP_INDIRECT = 35;
     private static final int DIV = 36;
     private static final int REM = 37;
+    private static final int LOCAL_NPSET = 38;
 
     public static final int ALU_OP_ADD      = 0;
     public static final int ALU_OP_SUB      = 1;
@@ -69,16 +70,29 @@ public class InstructionGenerator {
     public static final int IFCMP_LT = 1 + 2 + 4; // not GT & not EQ
     public static final int IFCMP_GE = 1 + 2; // GT | EQ
 
-    List<Instruction> instructions;
-    Map<Integer, Integer> pcMapping;
+    final List<Instruction> instructions;
+    // mapping bytecodePc > instruction pc
+    final Map<Integer, Integer> pcMapping;
+    final boolean dropOptimnization;
+    final boolean swapOptimnization;
+    final boolean localsOptimnization;
+
     Integer bytecodePc;
     int ipc;
 
-    public InstructionGenerator(Integer bytecodePc) {
+    public InstructionGenerator(Integer bytecodePc, boolean dropOptimization, boolean swapOptimization,
+                                boolean localsOptimization) {
         instructions = new ArrayList<>();
         pcMapping = new HashMap<>();
         this.bytecodePc = bytecodePc;
         ipc = 0;
+        this.dropOptimnization = dropOptimization;
+        this.swapOptimnization = swapOptimization;
+        this.localsOptimnization = localsOptimization;
+    }
+
+    public InstructionGenerator(Integer bytecodePc) {
+        this(bytecodePc, false, false, false);
     }
 
     private void addInstruction(Instruction i) {
@@ -194,7 +208,7 @@ public class InstructionGenerator {
 
     public void addDrop() {
         var i1 = instructions.getLast();
-        if (i1.isPush()) {
+        if (dropOptimnization && i1.isPush()) {
             instructions.removeLast();
             System.out.println("    Optimizing push drop at " + bytecodePc);
         }
@@ -207,7 +221,7 @@ public class InstructionGenerator {
     }
 
     public void addSwap() {
-        if (!canReorderToAvoidSwap())
+        if (!swapOptimnization || !canReorderToAvoidSwap())
             addInstruction(new OpCodeInstruction(bytecodePc, SWAP, 0, new int[0], "swap"));
     }
 
@@ -218,7 +232,7 @@ public class InstructionGenerator {
         if (canReorder) {
             instructions.set(instructions.size() - 2, i1);
             instructions.set(instructions.size() - 1, i2);
-            System.out.println("    Reordering swap at " + bytecodePc);
+            System.out.println("    Reordering to avoid swap at " + bytecodePc);
         }
         return canReorder;
     }
@@ -253,6 +267,8 @@ public class InstructionGenerator {
     }
 
     public void finish() {
+        if (localsOptimnization)
+            optimizeLocalSetLocalGet();
         int pc = 0;
         for (var instruction: instructions) {
             if (instruction instanceof JmpInstruction j) {
@@ -260,6 +276,48 @@ public class InstructionGenerator {
             }
             pc += instruction.getSize();
         }
+    }
+
+    private void optimizeLocalSetLocalGet() {
+        for (int i = 1; i < instructions.size(); i++) {
+            var i1 = instructions.get(i-1);
+            var i2 = instructions.get(i);
+            if (i2.isGetLocal() && i1.isSetLocal(i2.getParameter())) {
+                if (remove(i)) {
+                    System.out.println("    local_set local_get -> local_npset at " + i);
+                    i1.modifyOpCode(LOCAL_NPSET, String.format("local_npset %d", i));
+                } else
+                    System.out.println("    local_set local_get -> not optimizing due to existing references at " + i);
+            }
+        }
+    }
+
+    private boolean remove(int index) {
+        var bytecodePcOpt = pcMapping.entrySet().stream().filter(e -> e.getValue() == index).findFirst();
+        var result = bytecodePcOpt
+                .map(integerIntegerEntry -> !referencesExists(integerIntegerEntry.getKey()))
+                .orElse(true);
+        if (result) {
+            instructions.remove(index);
+            updatePcMapping(index);
+        }
+        return result;
+    }
+
+    private void updatePcMapping(int index) {
+        for (var m: pcMapping.entrySet()) {
+            var v = m.getValue();
+            if (v >= index)
+                pcMapping.put(m.getKey(), v - 1);
+        }
+    }
+
+    private boolean referencesExists(int index) {
+        for (var i: instructions) {
+            if (i instanceof JmpInstruction j && j.getTo() == index)
+                return true;
+        }
+        return false;
     }
 
     public List<Instruction> getInstructions() {

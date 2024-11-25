@@ -61,6 +61,7 @@ public class JavaCPU(string[] code, int speed, int dataStackSize, int callStackS
     private const byte JMP_INDIRECT = 35;
     private const byte DIV = 36;
     private const byte REM = 37;
+    private const byte LOCAL_NPSET = 38;
 
     private const byte ALU_OP_ADD  = 0;
     private const byte ALU_OP_SUB  = 1;
@@ -309,6 +310,9 @@ public class JavaCPU(string[] code, int speed, int dataStackSize, int callStackS
                 break;
             case LOCAL_SET:
                 CallStack.SetN(instruction & 0xFF, DataStack.Pop(Pc), Pc);
+                break;
+            case LOCAL_NPSET:
+                CallStack.SetN(instruction & 0xFF, DataStack.Peek(Pc), Pc);
                 break;
             case LOCALS:
                 CallStack.IncrementPointer(instruction & 0xFF, Pc);

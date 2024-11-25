@@ -13,4 +13,8 @@ public class JmpInstruction extends Instruction {
         var jmpTo = pcMapping.get(code[1]);
         code[1] = (jmpTo - pc - 1) & 0xFFFF;
     }
+
+    public int getTo() {
+        return code[1];
+    }
 }

@@ -76,6 +76,7 @@ internal static class InstructionCodes
     internal const uint JmpIndirect = 35;
     internal const uint Div = 36;
     internal const uint Rem = 37;
+    internal const uint LocalNPSet = 38;
 }
 
 internal sealed class OpCodeInstruction(string line, string file, int lineNo, uint opCode, uint parameter = 0) :

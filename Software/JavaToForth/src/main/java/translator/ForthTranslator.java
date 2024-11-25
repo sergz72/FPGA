@@ -19,16 +19,21 @@ public final class ForthTranslator {
     );
     private static final Set<String> callAsSpecial = Set.of("java/lang/String", "java/lang/Object");
 
-    TranslatorConfiguration configuration;
-    Map<String, ClassFile> classes;
-    HashSet<String> toTranslate;
+    final TranslatorConfiguration configuration;
+    final Map<String, ClassFile> classes;
+    final HashSet<String> toTranslate;
+    final Segment data, roData;
+    final Map<String, Integer> dataSegmentMapping;
+    final Map<String, List<Instruction>> methodInstructions;
+    final boolean dropOptimnization;
+    final boolean swapOptimnization;
+    final boolean localsOptimnization;
+
     ClassFile currentClassFile;
     InstructionGenerator instructionGenerator;
-    Segment data, roData;
-    Map<String, Integer> dataSegmentMapping;
     MethodOrField currentMethod;
     String currentMethodName;
-    Map<String, List<Instruction>> methodInstructions;
+
 
     public ForthTranslator(List<ClassFile> classes, TranslatorConfiguration configuration) throws ClassFileException {
         this.configuration = configuration;
@@ -38,6 +43,9 @@ public final class ForthTranslator {
         this.roData = new Segment("rodata", configuration.roData.address);
         this.methodInstructions = new HashMap<>();
         this.dataSegmentMapping = new HashMap<>();
+        this.dropOptimnization = configuration.optimizations.contains("PUSH_DROP");
+        this.swapOptimnization = configuration.optimizations.contains("SWAP");
+        this.localsOptimnization = configuration.optimizations.contains("LOCAL_SET_GET");
     }
 
     public ForthTranslator(String mainClassName, List<ClassFile> classes, String configurationFileName)
@@ -114,7 +122,7 @@ public final class ForthTranslator {
     }
 
     private void translateCurrentMethod() throws ClassFileException, TranslatorException {
-        instructionGenerator = new InstructionGenerator(0);
+        instructionGenerator = new InstructionGenerator(0, dropOptimnization, swapOptimnization, localsOptimnization);
         if (!createProlog())
             return;
         int pc = 0;

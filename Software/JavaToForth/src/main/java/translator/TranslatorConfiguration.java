@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class TranslatorConfiguration {
@@ -26,6 +27,7 @@ public final class TranslatorConfiguration {
         SourceSection code, data, roData;
         String mapFileName;
         Map<String, SourceInlineDefinition> inlines;
+        Set<String> optimizations;
     }
 
     static class InlineDefinition {
@@ -84,6 +86,7 @@ public final class TranslatorConfiguration {
     Section code, data, roData;
     String mapFileName;
     Map<String, InlineDefinition> inlines;
+    Set<String> optimizations;
 
     private TranslatorConfiguration(String mainClassName, SourceConfiguration config) throws TranslatorException {
         this.code = new Section(mainClassName, config.code, "code", false);
@@ -95,6 +98,7 @@ public final class TranslatorConfiguration {
             throw new TranslatorException("invalid rodata segment configuration");
         this.mapFileName = config.mapFileName;
         this.inlines = InlineDefinition.build(config.inlines);
+        this.optimizations = config.optimizations;
     }
 
     public static TranslatorConfiguration load(String mainClassName, String configurationFileName)

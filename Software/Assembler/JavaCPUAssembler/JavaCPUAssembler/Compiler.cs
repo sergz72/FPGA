@@ -63,6 +63,7 @@ internal sealed class JavaCPUCompiler : GenericCompiler
         {"lset", new OpCodeInstructionCreator(InstructionCodes.SetLong)},
         {"neg", new OpCodeInstructionCreator(InstructionCodes.Neg)},
         {"nop", new OpCodeInstructionCreator(InstructionCodes.Nop)},
+        {"npsetlocal", new OneParameterInstructionCreator(InstructionCodes.LocalNPSet)},
         {"over", new OpCodeInstructionCreator(InstructionCodes.Over)},
         {"push", new Label32InstructionCreator(InstructionCodes.Push)},
         {"reti", new OneParameterInstructionCreator(InstructionCodes.Reti)},

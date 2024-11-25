@@ -2,6 +2,7 @@
   "code":   { "fileName": "asm/code.hex", "size": "1K", "entryPoint": "main", "isrHandlers": ["isr1","isr2"] },
   "data":   { "address": "20000000", "size": "1K" },
   "roData": { "fileName": "asm/rodata.hex", "address": "40000000", "size": "1K" },
+  "optimizations": [ "SWAP", "PUSH_DROP" ],
   "inlines": {
     "JavaCPU/Hal.uartOut(C)V": {"code": ["20FD", "0300"], "comment": "bpush -3; set"},
     "JavaCPU/Hal.uartGet()I": {"code": ["20FD", "0600"], "comment": "bpush -3; get"},

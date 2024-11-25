@@ -62,7 +62,7 @@ module java_cpu
 
     wire push, push_long, dup, set, set_long, alu_op, get, get_long, call, call_indirect, jmp, ret, retn, reti, fetch;
     wire neg, inc, nop, ifcmp, if_, drop, drop2, swap, rot, over, local_get, local_set, locals, get_data_stack_pointer;
-    wire arrayp, arrayp2, bipush, sipush, getn, div, rem, ijmp;
+    wire arrayp, arrayp2, bipush, sipush, getn, div, rem, ijmp, local_npset;
     wire eq, gt, lt, n, z, z2, condition_neg, condition_cmp_pass, condition_pass;
     wire [1:0] condition_flags, condition_cmp_temp, condition_temp;
 
@@ -117,6 +117,7 @@ module java_cpu
     assign ijmp = opcode == 35;
     assign div = opcode == 36;
     assign rem = opcode == 37;
+    assign local_npset = opcode == 38; // local set no pop
 
     assign jmp_address = {pc_data, immediate};
     assign interrupt_no = interrupt[1] ? 2'b10 : {1'b0, interrupt[0]};
@@ -315,11 +316,12 @@ module java_cpu
                             local_pointer <= call_stack_pointer + current_instruction[7:0];
                             state <= STATE_PUSH_LOCAL;
                         end
-                        local_set: begin
+                        local_set | local_npset: begin
                             call_stack_nwr <= 0;
                             call_stack_wr_data <= data_stack_value1;
                             call_stack_wr_address <= call_stack_pointer + current_instruction[7:0];
-                            data_stack_pointer <= data_stack_pointer + 1;
+                            if (local_set)
+                                data_stack_pointer <= data_stack_pointer + 1;
                             state <= STATE_FETCH;
                         end
                         locals: begin
