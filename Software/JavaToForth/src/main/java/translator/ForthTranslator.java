@@ -491,7 +491,8 @@ public final class ForthTranslator {
                 instructionGenerator.addRem("lrem");
                 break;
             case 0xaa: // tableswitch
-                throw new TranslatorException("tableswitch is not supported");
+                pc = translateTableSwitch(code, pc);
+                break;
             case 0xab: // lookupswitch
                 pc = translateLookupSwitch(code, pc);
                 break;
@@ -565,6 +566,42 @@ public final class ForthTranslator {
         return (code[pc] << 24) | (code[pc+1] << 16) | (code[pc+2] << 8) | code[pc+3];
     }
 
+    private int translateTableSwitch(byte[] code, int pc) {
+        var startPc = pc - 1;
+        if ((pc & 3) != 0) {
+            pc += 4;
+            pc &= ~3;
+        }
+        var defaultPc = readInt(code, pc);
+        pc += 4;
+        var low = readInt(code, pc);
+        pc += 4;
+        var high = readInt(code, pc);
+        pc += 4;
+
+        instructionGenerator.addDup();
+        generatePush(low, "check for >=" + low);
+        instructionGenerator.addIfcmp(InstructionGenerator.IFCMP_GE, "ifcmp_ge", 4);
+        instructionGenerator.addDrop();
+        instructionGenerator.addJmp(defaultPc, startPc);
+        instructionGenerator.addDup();
+        generatePush(high, "check for <=" + high);
+        instructionGenerator.addIfcmp(InstructionGenerator.IFCMP_LE, "ifcmp_le", 4);
+        instructionGenerator.addDrop();
+        instructionGenerator.addJmp(defaultPc, startPc);
+        generatePush(low, "push " + low);
+        instructionGenerator.addAluOp(InstructionGenerator.ALU_OP_SUB, "sub");
+        instructionGenerator.addIndirectJmp();
+
+        for (var i = low; i <= high; i++) {
+            var offset = readInt(code, pc);
+            instructionGenerator.addJmp(offset, startPc);
+            pc += 4;
+        }
+
+        return pc;
+    }
+
     private int translateLookupSwitch(byte[] code, int pc) {
         var startPc = pc - 1;
         if ((pc & 3) != 0) {
@@ -587,7 +624,7 @@ public final class ForthTranslator {
         for (var pcm : pcs.entrySet()) {
             instructionGenerator.addDup();
             generatePush(pcm.getKey(), "lookup for " + pcm.getKey());
-            instructionGenerator.addIfcmp(InstructionGenerator.IF_NE, "ifcmp_ne", 4);
+            instructionGenerator.addIfcmp(InstructionGenerator.IFCMP_NE, "ifcmp_ne", 4);
             instructionGenerator.addDrop();
             instructionGenerator.addJmp(pcm.getValue(), startPc);
         }
@@ -695,7 +732,6 @@ public final class ForthTranslator {
 
     private int buildClass(String key, String name, List<String> parents, List<String> methods) throws ClassFileException {
         for (var parent : parents) {
-            var pkey = "%" + parent;
             if (!dataSegmentMapping.containsKey(parent))
                 buildClass(parent, classes.get(parent));
         }
@@ -726,7 +762,7 @@ public final class ForthTranslator {
         throw new TranslatorException("multianewarray is not supported");
     }
 
-    private void translateNewArray(int type) throws TranslatorException {
+    private void translateNewArray(int type) {
         if (type == 7 || type == 11) // double or long
             instructionGenerator.addCall("JavaCPU/System.newLongArray(I)I");
         else
@@ -838,7 +874,7 @@ public final class ForthTranslator {
                 break;
             default:
                 throw new ClassFileException("unsupported constant pool item type for ldc/lcd_w");
-        };
+        }
     }
 
     private void translateLdc2(int index) throws ClassFileException {
@@ -849,7 +885,7 @@ public final class ForthTranslator {
                 break;
             default:
                 throw new ClassFileException("unsupported constant pool item type for ldc2_w");
-        };
+        }
     }
 
     private int buildStringConstant(int stringIndex) throws ClassFileException {

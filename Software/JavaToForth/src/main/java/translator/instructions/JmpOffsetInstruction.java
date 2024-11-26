@@ -1,7 +1,5 @@
 package translator.instructions;
 
-import java.util.Map;
-
 public class JmpOffsetInstruction extends Instruction {
     public JmpOffsetInstruction(int bytecodePc, int opCode, int opCodeParameter, int offset, String comment) {
         super(null, 2, bytecodePc, comment);

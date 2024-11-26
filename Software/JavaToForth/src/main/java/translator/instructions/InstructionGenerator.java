@@ -372,4 +372,8 @@ public class InstructionGenerator {
     public void addLocals(int localsCount) {
         addInstruction(new OpCodeInstruction(bytecodePc, LOCALS, localsCount, new int[0], "locals " + localsCount));
     }
+
+    public void addIndirectJmp() {
+        addInstruction(new OpCodeInstruction(bytecodePc, JMP_INDIRECT, 0, new int[0], "ijmp"));
+    }
 }
