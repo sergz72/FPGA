@@ -89,7 +89,7 @@ internal sealed class ForthCompiler
                 if (!CompileMode)
                 {
                     _currentWordInstructions[0].Labels.Add(_codeGenerator.CurrentWord);
-                    _words.Add(_codeGenerator.CurrentWord, _currentWordInstructions);
+                    _words[_codeGenerator.CurrentWord] = _currentWordInstructions;
                 }
             }
             else
@@ -369,16 +369,24 @@ internal sealed class ForthCompiler
         }
     }
 
-    internal void CheckName(Token t)
+    private void CheckName(Token t)
     {
         if (Constants.ContainsKey(t.Word) || _words.ContainsKey(t.Word) || Variables.ContainsKey(t.Word))
             throw new CompilerException($"constant/variable/array/word with name {t.Word} already exists", t);
+    }
+
+    private void CheckWordName(Token t)
+    {
+        if (Constants.ContainsKey(t.Word) || Variables.ContainsKey(t.Word))
+            throw new CompilerException($"constant/variable/array with name {t.Word} already exists", t);
+        if (_words.ContainsKey(t.Word))
+            Console.WriteLine($"Word redefinition: {t.Word}");
     }
     
     private void InterpretWordDefinition(ref int start)
     {
         var name = GetName(start);
-        CheckName(name);
+        CheckWordName(name);
         CompileMode = true;
         _currentWordInstructions = [];
         _codeGenerator.Init(name.Word);
