@@ -58,16 +58,20 @@ public class Main {
             System.hlt();
         }
 
+        if (testTableSwitch(0) != 22) {
+            Console.println("t0");
+            System.hlt();
+        }
         if (testTableSwitch(1) != 4) {
             Console.println("t1");
             System.hlt();
         }
         if (testTableSwitch(2) != 9) {
-            Console.println("t20");
+            Console.println("t2");
             System.hlt();
         }
         if (testTableSwitch(3) != 15) {
-            Console.println("t39");
+            Console.println("t3");
             System.hlt();
         }
         if (testTableSwitch(4) != 22) {
