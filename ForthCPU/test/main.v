@@ -27,7 +27,7 @@ module main
     reg [15:0] ram_rdata, rodata_rdata;
     wire cpu_clk;
     wire mem_valid, mem_nwr;
-    wire ram_selected, rodata_selected, port_selected, uart_selected, i2c_selected, mem_selected, timer_selected;
+    wire ram_selected, rodata_selected, port_selected, uart_selected, i2c_selected, timer_selected;
 
     reg mem_ready = 0;
     wire [RAM_BITS - 1:0] ram_address;
@@ -109,8 +109,6 @@ module main
     assign uart_send = nreset & mem_valid & mem_ready & uart_selected & !mem_nwr;
     assign timer_nwr = !(nreset & mem_valid & mem_ready & timer_selected & !mem_nwr);
 
-    assign mem_selected = mem_valid & !mem_ready;
-
     initial begin
         $readmemh("asm/data.hex", ram);
         $readmemh("asm/rodata.hex", rodata);
@@ -122,8 +120,8 @@ module main
         reset_timer <= reset_timer + 1;
     end
 
-    always @(posedge cpu_clk) begin
-        if (mem_selected & ram_selected) begin
+    always @(negedge cpu_clk) begin
+        if (mem_valid & ram_selected) begin
             if (!mem_nwr)
                 ram[ram_address] <= mem_data_in;
             ram_rdata <= ram[ram_address];
@@ -131,19 +129,19 @@ module main
         mem_ready <= nreset & mem_valid & (ram_selected | i2c_selected | port_selected | uart_selected | rodata_selected | timer_selected);
     end
 
-    always @(posedge cpu_clk) begin
-        if (mem_selected & rodata_selected) begin
+    always @(negedge cpu_clk) begin
+        if (mem_valid & rodata_selected) begin
             rodata_rdata <= rodata[rodata_address];
         end
     end
 
-    always @(posedge cpu_clk) begin
-        if (mem_selected & port_selected & !mem_nwr)
+    always @(negedge cpu_clk) begin
+        if (mem_valid & port_selected & !mem_nwr)
             led <= mem_data_in[0];
     end
 
-    always @(posedge cpu_clk) begin
-        if (mem_selected & i2c_selected & !mem_nwr) begin
+    always @(negedge cpu_clk) begin
+        if (mem_valid & i2c_selected & !mem_nwr) begin
             {scl[i2c_port], sda[i2c_port]} <= mem_data_in[1:0];
         end
     end

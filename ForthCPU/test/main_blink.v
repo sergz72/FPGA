@@ -56,8 +56,8 @@ module main
         cpu_timer <= cpu_timer + 1;
     end
 
-    always @(posedge cpu_clk) begin
-        if (mem_valid & !mem_ready) begin
+    always @(negedge cpu_clk) begin
+        if (mem_valid) begin
             case (1'b1)
                 ram_selected: begin
                     if (!mem_nwr)

@@ -16,7 +16,7 @@ module main
     reg [15:0] ram_rdata;
     wire cpu_clk;
     wire mem_valid, mem_nwr;
-    wire ram_selected, port_selected, timer_selected, mem_selected;
+    wire ram_selected, port_selected, timer_selected;
 
     reg mem_ready = 0;
     wire [RAM_BITS - 1:0] ram_address;
@@ -57,8 +57,6 @@ module main
 
     assign timer_nwr = !(nreset & mem_valid & mem_ready & timer_selected & !mem_nwr);
 
-    assign mem_selected = mem_valid & !mem_ready;
-
     initial begin
         $readmemh("asm/data.hex", ram);
     end
@@ -69,8 +67,8 @@ module main
         cpu_timer <= cpu_timer + 1;
     end
 
-    always @(posedge cpu_clk) begin
-        if (mem_selected & ram_selected) begin
+    always @(negedge cpu_clk) begin
+        if (mem_valid & ram_selected) begin
             if (!mem_nwr)
                 ram[ram_address] <= mem_data_in;
             ram_rdata <= ram[ram_address];
@@ -78,8 +76,8 @@ module main
         mem_ready <= nreset & mem_valid & (ram_selected | port_selected | timer_selected);
     end
 
-    always @(posedge cpu_clk) begin
-        if (mem_selected & port_selected & !mem_nwr)
+    always @(negedge cpu_clk) begin
+        if (mem_valid & port_selected & !mem_nwr)
             led <= mem_data_in[0];
     end
 endmodule

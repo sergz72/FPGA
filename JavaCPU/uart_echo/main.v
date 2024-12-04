@@ -22,7 +22,7 @@ module main
     wire [RODATA_BITS - 1:0] rodata_address;
     wire [HEAP_BITS - 1:0] heap_address;
     wire [31-MEMORY_SELECTOR_START_BIT:0] memory_selector;
-    wire ram_selected, rodata_selected, port_selected, mem_selected, timer_selected, uart_selected, heap_selected;
+    wire ram_selected, rodata_selected, port_selected, timer_selected, uart_selected, heap_selected;
 
     wire hlt, wfi, error;
 
@@ -80,8 +80,6 @@ module main
 
     assign timer_nwr = !(nreset & mem_valid & mem_ready & timer_selected & !mem_nwr);
 
-    assign mem_selected = mem_valid & !mem_ready;
-
     function [31:0] mem_rdata_f(input [31-MEMORY_SELECTOR_START_BIT:0] source);
         case (source)
             1: mem_rdata_f = ram_rdata;
@@ -101,8 +99,8 @@ module main
         reset_timer <= reset_timer + 1;
     end
 
-    always @(posedge cpu_clk) begin
-        if (mem_selected & ram_selected) begin
+    always @(negedge cpu_clk) begin
+        if (mem_valid & ram_selected) begin
             if (!mem_nwr)
                 ram[ram_address] <= mem_data_in;
             ram_rdata <= ram[ram_address];
@@ -110,22 +108,22 @@ module main
         mem_ready <= nreset & mem_valid & (ram_selected | rodata_selected | heap_selected | port_selected | timer_selected | uart_selected);
     end
 
-    always @(posedge cpu_clk) begin
-        if (mem_selected & heap_selected) begin
+    always @(negedge cpu_clk) begin
+        if (mem_valid & heap_selected) begin
             if (!mem_nwr)
                 heap[heap_address] <= mem_data_in;
             heap_rdata <= heap[heap_address];
         end
     end
 
-    always @(posedge cpu_clk) begin
-        if (mem_selected & rodata_selected) begin
+    always @(negedge cpu_clk) begin
+        if (mem_valid & rodata_selected) begin
             rodata_rdata <= rodata[rodata_address];
         end
     end
 
-    always @(posedge cpu_clk) begin
-        if (mem_selected & port_selected & !mem_nwr)
+    always @(negedge cpu_clk) begin
+        if (mem_valid & port_selected & !mem_nwr)
             led <= mem_data_in[0];
     end
 endmodule

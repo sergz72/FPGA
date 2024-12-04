@@ -33,8 +33,8 @@ module main
         $readmemh("asm/data.hex", ram);
     end
 
-    always @(posedge clk) begin
-        if (mem_valid & !mem_ready) begin
+    always @(negedge clk) begin
+        if (mem_valid) begin
             if (!mem_nwr)
                 ram[ram_address] <= mem_data_in;
             ram_rdata <= ram[ram_address];
