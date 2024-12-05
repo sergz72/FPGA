@@ -3,8 +3,10 @@ module fifo
 (
     input wire clk,
     input wire nrst,
-    input wire nwr,
-    input wire nrd,
+    input wire rreq,
+    input wire wreq,
+    output reg rack = 0,
+    output reg wack = 0,
     input [WIDTH-1:0] data_in,
     output reg [WIDTH-1:0] data_out,
     output wire full,
@@ -12,29 +14,35 @@ module fifo
 );
     reg [SIZE_BITS-1:0] w_ptr, r_ptr;
     reg [WIDTH-1:0] data [0:(1<<SIZE_BITS) - 1];
-    wire rclk, wclk;
 
-    assign rclk = (nrst | clk) & nrd;
-    assign wclk = (nrst | clk) & nwr;
-
-    always@(negedge rclk) begin
-        if(!nrst)
+    always@(negedge clk) begin
+        if(!nrst) begin
             r_ptr <= 0;
-        else if (!empty) begin
-            data_out <= data[r_ptr];
-            r_ptr <= r_ptr + 1;
+            rack <= 0;
+        end
+        else begin
+            if (rreq & !empty & !rack) begin
+                data_out <= data[r_ptr];
+                r_ptr <= r_ptr + 1;
+            end
+            rack <= rreq;
         end
     end
 
-    always@(negedge wclk) begin
-        if(!nrst)
+    always@(negedge clk) begin
+        if(!nrst) begin
             w_ptr <= 0;
-        else if (!full) begin
-            data[w_ptr] <= data_in;
-            w_ptr <= w_ptr + 1;
+            wack <= 0;
+        end
+        else begin
+            if (wreq & !full & !wack) begin
+                data[w_ptr] <= data_in;
+                w_ptr <= w_ptr + 1;
+            end
+            wack <= wreq;
         end
     end
-    
+
     assign full = (w_ptr+1'b1) == r_ptr;
     assign empty = w_ptr == r_ptr;
 

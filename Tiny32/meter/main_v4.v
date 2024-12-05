@@ -61,7 +61,7 @@ ROM_BITS = 13)
     wire [31-MEMORY_SELECTOR_START_BIT:0] memory_selector;
 
     wire uart_rx_fifo_empty, uart_tx_fifo_full;
-    wire uart_nwr, uart_nrd;
+    wire uart_req, uart_ack;
     wire [7:0] uart_data_out;
 
     wire time_nrd, timer_nwr;
@@ -105,8 +105,7 @@ ROM_BITS = 13)
     assign ram_address = address[RAM_BITS + 1:2];
     assign rom_address = address[ROM_BITS + 1:2];
 
-    assign uart_nwr = !(mem_valid & mem_ready & uart_data_selected & (mem_nwr != 4'b1111));
-    assign uart_nrd = !(mem_valid & mem_ready & uart_data_selected & (mem_nwr == 4'b1111));
+    assign uart_req = mem_valid & uart_data_selected;
     assign time_nrd = !(mem_valid & mem_ready & time_selected & (mem_nwr == 4'b1111));
     assign timer_nwr = !(mem_valid & mem_ready & timer_selected & (mem_nwr != 4'b1111));
     
@@ -140,8 +139,8 @@ ROM_BITS = 13)
                  .error(error), .hlt(hlt), .mem_ready(mem_ready), .interrupt(irq), .interrupt_ack(interrupt_ack));
 
     uart_fifo #(.CLOCK_DIV(`UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(`UART_CLOCK_COUNTER_BITS))
-        ufifo(.clk(clk), .tx(tx), .rx(rx), .data_in(data_in[7:0]), .data_out(uart_data_out), .nwr(uart_nwr), .nrd(uart_nrd), .nreset(nreset),
-                .full(uart_tx_fifo_full), .empty(uart_rx_fifo_empty));
+        ufifo(.clk(clk), .tx(tx), .rx(rx), .data_in(data_in[7:0]), .data_out(uart_data_out), .req(uart_req), .ack(uart_ack), .nwr(mem_nwr == 4'b1111),
+                .nreset(nreset), .full(uart_tx_fifo_full), .empty(uart_rx_fifo_empty));
 
     timer #(.MHZ_TIMER_BITS(`MHZ_TIMER_BITS), .MHZ_TIMER_VALUE(`MHZ_TIMER_VALUE))
         t(.clk(clk), .nreset(nreset), .nwr(timer_nwr), .value(data_in), .interrupt(timer_interrupt), .interrupt_clear(interrupt_ack[0]));
@@ -177,7 +176,7 @@ ROM_BITS = 13)
                 ram4[ram_address] <= data_in[31:24];
             ram_rdata <= {ram4[ram_address], ram3[ram_address], ram2[ram_address], ram1[ram_address]};
         end
-        mem_ready <= mem_valid & (ram_selected | rom_selected | ports_selected | uart_control_selected | uart_data_selected | time_selected | timer_selected | i2c_selected);
+        mem_ready <= mem_valid & (ram_selected | rom_selected | ports_selected | uart_control_selected | uart_ack | time_selected | timer_selected | i2c_selected);
     end
 
     always @(negedge cpu_clk) begin
