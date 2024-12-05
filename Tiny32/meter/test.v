@@ -1,15 +1,13 @@
 `include "main.vh"
 
 module test;
-    localparam I2C_PORTS = 1;
+    localparam I2C_PORTS_BITS = 1;
 
     reg clk;
     wire nhlt, nerror, nwfi;
     wire [31:0] address;
-    wire scl0_io;
-    wire sda0_io;
-    wire [I2C_PORTS - 1:0] scl_io;
-    wire [I2C_PORTS - 1:0] sda_io;
+    wire [(1 << I2C_PORTS_BITS) - 1:0] scl_io;
+    wire [(1 << I2C_PORTS_BITS) - 1:0] sda_io;
     reg con_button;
     reg psh_button;
     reg tra, trb;
@@ -22,8 +20,8 @@ module test;
     wire interrupt;
     reg interrupt_clear, nreset;
 
-    main #(.I2C_PORTS(I2C_PORTS))
-         m(.clk(clk), .nhlt(nhlt), .nerror(nerror), .nwfi(nwfi), .address(address), .scl0_io(scl0_io), .sda0_io(sda0_io),
+    main #(.I2C_PORTS_BITS(I2C_PORTS_BITS))
+         m(.clk(clk), .nhlt(nhlt), .nerror(nerror), .nwfi(nwfi), .address(address),
            .scl_io(scl_io), .sda_io(sda_io), .con_button(con_button), .psh_button(psh_button), .tra(tra), .trb(trb),
            .bak_button(bak_button), .led(led), .tx(tx), .rx(rx));
 
@@ -32,18 +30,18 @@ module test;
     uart1rx #(.CLOCK_DIV(`UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(`UART_CLOCK_COUNTER_BITS))
         urx(.clk(clk), .rx(tx), .data(data_out), .interrupt(interrupt), .interrupt_clear(interrupt_clear), .nreset(nreset));
 
-    pullup(scl0_io);
-    pullup(sda0_io);
     pullup(scl_io[0]);
     pullup(sda_io[0]);
+    pullup(scl_io[1]);
+    pullup(sda_io[1]);
 
     always #1 clk = ~clk;
 
     initial begin
         $dumpfile("meter_tb.vcd");
         $dumpvars(0, test);
-        $monitor("time=%t address=0x%x nhlt=%d nerror=%d nwfi=%d scl0_io=%d sda0_io=%d led=%d scl_io=0x%x sda_io=0x%x rx=%d tx=%d data_out=0x%x busy=%d interrupt=%d",
-                 $time, address, nhlt, nerror, nwfi, scl0_io, sda0_io, led, scl_io, sda_io, rx, tx, data_out, busy, interrupt);
+        $monitor("time=%t address=0x%x nhlt=%d nerror=%d nwfi=%d scl_io[0]=%d sda_io[0]=%d scl_io[1]=%d sda_io[1]=%d led=%d rx=%d tx=%d data_out=0x%x busy=%d interrupt=%d",
+                 $time, address, nhlt, nerror, nwfi, scl_io[0], sda_io[0], scl_io[1], sda_io[1], led, rx, tx, data_out, busy, interrupt);
         clk = 0;
         con_button = 1;
         psh_button = 1;
