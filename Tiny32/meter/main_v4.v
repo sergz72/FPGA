@@ -106,7 +106,7 @@ ROM_BITS = 13)
     assign rom_address = address[ROM_BITS + 1:2];
 
     assign uart_req = mem_valid & uart_data_selected;
-    assign time_nrd = !(mem_valid & mem_ready & time_selected & (mem_nwr == 4'b1111));
+    assign time_nrd = !(mem_valid & time_selected & (mem_nwr == 4'b1111));
     assign timer_nwr = !(mem_valid & mem_ready & timer_selected & (mem_nwr != 4'b1111));
     
     genvar i;

@@ -62,7 +62,7 @@ ROM_BITS = 13)
     wire [31-MEMORY_SELECTOR_START_BIT:0] memory_selector;
 
     wire uart_rx_fifo_empty, uart_tx_fifo_full;
-    wire uart_nwr, uart_nrd;
+    wire uart_req, uart_ack;
     wire [7:0] uart_data_out;
 
     wire time_nrd, timer_nwr;
@@ -106,8 +106,7 @@ ROM_BITS = 13)
     assign ram_address = address[RAM_BITS + 1:2];
     assign rom_address = address[ROM_BITS + 1:2];
 
-    assign uart_nwr = !uart_data_selected | (nwr == 4'b1111);
-    assign uart_nrd = !uart_data_selected | nrd;
+    assign uart_req = uart_data_selected & ((nwr != 4'b1111) | !nrd);
     assign time_nrd = !time_selected | nrd;
     assign timer_nwr = !timer_selected | (nwr == 4'b1111);
 
@@ -143,7 +142,7 @@ ROM_BITS = 13)
                  .error(error), .hlt(hlt), .ready(1'b1), .interrupt(irq), .interrupt_ack(interrupt_ack));
 
     uart_fifo #(.CLOCK_DIV(`UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(`UART_CLOCK_COUNTER_BITS))
-        ufifo(.clk(clk), .tx(tx), .rx(rx), .data_in(data_in[7:0]), .data_out(uart_data_out), .nwr(uart_nwr), .nrd(uart_nrd), .nreset(nreset),
+        ufifo(.clk(clk), .tx(tx), .rx(rx), .data_in(data_in[7:0]), .data_out(uart_data_out), .req(uart_req), .ack(uart_ack), .nwr(nwr == 4'b1111), .nreset(nreset),
                 .full(uart_tx_fifo_full), .empty(uart_rx_fifo_empty));
 
     timer #(.MHZ_TIMER_BITS(`MHZ_TIMER_BITS), .MHZ_TIMER_VALUE(`MHZ_TIMER_VALUE))
