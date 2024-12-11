@@ -74,7 +74,7 @@ public class UsbDecoder
                 }
                 break;
             case UsbState.ReceiveByte:
-                if ((_bitTickCounter & 3) == 2)
+                if ((_bitTickCounter & 3) == 1)
                 {
                     if (se1)
                         _state = UsbState.WaitIdle;
@@ -116,11 +116,12 @@ public class UsbDecoder
                 }
                 break;
             case UsbState.ReceiveNext:
-                _packetData[_packetLength++] = data;
+                _packetData[_packetLength++] = (byte)_data;
                 StartReceiving(UsbState.ReceiveNext);
                 break;
             case UsbState.PacketEnd:
-                Console.WriteLine($"End packet {_packetId:X} with length {_packetLength} at {_tickCounter}");
+                var s = BitConverter.ToString(_packetData[.._packetLength]);
+                Console.WriteLine($"End packet {_packetId:X} with length {_packetLength} at {_tickCounter} {s}");
                 _state = UsbState.WaitIdle2;
                 DecodePacket();
                 break;
@@ -131,41 +132,127 @@ public class UsbDecoder
     {
         switch (_packetId)
         {
+            case 1: // OUT
+                DecodeTokenPacket("OUT");
+                break;
+            case 2: // ACK
+                Console.WriteLine("-ACK Packet");
+                break;
+            case 3:
+                DecodeDataPacket("DATA0");
+                break;
+            case 4: // PING
+                Console.WriteLine("-PING Packet");
+                break;
             case 5: // SOF
-                DecodeTokenPacket("SOF");
+                DecodeSOFPacket();
+                break;
+            case 6: // NYET
+                Console.WriteLine("-NYET Packet");
+                break;
+            case 7:
+                DecodeDataPacket("DATA2");
+                break;
+            case 8: // SPLIT
+                Console.WriteLine("-SPLIT Packet");
+                break;
+            case 9: // IN
+                DecodeTokenPacket("IN");
+                break;
+            case 0x0A: // NAK
+                Console.WriteLine("-NAK Packet");
+                break;
+            case 0x0B:
+                DecodeDataPacket("DATA1");
+                break;
+            case 0x0C: // PRE/ERR
+                Console.WriteLine("-PRE/ERR Packet");
+                break;
+            case 0x0D: // SETUP
+                DecodeTokenPacket("SETUP");
+                break;
+            case 0x0E: // STALL
+                Console.WriteLine("-STALL Packet");
+                break;
+            case 0x0F:
+                DecodeDataPacket("MDATA");
+                break;
+            default:
+                Console.WriteLine("-UNKNOWN Packet");
                 break;
         }
     }
 
+    private void DecodeDataPacket(string name)
+    {
+        if (_packetLength < 2 || !CheckCrc16(_packetData, _packetLength))
+            Console.WriteLine($"-Invalid {name} packet");
+        else
+            Console.WriteLine($"-{name} packet " + BitConverter.ToString(_packetData[..(_packetLength - 2)]));
+    }
+    
+    private void DecodeSOFPacket()
+    {
+        var data = _packetData[0] + (_packetData[1] << 8);
+        if (_packetLength != 2 || !CheckCrc5(data))
+            Console.WriteLine("-Invalid SOF packet");
+        else
+            Console.WriteLine("-SOF packet " + (data & 0x7FF));
+    }
+
     private void DecodeTokenPacket(string name)
     {
-        var token = GetToken();
-        if (_packetLength != 2 || !CheckCrc5(token))
-            Console.WriteLine($"Invalid {name} packet");
+        var data = _packetData[0] + (_packetData[1] << 8);
+        if (_packetLength != 2 || !CheckCrc5(data))
+            Console.WriteLine($"-Invalid {name} packet");
         else
-            Console.WriteLine("SOF packet " + token);
+        {
+            var addr = data & 0x7F;
+            var endp = (data >> 7) & 0x0F;
+            Console.WriteLine($"-{name} packet ADDR {addr} ENDP {endp}");
+        }
     }
-
-    private int GetToken()
+    
+    public static bool CheckCrc5(int data)
     {
-        return _packetData[0] + ((_packetData[1] & 7) << 8);
-    }
-
-    private bool CheckCrc5(int token)
-    {
-        var expected = _packetData[1] >> 3;
         var res = 0x1f;
 
-        for (var i = 0;  i < 11;  ++i)
+        for (var i = 0;  i < 16;  ++i)
         {
-            var b = ((token ^ res) & 1) != 0;
-            token >>= 1;
+            var b = (data & 1) != (res & 1);
+            data >>= 1;
             res >>= 1;
             if (b)
                 res ^= 0x14;
         }
-        var crc = res ^ 0x1f;
+        
+        return res == 0x06;
+    }
+    
+    private static bool CheckCrc16(byte[] data, int length)
+    {
+        var res = 0xFFFF;
 
-        return expected == crc;
+        var idx = 0;
+        var cdata = data[0];
+        var bit = 0; 
+        for (var i = 0;  i < length * 8;  ++i)
+        {
+            var b = (cdata & 1) != (res & 1);
+            cdata >>= 1;
+            res >>= 1;
+            bit++;
+            if (bit == 8)
+            {
+                idx++;
+                bit = 0;
+                if (idx < data.Length)
+                    cdata = data[idx];
+            }
+            if (b)
+                res ^= 0xA001;
+        }
+        
+        return res == 0xB001;
     }
 }
