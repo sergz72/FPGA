@@ -50,7 +50,7 @@ module div #(parameter DATA_WIDTH = 32)
       quotient  <= {DATA_WIDTH{1'b1}};
       remainder <= dividend;
     end
-    if (!ready) begin
+    else if (!ready) begin
       if (r_remainder != 0) begin
         if (r_remainder == divisor_ext) begin
           quotient  <= q + 1;
