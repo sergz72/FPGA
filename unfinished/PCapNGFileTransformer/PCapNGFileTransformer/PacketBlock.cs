@@ -12,8 +12,7 @@ internal class PacketBlock: IBlock
         {
             _usbClock = value;
             _state = 2;
-            _prev = false;
-            _sync = BuildByte(1);
+            _sync = BuildByte(0x80);
             _packetEnd = new byte[2*UsbClock/12];
             for (var i = 0; i < _packetEnd.Length; i++)
                 _packetEnd[i] = 0;
@@ -29,7 +28,6 @@ internal class PacketBlock: IBlock
     private static byte[] _sync = [], _packetEnd = [];
 
     private static byte _state;
-    private static bool _prev;
     
     internal PacketBlock()
     {
@@ -70,8 +68,7 @@ internal class PacketBlock: IBlock
 
     private IEnumerable<byte> BuildPacket()
     {
-        _state = 2;
-        _prev = false;
+        _state = 1;
         return PacketData.SelectMany(BuildByte);
     }
     
@@ -81,11 +78,10 @@ internal class PacketBlock: IBlock
         var idx = 0;
         for (var i = 0; i < 8; i++)
         {
-            var current = (value & 0x80) != 0;
-            if (_prev == current)
+            var current = (value & 1) != 0;
+            if (!current)
                 _state ^= 3;
-            _prev = current;
-            value <<= 1;
+            value >>= 1;
             for (var j = 0; j < UsbClock / 12; j++)
                 result[idx++] = _state;
         }
