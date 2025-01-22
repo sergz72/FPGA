@@ -41,28 +41,28 @@ module main
 
     genvar i;
     generate
-        for (i = 0; i < NUM_MODULES; i = i + 1) begin
+        for (i = 0; i < NUM_MODULES; i = i + 1) begin : gen_i2c
             assign sda[i] = module_id == i && sda_oe ? 0 : 1'bz;
             assign scl[i] = module_id == i && scl_oe ? 0 : 1'bz;
         end
-        for (i = 0; i < MODULE_IO_BITS; i = i + 1) begin
+        for (i = 0; i < MODULE_IO_BITS; i = i + 1) begin : gen_123
             assign module1_io[i] = module1_oe[i] ? module1_out[i] : 1'bz;
             assign module2_io[i] = module2_oe[i] ? module2_out[i] : 1'bz;
             assign module3_io[i] = module3_oe[i] ? module3_out[i] : 1'bz;
         end
-        for (i = 0; i < MODULE4_IO_BITS; i = i + 1) begin
+        for (i = 0; i < MODULE4_IO_BITS; i = i + 1) begin : gen_4
             assign module4_io[i] = module4_oe[i] ? module4_out[i] : 1'bz;
             assign module4_in[i] = module4_io[i];
         end
-        for (i = MODULE4_IO_BITS; i < MODULE_IO_BITS; i = i + 1) begin
+        for (i = MODULE4_IO_BITS; i < MODULE_IO_BITS; i = i + 1) begin : gen_4in
             assign module4_in[i] = 0;
         end
         if (NUM_MODULES > 4) begin : gen_51
-            for (i = 0; i < MODULE5_IO_BITS; i = i + 1) begin
+            for (i = 0; i < MODULE5_IO_BITS; i = i + 1) begin : gen_5io
                 assign module5_io[i] = module5_oe[i] ? module5_out[i] : 1'bz;
                 assign module5_in[i] = module5_io[i];
             end
-            for (i = MODULE5_IO_BITS; i < MODULE_IO_BITS; i = i + 1) begin
+            for (i = MODULE5_IO_BITS; i < MODULE_IO_BITS; i = i + 1) begin : gen_5in
                 assign module5_in[i] = 0;
             end
         end
