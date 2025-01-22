@@ -12,6 +12,7 @@ module main
     input wire [SPI_BITS - 1:0] sdi,
     output wire [SPI_BITS - 1:0] sdo,
     input wire sclk,
+    input wire sncs,
     //address
     input wire [MODULE_ID_BITS - 1: 0] module_id,
     //i2c fpga->modules
@@ -73,25 +74,25 @@ module main
     assign sdo = module_id > NUM_MODULES - 1 ? {SPI_BITS{1'b1}} : module_do[module_id];
 
     device_handler #(.SPI_BITS(SPI_BITS), .IO_BITS(MODULE_IO_BITS))
-        module1(.clk(clk), .nreset(nreset), .sdi(sdi), .sdo(module_do[0]), .sclk(sclk), .sncs(module_id == 0), .module_in(module1_io),
+        module1(.clk(clk), .nreset(nreset), .sdi(sdi), .sdo(module_do[0]), .sclk(sclk), .sncs(module_id != 0 || sncs), .module_in(module1_io),
                 .module_out(module1_out), .module_oe(module1_oe));
 
     device_handler #(.SPI_BITS(SPI_BITS), .IO_BITS(MODULE_IO_BITS))
-        module2(.clk(clk), .nreset(nreset), .sdi(sdi), .sdo(module_do[1]), .sclk(sclk), .sncs(module_id == 1), .module_in(module2_io),
+        module2(.clk(clk), .nreset(nreset), .sdi(sdi), .sdo(module_do[1]), .sclk(sclk), .sncs(module_id != 1 || sncs), .module_in(module2_io),
                 .module_out(module2_out), .module_oe(module2_oe));
 
     device_handler #(.SPI_BITS(SPI_BITS), .IO_BITS(MODULE_IO_BITS))
-        module3(.clk(clk), .nreset(nreset), .sdi(sdi), .sdo(module_do[2]), .sclk(sclk), .sncs(module_id == 2), .module_in(module3_io),
+        module3(.clk(clk), .nreset(nreset), .sdi(sdi), .sdo(module_do[2]), .sclk(sclk), .sncs(module_id != 2 || sncs), .module_in(module3_io),
                 .module_out(module3_out), .module_oe(module3_oe));
 
     device_handler #(.SPI_BITS(SPI_BITS), .IO_BITS(MODULE_IO_BITS))
-        module4(.clk(clk), .nreset(nreset), .sdi(sdi), .sdo(module_do[3]), .sclk(sclk), .sncs(module_id == 3), .module_in(module4_in),
+        module4(.clk(clk), .nreset(nreset), .sdi(sdi), .sdo(module_do[3]), .sclk(sclk), .sncs(module_id != 3 || sncs), .module_in(module4_in),
                 .module_out(module4_out), .module_oe(module4_oe));
 
     generate
         if (NUM_MODULES > 4) begin : gen_52
             device_handler #(.SPI_BITS(SPI_BITS), .IO_BITS(MODULE_IO_BITS))
-                module5(.clk(clk), .nreset(nreset), .sdi(sdi), .sdo(module_do[4]), .sclk(sclk), .sncs(module_id == 4), .module_in(module5_in),
+                module5(.clk(clk), .nreset(nreset), .sdi(sdi), .sdo(module_do[4]), .sclk(sclk), .sncs(module_id != 4 || sncs), .module_in(module5_in),
                         .module_out(module5_out), .module_oe(module5_oe));
         end
     endgenerate

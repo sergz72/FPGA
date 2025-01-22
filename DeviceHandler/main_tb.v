@@ -4,7 +4,7 @@ module main_tb;
     wire sda_out, scl_out;
     reg [2:0] sdi;
     wire [2:0] sdo;
-    reg sclk;
+    reg sclk, sncs;
     reg [2:0] module_id;
     wire [4:0] sda;
     wire [4:0] scl;
@@ -42,7 +42,7 @@ module main_tb;
     pullup(sda[4]);
 
     main m(.clk(clk), .nreset(nreset), .sda_oe(sda_oe), .sda_out(sda_out), .scl_oe(scl_oe), .scl_out(scl_out), .sdi(sdi), .sdo(sdo),
-            .sclk(sclk), .module_id(module_id), .sda(sda), .scl(scl), .module1_io(module1_io), .module2_io(module2_io), .module3_io(module3_io),
+            .sclk(sclk), .sncs(sncs), .module_id(module_id), .sda(sda), .scl(scl), .module1_io(module1_io), .module2_io(module2_io), .module3_io(module3_io),
             .module4_io(module4_io), .module5_io(module5_io));
 
     initial begin
@@ -67,6 +67,7 @@ module main_tb;
         scl_m_oe[4]=0;
         sclk = 0;
         sdi = 0;
+        sncs = 1;
         module_id = 7;
 
         #10
