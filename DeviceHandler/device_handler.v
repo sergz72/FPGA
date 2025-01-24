@@ -13,17 +13,15 @@ module device_handler
     output wire [IO_BITS - 1:0] module_out,
     output wire [IO_BITS - 1:0] module_oe
 );
-    localparam EXTRA_DDS_BITS = IO_BITS - 8;
-
-    localparam MODE_NONE = 0;
-    localparam MODE_DDS  = 1;
+    localparam MODE_NONE = 4'h0;
+    localparam MODE_DDS  = 4'h1;
 
     reg [31:0] dds_code = 0;
-    reg [7:0] dds_ram[0:255];
+    reg [IO_BITS - 1:0] dds_ram[0:255];
     wire [7:0] dds_out;
     wire [7:0] dds_ram_address;
-    wire [7:0] dds_ram_data;
-    reg [7:0] dds_result = 0;
+    wire [IO_BITS - 1:0] dds_ram_data;
+    reg [IO_BITS - 1:0] dds_result = 0;
 
     reg prev_sncs = 1;
 
@@ -41,7 +39,7 @@ module device_handler
 
     function [IO_BITS - 1:0] module_out_f(input [3:0] m);
         case (m)
-            MODE_DDS: module_out_f = {{EXTRA_DDS_BITS{1'b0}}, dds_result};
+            MODE_DDS: module_out_f = dds_result;
             default: module_out_f = 0;
         endcase
     endfunction
@@ -51,8 +49,8 @@ module device_handler
 
     assign device_id = input_reg[3:0];
     assign dds_ram_address = input_reg[11:4];
-    assign dds_ram_data = input_reg[19:12];
-    assign sdo = sncs ? {SPI_BITS{1'b1}} : output_reg[31:31-SPI_BITS+1];
+    assign dds_ram_data = input_reg[IO_BITS + 11:12];
+    assign sdo = output_reg[31:31-SPI_BITS+1];
 
     dds #(.OUT_WIDTH(8)) devide_dds(.clk(clk), .code(dds_code), .out(dds_out));
 
@@ -70,7 +68,7 @@ module device_handler
     end
 
     always @(posedge clk) begin
-        dds_result <= nreset ? dds_ram[dds_out] : 0;
+        dds_result <= nreset ? dds_ram[dds_out] : {IO_BITS{1'b0}};
         if (!nreset) begin
             mode <= MODE_NONE;
             prev_sncs <= 1;

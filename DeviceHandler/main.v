@@ -1,5 +1,6 @@
 module main
-#(parameter MODULE_ID_BITS = 3, NUM_MODULES = 5, SPI_BITS = 3, MODULE_IO_BITS = 10, MODULE4_IO_BITS = 2, MODULE5_IO_BITS = 2)
+#(parameter MODULE_ID_BITS = 3, NUM_MODULES = 5, SPI_BITS = 2, MODULE_IO_BITS = 10, MODULE4_IO_BITS = 2, MODULE5_IO_BITS = 2,
+  NUM_LEDS = 4, LEDS_MODULE_ID = 7)
 (
     input wire clk,
     input wire nreset,
@@ -23,9 +24,12 @@ module main
     inout wire [MODULE_IO_BITS - 1:0] module2_io,
     inout wire [MODULE_IO_BITS - 1:0] module3_io,
     inout wire [MODULE4_IO_BITS - 1:0] module4_io,
-    inout wire [MODULE5_IO_BITS - 1:0] module5_io
+    inout wire [MODULE5_IO_BITS - 1:0] module5_io,
+    // leds
+    output wire [NUM_LEDS - 1:0] leds
 );
     wire [SPI_BITS - 1:0] module_do [NUM_MODULES - 1: 0];
+    wire [SPI_BITS - 1:0] leds_do;
     wire [MODULE_IO_BITS - 1:0] module1_out;
     wire [MODULE_IO_BITS - 1:0] module2_out;
     wire [MODULE_IO_BITS - 1:0] module3_out;
@@ -42,8 +46,8 @@ module main
     genvar i;
     generate
         for (i = 0; i < NUM_MODULES; i = i + 1) begin : gen_i2c
-            assign sda[i] = module_id == i && sda_oe ? 0 : 1'bz;
-            assign scl[i] = module_id == i && scl_oe ? 0 : 1'bz;
+            assign sda[i] = module_id == i && sda_oe ? 1'b0 : 1'bz;
+            assign scl[i] = module_id == i && scl_oe ? 1'b0 : 1'bz;
         end
         for (i = 0; i < MODULE_IO_BITS; i = i + 1) begin : gen_123
             assign module1_io[i] = module1_oe[i] ? module1_out[i] : 1'bz;
@@ -71,7 +75,7 @@ module main
     assign sda_out = module_id > NUM_MODULES - 1 ? 1'b1 : sda[module_id];
     assign scl_out = module_id > NUM_MODULES - 1 ? 1'b1 : scl[module_id];
 
-    assign sdo = module_id > NUM_MODULES - 1 ? {SPI_BITS{1'b1}} : module_do[module_id];
+    assign sdo = module_id == LEDS_MODULE_ID ? leds_do : (module_id > NUM_MODULES - 1 ? {SPI_BITS{1'b1}} : module_do[module_id]);
 
     device_handler #(.SPI_BITS(SPI_BITS), .IO_BITS(MODULE_IO_BITS))
         module1(.clk(clk), .nreset(nreset), .sdi(sdi), .sdo(module_do[0]), .sclk(sclk), .sncs(module_id != 0 || sncs), .module_in(module1_io),
@@ -96,4 +100,7 @@ module main
                         .module_out(module5_out), .module_oe(module5_oe));
         end
     endgenerate
+
+    led_handler #(.SPI_BITS(SPI_BITS), .NUM_LEDS(NUM_LEDS))
+        leds_module(.sdi(sdi), .sdo(leds_do), .sclk(sclk), .sncs(module_id != LEDS_MODULE_ID || sncs), .leds(leds));
 endmodule

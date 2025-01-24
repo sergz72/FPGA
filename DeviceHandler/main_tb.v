@@ -13,6 +13,7 @@ module main_tb;
     wire [9:0] module3_io;
     wire [1:0] module4_io;
     wire [1:0] module5_io;
+    wire [5:0] leds;
 
     reg sda_m_oe[4:0], scl_m_oe[4:0];
 
@@ -43,13 +44,13 @@ module main_tb;
 
     main m(.clk(clk), .nreset(nreset), .sda_oe(sda_oe), .sda_out(sda_out), .scl_oe(scl_oe), .scl_out(scl_out), .sdi(sdi), .sdo(sdo),
             .sclk(sclk), .sncs(sncs), .module_id(module_id), .sda(sda), .scl(scl), .module1_io(module1_io), .module2_io(module2_io), .module3_io(module3_io),
-            .module4_io(module4_io), .module5_io(module5_io));
+            .module4_io(module4_io), .module5_io(module5_io), .leds(leds));
 
     initial begin
         $dumpfile("main_tb.vcd");
         $dumpvars(0, main_tb);
-        $monitor("time=%t nreset=%d sda_oe=%d sda_out=%d scl_oe=%d scl_out=%d sda_m_oe[0]=%d scl_m_oe[0]=%d sda_m_oe[1]=%d scl_m_oe[1]=%d sda[0]=%d scl[0]=%d sda[1]=%d scl[1]=%d",
-                    $time, nreset, sda_oe, sda_out, scl_oe, scl_out, sda_m_oe[0], scl_m_oe[0], sda_m_oe[1], scl_m_oe[1], sda[0], scl[0], sda[1], scl[1]);
+        $monitor("time=%t nreset=%d sda_oe=%d sda_out=%d scl_oe=%d scl_out=%d sda_m_oe[0]=%d scl_m_oe[0]=%d sda_m_oe[1]=%d scl_m_oe[1]=%d sda[0]=%d scl[0]=%d sda[1]=%d scl[1]=%d leds=%x",
+                    $time, nreset, sda_oe, sda_out, scl_oe, scl_out, sda_m_oe[0], scl_m_oe[0], sda_m_oe[1], scl_m_oe[1], sda[0], scl[0], sda[1], scl[1], leds);
         
         clk = 0;
         nreset = 0;
