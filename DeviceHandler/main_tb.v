@@ -8,13 +8,14 @@ module main_tb;
     reg [2:0] module_id;
     wire [3:0] sda;
     wire [3:0] scl;
-    wire [8:0] module1_io;
-    wire [8:0] module2_io;
-    wire [8:0] module3_io;
-    wire [4:0] module4_io;
+    wire [7:0] module1_io;
+    wire [7:0] module2_io;
+    wire [7:0] module3_io;
+    wire [3:0] module4_io;
     wire [0:0] module5_io;
     wire [3:0] leds;
     wire interrupt;
+    reg module1_dedicated_in, module2_dedicated_in, module3_dedicated_in, module4_dedicated_in, module5_dedicated_in;
 
     reg sda_m_oe[4:0], scl_m_oe[4:0];
 
@@ -45,7 +46,9 @@ module main_tb;
 
     main m(.clk(clk), .nreset(nreset), .sda_oe(sda_oe), .sda_out(sda_out), .scl_oe(scl_oe), .scl_out(scl_out), .sdi(sdi), .sdo(sdo),
             .sclk(sclk), .sncs(sncs), .module_id(module_id), .sda(sda), .scl(scl), .module1_io(module1_io), .module2_io(module2_io), .module3_io(module3_io),
-            .module4_io(module4_io), .module5_io(module5_io), .leds(leds), .interrupt(interrupt));
+            .module4_io(module4_io), .module5_io(module5_io), .leds(leds), .interrupt(interrupt), .module1_dedicated_in(module1_dedicated_in),
+            .module2_dedicated_in(module2_dedicated_in), .module3_dedicated_in(module3_dedicated_in), .module4_dedicated_in(module4_dedicated_in),
+            .module5_dedicated_in(module5_dedicated_in));
 
     initial begin
         $dumpfile("main_tb.vcd");
@@ -71,6 +74,11 @@ module main_tb;
         sdi = 0;
         sncs = 1;
         module_id = 7;
+        module1_dedicated_in = 0;
+        module2_dedicated_in = 0;
+        module3_dedicated_in = 0;
+        module4_dedicated_in = 0;
+        module5_dedicated_in = 0;
 
         #10
         nreset = 1;
