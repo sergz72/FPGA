@@ -3,7 +3,7 @@ module dds
 (
     input wire clk,
     input wire [WIDTH - 1:0] code,
-    output [OUT_WIDTH - 1:0] out
+    output wire [OUT_WIDTH - 1:0] out
 );
     reg [WIDTH - 1:0] counter = 0;
 
