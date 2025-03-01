@@ -1,17 +1,18 @@
 module main_tb;
-    reg clk, clk_sys, ncs, spi_send, sent;
+    reg clk, clk_sys, ncs, spi_send, sent, nreset;
     reg [119:0] spi_data_out, spi_data_in;
     reg [2:0] counter;
     reg [7:0] cnt;
-    wire miso, mosi, interrupt, out, sck;
+    wire miso, mosi, interrupt, sck;
+    wire [3:0] out;
 
     assign mosi = spi_data_out[119];
 
-    assign sck = counter[2] || cnt == 0;
+    assign sck = counter[2];
 
     always #1 clk <= ~clk;
 
-    main m(.clk(clk), .clk_dds(clk_sys), .sck(sck), .mosi(mosi), .ncs(ncs), .miso(miso), .interrupt(interrupt), .out(out));
+    main m(.clk(clk), .clk_dds(clk_sys), .sck(sck), .mosi(mosi), .ncs(ncs), .miso(miso), .interrupt(interrupt), .out(out), .nreset(nreset));
 
     initial begin
         $dumpfile("main_tb.vcd");
@@ -23,6 +24,9 @@ module main_tb;
         spi_send = 0;
         sent = 0;
         counter = 0;
+        nreset = 0;
+        #5
+        nreset = 1;
 
         spi_data_out = {120'h0}; // get device id
         spi_data_in = {120'h0};
@@ -59,6 +63,60 @@ module main_tb;
         spi_data_out = {8'h3, 8'h2, 8'h0, 8'hFF, 8'hFF, 48'h0, 16'h0, 16'h0};
         spi_data_in = {120'h0};
         cnt = 104;
+        spi_send = 1;
+        while (!sent) begin
+            #5;
+        end
+        spi_send = 0;
+        #5
+
+        //device_command, command, channel, enable
+        spi_data_out = {8'h3, 8'h5, 8'h0, 8'h1, 88'h0};
+        spi_data_in = {120'h0};
+        cnt = 32;
+        spi_send = 1;
+        while (!sent) begin
+            #5;
+        end
+        spi_send = 0;
+        #5
+
+        //device_command, command, channel, enable
+        spi_data_out = {8'h3, 8'h5, 8'h0, 8'h0, 88'h0};
+        spi_data_in = {120'h0};
+        cnt = 32;
+        spi_send = 1;
+        while (!sent) begin
+            #5;
+        end
+        spi_send = 0;
+        #5
+
+        spi_data_out = {120'h0}; // get device id
+        spi_data_in = {120'h0};
+        cnt = 8;
+        #5
+        spi_send = 1;
+        while (!sent) begin
+            #5;
+        end
+        spi_send = 0;
+        #5
+
+        spi_data_out = {8'h1, 112'h0}; // get config
+        spi_data_in = {120'h0};
+        cnt = 8;
+        spi_send = 1;
+        while (!sent) begin
+            #5;
+        end
+        spi_send = 0;
+        #5
+
+        spi_data_out = {120'h0}; // get device id
+        spi_data_in = {120'h0};
+        cnt = 120;
+        #5
         spi_send = 1;
         while (!sent) begin
             #5;
