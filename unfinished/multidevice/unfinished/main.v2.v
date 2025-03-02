@@ -25,31 +25,28 @@ module main
     reg[COMMAND_LENGTH - 1:0] command = 0;
     reg[COMMAND_LENGTH - 1:0] response = 0;
     reg[7:0] cnt = 0;
-    reg prev_sck = 0;
-    reg prev_ncs = 1;
-    reg rsck = 0;
-    reg rncs = 1;
     reg [3:0] output_enabled = 0;
+    reg idle = 1;
 
     wire [1:0] dds_channel;
     wire [1:0] enable_channel;
     wire enable;
+    wire spi_clock;
 
     assign miso = ncs ? 1'bz : response[COMMAND_LENGTH - 1];
     assign dds_channel = command[SET_FREQUENCY_COMMAND_LENGTH - 23: SET_FREQUENCY_COMMAND_LENGTH - 24];
     assign enable_channel = command[9:8];
     assign enable = command[7:0] != 0;
+    assign spi_clock = ((sck | ncs) & nreset) | (!nreset & clk);
 
     dds dds_instance1(.clk(clk_dds), .code(dds_code[0]), .out(out[0]));
     dds dds_instance2(.clk(clk_dds), .code(dds_code[1]), .out(out[1]));
     dds dds_instance3(.clk(clk_dds), .code(dds_code[2]), .out(out[2]));
     dds dds_instance4(.clk(clk_dds), .code(dds_code[3]), .out(out[3]));
 
-    always @(posedge clk) begin
+    always @(posedge spi_clock) begin
         if (!nreset) begin
-            cnt <= 0;
             command <= 0;
-            response <= 0;
             output_enabled <= 0;
             dds_code[0] <= 0;
             dds_code[1] <= 0;
@@ -59,9 +56,41 @@ module main
             dds_code_bak[1] <= 0;
             dds_code_bak[2] <= 0;
             dds_code_bak[3] <= 0;
+            idle <= 1;
         end
-        else if (rncs) begin
-            if (!prev_ncs) begin
+        else begin
+            idle <= ncs;
+            if (ncs) begin
+                case (cnt)
+                    OUTPUT_ENABLE_COMMAND_LENGTH: begin
+                        if (command[OUTPUT_ENABLE_COMMAND_LENGTH - 1: OUTPUT_ENABLE_COMMAND_LENGTH - 8] == 3 && // dds_command
+                            command[OUTPUT_ENABLE_COMMAND_LENGTH - 9: OUTPUT_ENABLE_COMMAND_LENGTH - 16] == 5) begin // enable_output
+                            output_enabled[enable_channel] <= enable;
+                            dds_code[enable_channel] <= enable ? dds_code_bak[enable_channel] : 32'h0;
+                        end
+                    end
+                    SET_FREQUENCY_COMMAND_LENGTH: begin
+                        if (command[SET_FREQUENCY_COMMAND_LENGTH - 1: SET_FREQUENCY_COMMAND_LENGTH - 8] == 3 && // dds_command
+                            command[SET_FREQUENCY_COMMAND_LENGTH - 9: SET_FREQUENCY_COMMAND_LENGTH - 16] == 2) begin // set frequency code
+                            dds_code_bak[dds_channel] <= {command[55:48], command[63:56], command[71:64], command[79:72]};
+                            if (output_enabled[dds_channel])
+                                dds_code[dds_channel] <= {command[55:48], command[63:56], command[71:64], command[79:72]};
+                        end
+                    end
+                endcase
+            end
+            else
+                command <= {command[COMMAND_LENGTH - 2:0], mosi};
+        end
+    end
+
+    always @(negedge spi_clock) begin
+        if (!nreset) begin
+            response <= 0;
+            cnt <= 0;
+        end
+        else if (idle) begin
+            if (cnt != 0) begin
                 case (cnt)
                     8: begin
                         case (command[7:0])
@@ -81,45 +110,15 @@ module main
                             end
                         endcase
                     end
-                    OUTPUT_ENABLE_COMMAND_LENGTH: begin
-                        response <= {COMMAND_LENGTH{1'b0}};
-                        if (command[OUTPUT_ENABLE_COMMAND_LENGTH - 1: OUTPUT_ENABLE_COMMAND_LENGTH - 8] == 3 && // dds_command
-                            command[OUTPUT_ENABLE_COMMAND_LENGTH - 9: OUTPUT_ENABLE_COMMAND_LENGTH - 16] == 5) begin // enable_output
-                            output_enabled[enable_channel] <= enable;
-                            dds_code[enable_channel] <= enable ? dds_code_bak[enable_channel] : 32'h0;
-                        end
-                    end
-                    SET_FREQUENCY_COMMAND_LENGTH: begin
-                        response <= {COMMAND_LENGTH{1'b0}};
-                        if (command[SET_FREQUENCY_COMMAND_LENGTH - 1: SET_FREQUENCY_COMMAND_LENGTH - 8] == 3 && // dds_command
-                            command[SET_FREQUENCY_COMMAND_LENGTH - 9: SET_FREQUENCY_COMMAND_LENGTH - 16] == 2) begin // set frequency code
-                            dds_code_bak[dds_channel] <= {command[55:48], command[63:56], command[71:64], command[79:72]};
-                            if (output_enabled[dds_channel])
-                                dds_code[dds_channel] <= {command[55:48], command[63:56], command[71:64], command[79:72]};
-                        end
-                    end
+                    default: response <= {COMMAND_LENGTH{1'b0}};
                 endcase
                 cnt <= 0;
             end
         end
         else begin
-            case (1'b1)
-                rsck & !prev_sck: begin
-                    command <= {command[COMMAND_LENGTH - 2:0], mosi};
-                    cnt <= cnt + 1;
-                end
-                !rsck & prev_sck: begin
-                    response <= {response[COMMAND_LENGTH - 2:0], 1'b0};
-                end
-            endcase
+            response <= {response[COMMAND_LENGTH - 2:0], 1'b0};
+            cnt <= cnt + 1;
         end
-    end
-
-    always @(negedge clk) begin
-        prev_sck <= rsck;
-        prev_ncs <= rncs;
-        rsck <= sck;
-        rncs <= ncs;
     end
 
 endmodule
