@@ -2,6 +2,7 @@ module frequency_counter
 #(parameter CLK_COUNTER_WIDTH = 28, COUNTER_WIDTH = 28)
 (
     input wire clk,
+    input wire nreset,
     input wire iclk,
     input wire [CLK_COUNTER_WIDTH - 3:0] clk_frequency_div4,
     output reg [COUNTER_WIDTH - 1:0] code,
@@ -22,7 +23,13 @@ module frequency_counter
     end
 
     always @(posedge clk) begin
-        if (clk_counter[CLK_COUNTER_WIDTH - 1:2] == clk_frequency_div4) begin
+        if (!nreset) begin
+            clk_counter <= 0;
+            reset <= 0;
+            stop <= 0;
+            reset_counter <= 0;
+        end
+        else if (clk_counter[CLK_COUNTER_WIDTH - 1:2] == clk_frequency_div4) begin
             case (reset_counter)
                 0: stop <= 1;
                 1: code <= counter;
