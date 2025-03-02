@@ -30,7 +30,7 @@ module main_tb;
 
         spi_data_out = {120'h0}; // get device id
         spi_data_in = {120'h0};
-        cnt = 8;
+        cnt = 16;
         #5
         spi_send = 1;
         while (!sent) begin
@@ -39,9 +39,19 @@ module main_tb;
         spi_send = 0;
         #5
 
-        spi_data_out = {8'h1, 112'h0}; // get config
+        spi_data_out = {120'h0};
         spi_data_in = {120'h0};
-        cnt = 8;
+        cnt = 32;
+        spi_send = 1;
+        while (!sent) begin
+            #5;
+        end
+        spi_send = 0;
+        #5
+
+        spi_data_out = {8'h0, 8'h1, 104'h0}; // get config, subdevice 0
+        spi_data_in = {120'h0};
+        cnt = 16;
         spi_send = 1;
         while (!sent) begin
             #5;
@@ -60,9 +70,9 @@ module main_tb;
         #5
 
         //device_command, command, channel, frequency_code(8), divider(2)
-        spi_data_out = {8'h3, 8'h2, 8'h0, 8'hFF, 8'hFF, 48'h0, 16'h0, 16'h0};
+        spi_data_out = {8'h0, 8'h3, 8'h2, 8'h0, 8'hFF, 8'hFF, 48'h0, 16'h0, 8'h0};
         spi_data_in = {120'h0};
-        cnt = 104;
+        cnt = 112;
         spi_send = 1;
         while (!sent) begin
             #5;
@@ -71,9 +81,9 @@ module main_tb;
         #5
 
         //device_command, command, channel, enable
-        spi_data_out = {8'h3, 8'h5, 8'h0, 8'h1, 88'h0};
+        spi_data_out = {8'h0, 8'h3, 8'h5, 8'h0, 8'h1, 80'h0};
         spi_data_in = {120'h0};
-        cnt = 32;
+        cnt = 40;
         spi_send = 1;
         while (!sent) begin
             #5;
@@ -82,9 +92,9 @@ module main_tb;
         #5
 
         //device_command, command, channel, enable
-        spi_data_out = {8'h3, 8'h5, 8'h0, 8'h0, 88'h0};
+        spi_data_out = {8'h0, 8'h3, 8'h5, 8'h0, 8'h0, 80'h0};
         spi_data_in = {120'h0};
-        cnt = 32;
+        cnt = 40;
         spi_send = 1;
         while (!sent) begin
             #5;
@@ -94,7 +104,7 @@ module main_tb;
 
         spi_data_out = {120'h0}; // get device id
         spi_data_in = {120'h0};
-        cnt = 8;
+        cnt = 16;
         #5
         spi_send = 1;
         while (!sent) begin
@@ -103,9 +113,9 @@ module main_tb;
         spi_send = 0;
         #5
 
-        spi_data_out = {8'h1, 112'h0}; // get config
+        spi_data_out = {120'h0};
         spi_data_in = {120'h0};
-        cnt = 8;
+        cnt = 32;
         spi_send = 1;
         while (!sent) begin
             #5;
@@ -113,7 +123,17 @@ module main_tb;
         spi_send = 0;
         #5
 
-        spi_data_out = {120'h0}; // get device id
+        spi_data_out = {8'h0, 8'h1, 104'h0}; // get config
+        spi_data_in = {120'h0};
+        cnt = 16;
+        spi_send = 1;
+        while (!sent) begin
+            #5;
+        end
+        spi_send = 0;
+        #5
+
+        spi_data_out = {120'h0};
         spi_data_in = {120'h0};
         cnt = 120;
         #5

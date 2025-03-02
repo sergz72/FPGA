@@ -12,13 +12,16 @@ module main
     output wire [3:0] out
 );
     localparam COMMAND_LENGTH = 15 * 8;
-    localparam ID = 8'h1; // dds
-    localparam TYPE = 16'd6; //ad9959
+    localparam ID1 = 8'h1; // dds
+    localparam ID2 = 8'h0;
+    localparam ID3 = 8'h0;
+    localparam ID4 = 8'h0;
+    localparam DDS_TYPE = 16'd6; //ad9959
     localparam LEVEL_METER_TYPE = 16'h0;
     localparam MAX_MV = 16'd3300;
     localparam MAX_ATTENUATOR = 8'h0;
-    localparam SET_FREQUENCY_COMMAND_LENGTH = 13 * 8;
-    localparam OUTPUT_ENABLE_COMMAND_LENGTH = 4 * 8;
+    localparam SET_FREQUENCY_COMMAND_LENGTH = 14 * 8;
+    localparam OUTPUT_ENABLE_COMMAND_LENGTH = 5 * 8;
 
     reg [31:0] dds_code [0:3];
     reg [31:0] dds_code_bak [0:3];
@@ -36,7 +39,7 @@ module main
     wire enable;
 
     assign miso = ncs ? 1'bz : response[COMMAND_LENGTH - 1];
-    assign dds_channel = command[SET_FREQUENCY_COMMAND_LENGTH - 23: SET_FREQUENCY_COMMAND_LENGTH - 24];
+    assign dds_channel = command[SET_FREQUENCY_COMMAND_LENGTH - 31: SET_FREQUENCY_COMMAND_LENGTH - 32];
     assign enable_channel = command[9:8];
     assign enable = command[7:0] != 0;
 
@@ -63,18 +66,22 @@ module main
         else if (rncs) begin
             if (!prev_ncs) begin
                 case (cnt)
-                    8: begin
+                    16: begin
                         case (command[7:0])
                             0: begin// get id
-                                response <= {ID, {COMMAND_LENGTH-8{1'b0}}};
+                                response <= {ID1, ID2, ID3, ID4, {COMMAND_LENGTH-32{1'b0}}};
                             end
                             1: begin // get config
-                                response <= {
-                                    TYPE[7:0], TYPE[15:8],
-                                    LEVEL_METER_TYPE[7:0], LEVEL_METER_TYPE[15:8],
-                                    MCLK[7:0], MCLK[15:8], MCLK[23:16], MCLK[31:24], MCLK[39:32], MCLK[47:40], MCLK[55:48], MCLK[63:56],
-                                    MAX_MV[7:0], MAX_MV[15:8],
-                                    MAX_ATTENUATOR};
+                                case (command[15:8]) // subdevice_id
+                                    0: response <= {
+                                            DDS_TYPE[7:0], DDS_TYPE[15:8],
+                                            LEVEL_METER_TYPE[7:0], LEVEL_METER_TYPE[15:8],
+                                            MCLK[7:0], MCLK[15:8], MCLK[23:16], MCLK[31:24], MCLK[39:32], MCLK[47:40], MCLK[55:48], MCLK[63:56],
+                                            MAX_MV[7:0], MAX_MV[15:8],
+                                            MAX_ATTENUATOR};
+                                    default:
+                                        response <= {COMMAND_LENGTH{1'b0}};
+                                endcase
                             end
                             2: begin // get status
                                 response <= {COMMAND_LENGTH{1'b0}};
@@ -83,16 +90,16 @@ module main
                     end
                     OUTPUT_ENABLE_COMMAND_LENGTH: begin
                         response <= {COMMAND_LENGTH{1'b0}};
-                        if (command[OUTPUT_ENABLE_COMMAND_LENGTH - 1: OUTPUT_ENABLE_COMMAND_LENGTH - 8] == 3 && // dds_command
-                            command[OUTPUT_ENABLE_COMMAND_LENGTH - 9: OUTPUT_ENABLE_COMMAND_LENGTH - 16] == 5) begin // enable_output
+                        if (command[OUTPUT_ENABLE_COMMAND_LENGTH - 9: OUTPUT_ENABLE_COMMAND_LENGTH - 16] == 3 && // dds_command
+                            command[OUTPUT_ENABLE_COMMAND_LENGTH - 17: OUTPUT_ENABLE_COMMAND_LENGTH - 24] == 5) begin // enable_output
                             output_enabled[enable_channel] <= enable;
                             dds_code[enable_channel] <= enable ? dds_code_bak[enable_channel] : 32'h0;
                         end
                     end
                     SET_FREQUENCY_COMMAND_LENGTH: begin
                         response <= {COMMAND_LENGTH{1'b0}};
-                        if (command[SET_FREQUENCY_COMMAND_LENGTH - 1: SET_FREQUENCY_COMMAND_LENGTH - 8] == 3 && // dds_command
-                            command[SET_FREQUENCY_COMMAND_LENGTH - 9: SET_FREQUENCY_COMMAND_LENGTH - 16] == 2) begin // set frequency code
+                        if (command[SET_FREQUENCY_COMMAND_LENGTH - 9: SET_FREQUENCY_COMMAND_LENGTH - 16] == 3 && // dds_command
+                            command[SET_FREQUENCY_COMMAND_LENGTH - 17: SET_FREQUENCY_COMMAND_LENGTH - 24] == 2) begin // set frequency code
                             dds_code_bak[dds_channel] <= {command[55:48], command[63:56], command[71:64], command[79:72]};
                             if (output_enabled[dds_channel])
                                 dds_code[dds_channel] <= {command[55:48], command[63:56], command[71:64], command[79:72]};
