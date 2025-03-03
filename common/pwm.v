@@ -12,7 +12,7 @@ module pwm
     assign out = nreset && (counter < duty);
 
     always @(posedge clk) begin
-        if (!nreset || counter == period - 1)
+        if (!nreset || counter >= period - 1)
             counter <= 0;
         else
             counter <= counter + 1;

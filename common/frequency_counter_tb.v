@@ -4,7 +4,7 @@ module frequency_counter_tb;
     wire interrupt;
     reg interrupt_clear;
 
-    frequency_counter fc(.clk(clk), .nreset(nreset), .iclk(iclk), .clk_frequency_div4(26'd100), .code(code), .interrupt(interrupt), .interrupt_clear(interrupt_clear));
+    frequency_counter fc(.clk(clk), .nreset(nreset), .iclk(iclk), .clk_frequency_minus1(28'd99), .code(code), .interrupt(interrupt), .interrupt_clear(interrupt_clear));
 
     always #2 clk = ~clk;
     always #1 iclk = ~iclk;
@@ -17,11 +17,11 @@ module frequency_counter_tb;
         nreset = 0;
         #10
         nreset = 1;
-        #1700
+        #500
         interrupt_clear = 1;
         #20
         interrupt_clear = 0;
-        #1700
+        #500
         interrupt_clear = 1;
         #20
         interrupt_clear = 0;

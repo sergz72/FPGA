@@ -4,7 +4,7 @@ module frequency_counter
     input wire clk,
     input wire nreset,
     input wire iclk,
-    input wire [CLK_COUNTER_WIDTH - 3:0] clk_frequency_div4,
+    input wire [CLK_COUNTER_WIDTH - 1:0] clk_frequency_minus1,
     output reg [COUNTER_WIDTH - 1:0] code,
     output reg interrupt = 0,
     input wire interrupt_clear
@@ -29,7 +29,7 @@ module frequency_counter
             stop <= 0;
             reset_counter <= 0;
         end
-        else if (clk_counter[CLK_COUNTER_WIDTH - 1:2] == clk_frequency_div4) begin
+        else if (clk_counter[CLK_COUNTER_WIDTH - 1:0] == clk_frequency_minus1) begin
             case (reset_counter)
                 0: stop <= 1;
                 1: code <= counter;
