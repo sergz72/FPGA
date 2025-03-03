@@ -1,10 +1,11 @@
 module main_tb;
-    reg clk, clk_sys, ncs, spi_send, sent, nreset;
+    reg clk, clk_dds, clk_pwm, ncs, spi_send, sent, nreset;
     reg [119:0] spi_data_out, spi_data_in;
     reg [2:0] counter;
     reg [7:0] cnt;
+    reg [1:0] freq_in;
     wire miso, mosi, interrupt, sck;
-    wire [3:0] out;
+    wire [3:0] dds_out, pwm_out;
 
     assign mosi = spi_data_out[119];
 
@@ -12,19 +13,22 @@ module main_tb;
 
     always #1 clk <= ~clk;
 
-    main m(.clk(clk), .clk_dds(clk_sys), .sck(sck), .mosi(mosi), .ncs(ncs), .miso(miso), .interrupt(interrupt), .out(out), .nreset(nreset));
+    main m(.clk(clk), .clk_dds(clk_dds), .clk_pwm(clk_pwm), .sck(sck), .mosi(mosi), .ncs(ncs), .miso(miso), .interrupt(interrupt), .dds_out(dds_out),
+            .pwm_out(pwm_out), .freq_in(freq_in), .nreset(nreset));
 
     initial begin
         $dumpfile("main_tb.vcd");
         $dumpvars(0, main_tb);
         $monitor("time=%t sck=%d mosi=%d miso=%d ncs=%d spi_data_in=%x spi_send=%d sent=%d", $time, sck, mosi, miso, ncs, spi_data_in, spi_send, sent);
         clk = 0;
-        clk_sys = 0;
+        clk_dds = 0;
+        clk_pwm = 0;
         ncs = 1;
         spi_send = 0;
         sent = 0;
         counter = 0;
         nreset = 0;
+        freq_in = 0;
         #5
         nreset = 1;
 
