@@ -36,7 +36,7 @@ module main
     localparam PWM_CHANNELS = 8'd4;
     localparam PWM_BITS = 8'd32;
     localparam PWM_DDS_CLOCK = 8'd0;
-    localparam SET_PERIOD_AND_DUTY_COMMAND_LENGTH = 11 * 8;
+    localparam SET_PERIOD_AND_DUTY_COMMAND_LENGTH = 12 * 8;
 
     reg [31:0] dds_code [0:3];
     reg [31:0] dds_code_bak [0:3];
