@@ -168,10 +168,10 @@ module main
                         response <= {COMMAND_LENGTH{1'b0}};
                         if (command[SET_PERIOD_AND_DUTY_COMMAND_LENGTH - 9: SET_PERIOD_AND_DUTY_COMMAND_LENGTH - 16] == 3 && // pwm_command
                             command[SET_PERIOD_AND_DUTY_COMMAND_LENGTH - 17: SET_PERIOD_AND_DUTY_COMMAND_LENGTH - 24] == 2) begin // set period_and_duty
-                            pwm_period[pwm_channel] <= {command[63:56], command[55:48], command[47:40], command[39:32]};
-                            pwm_duty_bak[pwm_channel] <= {command[31:24], command[23:16], command[15:8], command[7:0]};
+                            pwm_period[pwm_channel] <= {command[39:32], command[47:40], command[55:48], command[63:56]};
+                            pwm_duty_bak[pwm_channel] <= {command[7:0], command[15:8], command[23:16], command[31:24]};
                             if (pwm_output_enabled[pwm_channel])
-                                pwm_duty[pwm_channel] <= {command[31:24], command[23:16], command[15:8], command[7:0]};
+                                pwm_duty[pwm_channel] <= {command[7:0], command[15:8], command[23:16], command[31:24]};
                         end
                     end
                     SET_FREQUENCY_COMMAND_LENGTH: begin
