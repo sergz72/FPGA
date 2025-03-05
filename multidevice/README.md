@@ -1,4 +1,4 @@
-# Multidevice for [Universal measurements tool](https://github.com/sergz72/ARM/meter_ui)
+# Multidevice for [Universal measurements tool](https://github.com/sergz72/ARM/tree/master/meter_ui)
 
 ## Features:
 - 4 channel DDS with 297 MHz clock (for Tang primer 20k).
