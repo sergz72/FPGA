@@ -1,8 +1,8 @@
 # FPGA projects
 
-[multidevice](Multidevice module for universal measurements tool)
+[Multidevice](multidevice) - Multidevice module for [Universal measurements tool](https://github.com/sergz72/ARM/tree/master/meter_ui).
 
-[Cpu16Lite](Cpu16Lite) - 16 bit cpu with 256 registers
+[Cpu16Lite](Cpu16Lite) - 16 bit cpu with 256 registers.
 
 [ForthCPU](ForthCPU) - CPU, designed to run code, compiled by Forth language compiler.
 
@@ -12,16 +12,16 @@
 
 [Software](Software) - Various software related to my FPGA projects (compilers, translators, etc...).
 
-[Tiny16](tiny16) - 16 bit cpu
+[Tiny16](tiny16) - 16 bit cpu.
 
-[Tiny32](tiny32) - RV32I(M) core
+[Tiny32](tiny32) - RV32I(M) core.
 
-[archived](archived) - archived projects
+[archived](archived) - archived projects.
 
 [boards](boards) - projects, related to specific FPGA boards.
 
-[common](common) - common Verilog components
+[common](common) - common Verilog components.
 
-[unfinished](unfinished) - unfinished projects
+[unfinished](unfinished) - unfinished projects.
 
-[untested](untested) - some untested stuff
+[untested](untested) - some untested stuff.
