@@ -9,7 +9,7 @@ module tiny16
     input wire nreset,
     output reg hlt = 0,
     output reg wfi = 0,
-    output wire [7:0] address,
+    output wire [15:0] address,
     input wire [15:0] data_in,
     output wire [15:0] data_out,
     output reg mem_valid = 0,
@@ -22,14 +22,30 @@ module tiny16
     localparam EIGHT_TO_RAM_BITS = RAM_BITS - 8;
     localparam REGISTER_BITS = 4;
 
-    localparam NOP = 16'h4000; // mov A, A
+    localparam ALU_OP_ADC  = 0;
+    localparam ALU_OP_ADD  = 1;
+    localparam ALU_OP_SBC  = 2;
+    localparam ALU_OP_SUB  = 3;
+    localparam ALU_OP_CMP  = 4;
+    localparam ALU_OP_AND  = 5;
+    localparam ALU_OP_TEST = 6;
+    localparam ALU_OP_OR   = 7;
+    localparam ALU_OP_XOR  = 8;
+    localparam ALU_OP_SHL  = 9;
+    localparam ALU_OP_SHR  = 10;
+    localparam ALU_OP_MUL  = 15;
+
+    localparam NOP = 16'h4400; // mov A, A
 
     reg [STAGE_WIDTH - 1:0] stage = 1;
     reg stage_reset = 0;
 
     reg [15:0] current_instruction;
     reg [15:0] registers [0:(1 << REGISTER_BITS) - 1];
-    reg [15:0] acc, acc2;
+    reg [15:0] acc;
+`ifdef NUL
+    reg [15:0] acc2;
+`endif    
     reg [15:0] pc, saved_pc, sp;
     reg start = 0;
     wire [REGISTER_BITS - 1:0] src_reg, dst_reg, src_reg2;
@@ -39,11 +55,11 @@ module tiny16
     reg [15:0] registers_wr_data;
     wire [15:0] spm1;
 
-    wire [3:0] opcode;
+    wire [2:0] opcode;
     wire [6:0] opcode7;
     wire [1:0] opcode2;
-    wire [11:0] offset12;
-    wire [7:0] offset8;
+    wire [12:0] offset13;
+    wire [8:0] offset9;
     wire [5:0] alu_data6;
     wire [7:0] addr8;
     wire [3:0] alu_op;
@@ -81,11 +97,11 @@ module tiny16
     assign z = acc == 0;
     assign n = acc[15];
 
-    assign opcode = current_instruction[15:12];
+    assign opcode = current_instruction[15:13];
     assign opcode7 = current_instruction[15:9];
     assign opcode2 = current_instruction[15:14];
-    assign offset12 = current_instruction[11:0];
-    assign offset8 = current_instruction[11:4];
+    assign offset13 = current_instruction[12:0];
+    assign offset9 = current_instruction[12:4];
     assign condition = current_instruction[2:0];
     assign condition_neg = current_instruction[3];
     assign src_reg = src[REGISTER_BITS*2-1:REGISTER_BITS];
@@ -99,57 +115,57 @@ module tiny16
     assign condition_pass = (condition_temp[0] | condition_temp[1] | condition_temp[2]) ^ condition_neg;
 
     assign nwr = in;
-    assign address = addr8;
+    assign address = reg_src;
     assign data_out = reg_src2;
 
-    assign alu_src = aluopi ? {10'h0, alu_data6} : reg_src;
+    assign alu_src = aluopi ? {{10{alu_data6[5]}}, alu_data6} : reg_src;
 
     assign spm1 = sp - 1;
 
     assign interrupt_enter = interrupt_request & !in_interrupt;
 
-    // format |4'h0|offset,8bit|condition,4bit|
-    assign br = opcode == 0; //+
-    // format |4'h1|offset,12bit|
-    assign jmp = opcode == 1; //+
-    // format |4'h2|000|9'h?|
-    assign halt = opcode7 == 7'h10; //+
-    // format |4'h2|001|9'h?|
-    assign wfi_ = opcode7 == 7'h11;
-    // format |4'h2|010|?|src,4bit|dst,4bit|
-    assign movrr = opcode7 == 7'h12; //+
-    // format |4'h2|011|9'h?|
-    assign ret = opcode7 == 7'h13; //+
-    // format |4'h2|100|9'h?|
-    assign reti = opcode7 == 7'h14;
-    // format |4'h2|101|5'h?|src,4bit|
-    assign loadsp = opcode7 == 7'h15;
-    // format |4'h2|110|?|src,4bit|4'h?|
-    assign push = opcode7 == 7'h16;
-    // format |4'h2|111|5'h?|src,4bit|
-    assign pop = opcode7 == 7'h17;
-    // format |4'h3|alu_op,4bit|src,4bit|dst,4bit|
-    assign aluop = opcode == 3;
+    // format |3'h0|offset,9bit|condition,4bit|
+    assign br = opcode == 0;
+    // format |3'h1|offset,13bit|
+    assign jmp = opcode == 1;
+    // format |3'h2|0000|9'h?|
+    assign halt = opcode7 == 7'h20;
+    // format |3'h2|0001|9'h?|
+    assign wfi_ = opcode7 == 7'h21;
+    // format |3'h2|0010|?|src,4bit|dst,4bit|
+    assign movrr = opcode7 == 7'h22;
+    // format |3'h2|0011|9'h?|
+    assign ret = opcode7 == 7'h23;
+    // format |3'h2|0100|9'h?|
+    assign reti = opcode7 == 7'h24;
+    // format |3'h2|0101|5'h?|src,4bit|
+    assign loadsp = opcode7 == 7'h25;
+    // format |3'h2|0110|?|src,4bit|4'h?|
+    assign push = opcode7 == 7'h26;
+    // format |4'h2|0111|5'h?|src,4bit|
+    assign pop = opcode7 == 7'h27;
+    // format |3'h2|1000|src,4bit|dst,4bit|
+    assign movmr = opcode7 == 7'h28;
+    // format |3'h2|1001|src,4bit|dst,4bit|
+    assign movrm = opcode7 == 7'h29;
+    // format |3'h2|1010|addr_reg,4bit|dst,4bit|
+    assign in = opcode7 == 7'h2A;
+    // format |4'hA|1011|addr_reg,4bit|src,4bit|
+    assign out = opcode7 == 7'h2B;
 `ifdef LOADPC
-    // format |4'h4|8'h?|src,4bit|
-    assign loadpc = opcode == 4; //+
+    // format |3'h2|1100|5'h?|src,4bit|
+    assign loadpc = opcode7 == 7'h2C;
 `endif    
-    // format |4'h5|offset,12bit|
-    assign call = opcode == 5; //+
 `ifdef RCALL
-    // format |4'h6|8'h?|src,4bit|
-    assign rcall = opcode == 6; //+
+    // format |3'h2|1101|5'h?|src,4bit|
+    assign rcall = opcode7 == 7'h2D;
 `endif    
-    // format |4'h7|4'h?|src,4bit|dst,4bit|
-    assign movmr = opcode == 7; //+
-    // format |4'h8|4'h?|src,4bit|dst,4bit|
-    assign movrm = opcode == 8; //+
-    // format |4'h9|addr,8bit|dst,4bit|
-    assign in = opcode == 9; //+
-    // format |4'hA|addr,8bit|src,4bit|
-    assign out = opcode == 10; //+
-    // format |4'hB|addr,8bit|src,4bit|
-    assign movi = opcode == 11;
+    // format |3'h3|?|alu_op,4bit|src,4bit|dst,4bit|
+    assign aluop = opcode == 3;
+    // format |3'h4|offset,13bit|
+    assign call = opcode == 4;
+    // format |3'h5|addr,8bit|dst,4bit|
+    assign movi = opcode == 5;
     // format |2'h3|data,2bit|alu_op,4bit|data,4bit|dst,4bit|
     assign aluopi = opcode2 == 3;
 
@@ -179,16 +195,16 @@ module tiny16
     always @(negedge clk) begin
         if (alu_clk) begin
             case (alu_op)
-                0,1: {c, acc} <= alu_src + reg_src2 + {16'h0, alu_op == 0 ? 1'b0 : c};
-                2,3: {c, acc} <= alu_src - reg_src2 - {16'h0, alu_op == 2 ? 1'b0 : c};
+                ALU_OP_ADD,ALU_OP_ADC: {c, acc} <= alu_src + reg_src2 + {16'h0, alu_op == ALU_OP_ADC ? c : 1'b0};
+                ALU_OP_SUB,ALU_OP_SBC,ALU_OP_CMP: {c, acc} <= alu_src - reg_src2 - {16'h0, alu_op == ALU_OP_SBC ? c : 1'b0};
+                ALU_OP_AND,ALU_OP_TEST: acc <= alu_src & reg_src2;
+                ALU_OP_OR: acc <= alu_src | reg_src2;
+                ALU_OP_XOR: acc <= alu_src ^ reg_src2;
+                ALU_OP_SHL: acc <= alu_src << 1;
+                ALU_OP_SHR: acc <= alu_src >> 1;
 `ifdef MUL
-                4: {acc2, acc} <= alu_src * reg_src2;
+                ALU_OP_MUL: {acc2, acc} <= alu_src * reg_src2;
 `endif
-                5: acc <= alu_src & reg_src2;
-                6: acc <= alu_src | reg_src2;
-                7: acc <= alu_src ^ reg_src2;
-                8: acc <= alu_src << 1;
-                9: acc <= alu_src >> 1;
             endcase
         end
     end
@@ -218,7 +234,7 @@ module tiny16
                         wfi <= 0;
                         if (registers_wr)
                             registers[registers_wr_addr] <= in ? data_in : registers_wr_data;
-                        src_addr = interrupt_enter ? 1 : pc[RAM_BITS - 1:0];
+                        src_addr <= interrupt_enter ? 1 : pc[RAM_BITS - 1:0];
                         if (interrupt_enter) begin
                             pc <= 1;
                             saved_pc <= pc;
@@ -248,12 +264,12 @@ module tiny16
                     dst <= movrm | push ? reg_src : pc;
                     dst_addr <= movrm ? reg_src2[RAM_BITS-1:0] : spm1[RAM_BITS-1:0];
 `ifdef LOADPC
-                    pc <= rcall | loadpc ? reg_src2 : (jmp | call ? pc + { {4{offset12[11]}}, offset12 } : (br & condition_pass ? pc + { {8{offset8[7]}}, offset8 } : pc + 1));
+                    pc <= rcall | loadpc ? reg_src2 : (jmp | call ? pc + { {3{offset13[12]}}, offset13 } : (br & condition_pass ? pc + { {7{offset9[8]}}, offset9 } : pc + 1));
 `else
 `ifdef RCALL
-                    pc <= rcall ? reg_src2 : (jmp | call ? pc + { {4{offset12[11]}}, offset12 } : (br & condition_pass ? pc + { {8{offset8[7]}}, offset8 } : pc + 1));
+                    pc <= rcall ? reg_src2 : (jmp | call ? pc + { {3{offset13[12]}}, offset13 } : (br & condition_pass ? pc + { {7{offset9[8]}}, offset9 } : pc + 1));
 `else                    
-                    pc <= jmp | call ? pc + { {4{offset12[11]}}, offset12 } : (br & condition_pass ? pc + { {8{offset8[7]}}, offset8 } : pc + 1);
+                    pc <= jmp | call ? pc + { {3{offset13[12]}}, offset13 } : (br & condition_pass ? pc + { {7{offset9[8]}}, offset9 } : pc + 1);
 `endif
 `endif
                     case (1'b1)
@@ -268,7 +284,7 @@ module tiny16
                         aluop | aluopi: alu_clk <= 1;
                         loadsp: sp <= reg_src2;
                     endcase
-                    stage_reset <= halt | jmp | wfi_ | br | movrr | movrm | out | in | call | loadsp | push
+                    stage_reset <= halt | jmp | wfi_ | br | movrr | movrm | out | in | call | loadsp | push | (aluop && ((alu_op == ALU_OP_CMP) || (alu_op == ALU_OP_TEST)))
 `ifdef RCALL
                     | rcall
 `endif                    

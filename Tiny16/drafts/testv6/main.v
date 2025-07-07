@@ -6,7 +6,7 @@ module main
     output wire nwfi,
     output reg led = 1
 );
-    wire [7:0] address;
+    wire [15:0] address;
     wire nwr, hlt;
     wire [15:0] data_in;
     reg [15:0] data_out;
