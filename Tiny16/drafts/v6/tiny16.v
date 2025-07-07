@@ -19,7 +19,7 @@ module tiny16
     output reg in_interrupt = 0
 );
     localparam STAGE_WIDTH = 4;
-    localparam EIGHT_TO_RAM_BITS = RAM_BITS - 8;
+    localparam NINE_TO_RAM_BITS = RAM_BITS - 9;
     localparam REGISTER_BITS = 4;
 
     localparam ALU_OP_ADC  = 0;
@@ -61,9 +61,8 @@ module tiny16
     wire [6:0] opcode7;
     wire [1:0] opcode2;
     wire [12:0] offset13;
-    wire [8:0] offset9;
+    wire [8:0] offset_or_addr9;
     wire [5:0] alu_data6;
-    wire [7:0] addr8;
     wire [3:0] alu_op;
     wire br, jmp, movi, movrr, aluop, aluopi, call, movmr, movrm, in, out, halt, wfi_, ret, reti, loadsp;
     wire push, pop;
@@ -103,13 +102,12 @@ module tiny16
     assign opcode7 = current_instruction[15:9];
     assign opcode2 = current_instruction[15:14];
     assign offset13 = current_instruction[12:0];
-    assign offset9 = current_instruction[12:4];
+    assign offset_or_addr9 = current_instruction[12:4];
     assign condition = current_instruction[2:0];
     assign condition_neg = current_instruction[3];
     assign src_reg = src[REGISTER_BITS*2-1:REGISTER_BITS];
     assign src_reg2 = src[REGISTER_BITS-1:0];
     assign dst_reg = current_instruction[REGISTER_BITS-1:0];
-    assign addr8 = current_instruction[11:4];
     assign alu_op = current_instruction[11:8];
     assign alu_data6 = {current_instruction[13:12], current_instruction[7:4]};
 
@@ -144,15 +142,15 @@ module tiny16
     assign loadsp = opcode7 == 7'h25;
     // format |3'h2|0110|?|src,4bit|4'h?|
     assign push = opcode7 == 7'h26;
-    // format |4'h2|0111|5'h?|src,4bit|
+    // format |3'h2|0111|5'h?|src,4bit|
     assign pop = opcode7 == 7'h27;
-    // format |3'h2|1000|src,4bit|dst,4bit|
+    // format |3'h2|1000|?|src,4bit|dst,4bit|
     assign movmr = opcode7 == 7'h28;
-    // format |3'h2|1001|src,4bit|dst,4bit|
+    // format |3'h2|1001|?|src,4bit|dst,4bit|
     assign movrm = opcode7 == 7'h29;
-    // format |3'h2|1010|addr_reg,4bit|dst,4bit|
+    // format |3'h2|1010|?|addr_reg,4bit|dst,4bit|
     assign in = opcode7 == 7'h2A;
-    // format |4'hA|1011|addr_reg,4bit|src,4bit|
+    // format |4'hA|1011|?|addr_reg,4bit|src,4bit|
     assign out = opcode7 == 7'h2B;
 `ifdef LOADPC
     // format |3'h2|1100|5'h?|src,4bit|
@@ -166,7 +164,7 @@ module tiny16
     assign aluop = opcode == 3;
     // format |3'h4|offset,13bit|
     assign call = opcode == 4;
-    // format |3'h5|addr,8bit|dst,4bit|
+    // format |3'h5|addr,9bit|dst,4bit|
     assign movi = opcode == 5;
     // format |2'h3|data,2bit|alu_op,4bit|data,4bit|dst,4bit|
     assign aluopi = opcode2 == 3;
@@ -255,7 +253,7 @@ module tiny16
                 end
                 4: begin
                     mem_valid <= in | out;
-                    src_addr <= ret ? sp[RAM_BITS-1:0] : (movi ? {{EIGHT_TO_RAM_BITS{1'h0}}, addr8} : reg_src[RAM_BITS-1:0]);
+                    src_addr <= ret ? sp[RAM_BITS-1:0] : (movi ? {{NINE_TO_RAM_BITS{1'h0}}, offset_or_addr9} : reg_src[RAM_BITS-1:0]);
                     registers_wr_addr <= dst_reg;
                     registers_wr <= movrr | in;
 `ifdef RCALL                    
@@ -266,12 +264,12 @@ module tiny16
                     dst <= movrm | push ? reg_src : pc;
                     dst_addr <= movrm ? reg_src2[RAM_BITS-1:0] : spm1[RAM_BITS-1:0];
 `ifdef LOADPC
-                    pc <= rcall | loadpc ? reg_src2 : (jmp | call ? pc + { {3{offset13[12]}}, offset13 } : (br & condition_pass ? pc + { {7{offset9[8]}}, offset9 } : pc + 1));
+                    pc <= rcall | loadpc ? reg_src2 : (jmp | call ? pc + { {3{offset13[12]}}, offset13 } : (br & condition_pass ? pc + { {7{offset_or_addr9[8]}}, offset_or_addr9 } : pc + 1));
 `else
 `ifdef RCALL
-                    pc <= rcall ? reg_src2 : (jmp | call ? pc + { {3{offset13[12]}}, offset13 } : (br & condition_pass ? pc + { {7{offset9[8]}}, offset9 } : pc + 1));
+                    pc <= rcall ? reg_src2 : (jmp | call ? pc + { {3{offset13[12]}}, offset13 } : (br & condition_pass ? pc + { {7{offset_or_addr9[8]}}, offset_or_addr9 } : pc + 1));
 `else                    
-                    pc <= jmp | call ? pc + { {3{offset13[12]}}, offset13 } : (br & condition_pass ? pc + { {7{offset9[8]}}, offset9 } : pc + 1);
+                    pc <= jmp | call ? pc + { {3{offset13[12]}}, offset13 } : (br & condition_pass ? pc + { {7{offset_or_addr9[8]}}, offset_or_addr9 } : pc + 1);
 `endif
 `endif
                     case (1'b1)
