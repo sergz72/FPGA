@@ -3,8 +3,12 @@ using Tiny16Assembler.V6Instructions;
 
 namespace Tiny16Assembler;
 
+internal record ImmediateInstructionInformation(
+    LoadImmediateInstruction LoadImmediateInstruction, short? Immediate, string? Label);
 internal sealed class Tiny16V6Compiler : GenericCompiler
 {
+    private readonly List<ImmediateInstructionInformation> _loadConstantInstructions = [];
+    
     internal Tiny16V6Compiler(List<string> sources, OutputFormat outputFormat) :
         base(sources, outputFormat, Creators, new GenericParser(), 2, 2, 2)
     {
@@ -13,6 +17,8 @@ internal sealed class Tiny16V6Compiler : GenericCompiler
     
     private static readonly Dictionary<string, InstructionCreator> Creators = new()
     {
+        {".constants", new ConstantsInstructionCreator()},
+        
         {"nop", new OpCode7InstructionCreator(InstructionCodes.Nop)},
         {"hlt", new OpCode7InstructionCreator(InstructionCodes.Hlt)},
         {"wfi", new OpCode7InstructionCreator(InstructionCodes.Wfi)},
@@ -20,6 +26,7 @@ internal sealed class Tiny16V6Compiler : GenericCompiler
         {"ret", new OpCode7InstructionCreator(InstructionCodes.Ret)},
         
         {"mov", new MovInstructionCreator()},
+        {"lda", new LoadAddressInstructionCreator()},
         
         {"clr", new AluOneRegisterInstructionCreator(InstructionCodes.Xor)},
         {"ser", new AluWithImmediateInstructionCreator(InstructionCodes.Or, -1)},
@@ -65,4 +72,19 @@ internal sealed class Tiny16V6Compiler : GenericCompiler
         {"in", new TwoRegistersInstructionCreator(InstructionCodes.In)},
         {"out", new TwoRegistersInstructionCreator(InstructionCodes.Out)},
     };
+
+    public void RegisterInstructionForImmediate(LoadImmediateInstruction instruction, short immediate)
+    {
+        _loadConstantInstructions.Add(new ImmediateInstructionInformation(instruction, immediate, null));
+    }
+
+    public void RegisterInstructionForLabel(LoadImmediateInstruction instruction, string label)
+    {
+        _loadConstantInstructions.Add(new ImmediateInstructionInformation(instruction, null, label));
+    }
+
+    public uint[] BuildConstants(uint pc)
+    {
+        //todo
+    }
 }
