@@ -33,6 +33,8 @@ module tiny16
     localparam ALU_OP_XOR  = 8;
     localparam ALU_OP_SHL  = 9;
     localparam ALU_OP_SHR  = 10;
+    localparam ALU_OP_ROL  = 11;
+    localparam ALU_OP_ROR  = 12;
     localparam ALU_OP_MUL  = 15;
 
     localparam NOP = 16'h4400; // mov A, A
@@ -200,8 +202,8 @@ module tiny16
                 ALU_OP_AND,ALU_OP_TEST: acc <= alu_src & reg_src2;
                 ALU_OP_OR: acc <= alu_src | reg_src2;
                 ALU_OP_XOR: acc <= alu_src ^ reg_src2;
-                ALU_OP_SHL: acc <= alu_src << 1;
-                ALU_OP_SHR: acc <= alu_src >> 1;
+                ALU_OP_SHL,ALU_OP_ROL: {c, acc} <= {alu_src, alu_op == ALU_OP_ROL ? c : 1'b0};
+                ALU_OP_SHR,ALU_OP_ROR: {acc, c} <= {alu_op == ALU_OP_ROR ? c : 1'b0, alu_src[14:0]};
 `ifdef MUL
                 ALU_OP_MUL: {acc2, acc} <= alu_src * reg_src2;
 `endif
