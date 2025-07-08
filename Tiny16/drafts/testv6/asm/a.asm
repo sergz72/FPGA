@@ -1,11 +1,10 @@
 .equ RAM_SIZE 4096
-.equ SP RAM_SIZE-128
 
 	jmp start
 	reti
 .constants
 start:
-	mov r0, SP
+	mov r0, RAM_SIZE
 	loadsp  r0
 	xor r0, r0
 	beq next1

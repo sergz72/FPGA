@@ -15,7 +15,7 @@ internal sealed class AluInstructionCreator(uint opCode) : InstructionCreator
             throw new InstructionException("register name expected");
         if (parameters[2].Type == TokenType.Name &&
             GetRegisterNumber(compiler, parameters[2].StringValue, out var registerNumber2))
-            return new OpCode3Instruction(line, file, lineNo, InstructionCodes.AluOp, opCode, registerNumber, registerNumber2);
+            return new OpCode3Instruction(line, file, lineNo, InstructionCodes.AluOp, opCode, registerNumber2, registerNumber);
         var start = 2;
         var immediate = compiler.CalculateExpression(parameters, ref start);
         if (immediate is < 0 or > 0x3F)

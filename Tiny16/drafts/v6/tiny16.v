@@ -195,13 +195,13 @@ module tiny16
     always @(negedge clk) begin
         if (alu_clk) begin
             case (alu_op)
-                ALU_OP_ADD,ALU_OP_ADC: {c, acc} <= alu_src + reg_src2 + {16'h0, alu_op == ALU_OP_ADC ? c : 1'b0};
-                ALU_OP_SUB,ALU_OP_SBC,ALU_OP_CMP: {c, acc} <= alu_src - reg_src2 - {16'h0, alu_op == ALU_OP_SBC ? c : 1'b0};
-                ALU_OP_AND,ALU_OP_TEST: acc <= alu_src & reg_src2;
-                ALU_OP_OR: acc <= alu_src | reg_src2;
-                ALU_OP_XOR: acc <= alu_src ^ reg_src2;
+                ALU_OP_ADD,ALU_OP_ADC: {c, acc} <= reg_src2 + alu_src + {16'h0, alu_op == ALU_OP_ADC ? c : 1'b0};
+                ALU_OP_SUB,ALU_OP_SBC,ALU_OP_CMP: {c, acc} <= reg_src2 - alu_src - {16'h0, alu_op == ALU_OP_SBC ? c : 1'b0};
+                ALU_OP_AND,ALU_OP_TEST: acc <= reg_src2 & alu_src;
+                ALU_OP_OR: acc <= reg_src2 | alu_src;
+                ALU_OP_XOR: acc <= reg_src2 ^ alu_src;
                 ALU_OP_SHL,ALU_OP_ROL: {c, acc} <= {alu_src, alu_op == ALU_OP_ROL ? c : 1'b0};
-                ALU_OP_SHR,ALU_OP_ROR: {acc, c} <= {alu_op == ALU_OP_ROR ? c : 1'b0, alu_src[14:0]};
+                ALU_OP_SHR,ALU_OP_ROR: {acc, c} <= {alu_op == ALU_OP_ROR ? c : 1'b0, alu_src};
 `ifdef MUL
                 ALU_OP_MUL: {acc2, acc} <= alu_src * reg_src2;
 `endif
@@ -227,6 +227,7 @@ module tiny16
         else if (go) begin
             case (stage)
                 1: begin
+                    alu_clk <= 0;
                     if ((mem_valid & !mem_ready) | (wfi & !interrupt_request)) begin
                         stage_reset <= 1;
                     end
@@ -253,7 +254,7 @@ module tiny16
                 end
                 4: begin
                     mem_valid <= in | out;
-                    src_addr <= ret ? sp[RAM_BITS-1:0] : (movi ? {{NINE_TO_RAM_BITS{1'h0}}, offset_or_addr9} : reg_src[RAM_BITS-1:0]);
+                    src_addr <= ret | pop ? sp[RAM_BITS-1:0] : (movi ? {{NINE_TO_RAM_BITS{1'h0}}, offset_or_addr9} : reg_src[RAM_BITS-1:0]);
                     registers_wr_addr <= dst_reg;
                     registers_wr <= movrr | in;
 `ifdef RCALL                    
@@ -261,7 +262,7 @@ module tiny16
 `else
                     ram_wr <= movrm | call | push;
 `endif                    
-                    dst <= movrm | push ? reg_src : pc;
+                    dst <= movrm | push ? reg_src : (call ? pc + 1 : pc);
                     dst_addr <= movrm ? reg_src2[RAM_BITS-1:0] : spm1[RAM_BITS-1:0];
 `ifdef LOADPC
                     pc <= rcall | loadpc ? reg_src2 : (jmp | call ? pc + { {3{offset13[12]}}, offset13 } : (br & condition_pass ? pc + { {7{offset_or_addr9[8]}}, offset_or_addr9 } : pc + 1));
