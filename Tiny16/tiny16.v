@@ -55,7 +55,7 @@ module tiny16
     reg registers_wr;
     reg [REGISTER_BITS - 1:0] registers_wr_addr;
     reg [15:0] registers_wr_data;
-    wire [15:0] spm1, pcp1;
+    wire [15:0] spm1;
 
     wire [2:0] opcode;
     wire [6:0] opcode7;
@@ -121,7 +121,6 @@ module tiny16
     assign alu_src = aluopi ? {{10{alu_data6[5]}}, alu_data6} : reg_src;
 
     assign spm1 = sp - 1;
-    assign pcp1 = pc + 1;
 
     assign interrupt_enter = interrupt_request & !in_interrupt;
 
@@ -263,15 +262,15 @@ module tiny16
 `else
                     ram_wr <= movrm | call | push;
 `endif                    
-                    dst <= movrm | push ? reg_src : (call ? pcp1 : pc);
+                    dst <= movrm | push ? reg_src : (call ? pc + 1 : pc);
                     dst_addr <= movrm ? reg_src2[RAM_BITS-1:0] : spm1[RAM_BITS-1:0];
 `ifdef LOADPC
                     pc <= rcall | loadpc ? reg_src2 : (jmp | call ? pc + { {3{offset13[12]}}, offset13 } : (br & condition_pass ? pc + { {7{offset_or_addr9[8]}}, offset_or_addr9 } : pcp1));
 `else
 `ifdef RCALL
-                    pc <= rcall ? reg_src2 : (jmp | call ? pc + { {3{offset13[12]}}, offset13 } : (br & condition_pass ? pc + { {7{offset_or_addr9[8]}}, offset_or_addr9 } : pcp1));
+                    pc <= rcall ? reg_src2 : (jmp | call ? pc + { {3{offset13[12]}}, offset13 } : (br & condition_pass ? pc + { {7{offset_or_addr9[8]}}, offset_or_addr9 } : pc + 1));
 `else                    
-                    pc <= jmp | call ? pc + { {3{offset13[12]}}, offset13 } : (br & condition_pass ? pc + { {7{offset_or_addr9[8]}}, offset_or_addr9 } : pcp1);
+                    pc <= jmp | call ? pc + { {3{offset13[12]}}, offset13 } : (br & condition_pass ? pc + { {7{offset_or_addr9[8]}}, offset_or_addr9 } : pc + 1);
 `endif
 `endif
                     case (1'b1)
