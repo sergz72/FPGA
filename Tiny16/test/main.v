@@ -9,7 +9,7 @@ module main
     wire [15:0] address;
     wire nwr, hlt;
     wire [15:0] data_in;
-    reg [15:0] data_out;
+    reg [15:0] data_out = 16'h55AA;
     reg nreset = 0;
     reg [COUNTER_BITS - 1:0] counter = 0;
     reg interrupt = 0;

@@ -84,7 +84,7 @@ internal sealed class OpCode2Instruction(string line, string file, int lineNo, u
 {
     public override uint[] BuildCode(uint labelAddress, uint pc)
     {
-        return [(opCode << 14) | ((data & 0x30) << 12) | (alu_op << 8) | ((data & 0x0F) << 4) | dst];
+        return [(opCode << 14) | ((data & 0x30) << 8) | (alu_op << 8) | ((data & 0x0F) << 4) | dst];
     }
 }
 

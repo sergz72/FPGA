@@ -73,8 +73,8 @@ internal sealed class Tiny16V6Compiler : GenericCompiler
         {"push", new OneRegisterInstructionCreator(InstructionCodes.Push, true)},
         {"pop", new OneRegisterInstructionCreator(InstructionCodes.Pop, false)},
 
-        {"in", new TwoRegistersInstructionCreator(InstructionCodes.In)},
-        {"out", new TwoRegistersInstructionCreator(InstructionCodes.Out)},
+        {"in", new TwoRegistersInstructionCreator(InstructionCodes.In, false)},
+        {"out", new TwoRegistersInstructionCreator(InstructionCodes.Out, true)},
     };
 
     public void RegisterInstructionForImmediate(LoadImmediateInstruction instruction, uint immediate)
