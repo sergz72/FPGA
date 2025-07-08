@@ -1,2 +1,2 @@
 //`define MUL
-//`define DIV
+//`define loadpc

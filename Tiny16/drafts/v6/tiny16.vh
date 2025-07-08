@@ -1,2 +1,0 @@
-//`define MUL
-//`define loadpc
