@@ -6,7 +6,13 @@
 start:
 	mov r5, RAM_SIZE
 	loadsp  r5
+	mov r4, r5
 	xor r5, r5
+	beq next0
+	hlt
+next0:
+	mov r3, RAM_SIZE
+	cmp r4, r3
 	beq next1
 	hlt
 next1:
