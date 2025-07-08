@@ -143,7 +143,7 @@ module tiny16
     assign loadsp = opcode7 == 7'h25;
     // format |3'h2|0110|?|src,4bit|4'h?|
     assign push = opcode7 == 7'h26;
-    // format |3'h2|0111|5'h?|src,4bit|
+    // format |3'h2|0111|5'h?|dst,4bit|
     assign pop = opcode7 == 7'h27;
     // format |3'h2|1000|?|src,4bit|dst,4bit|
     assign movmr = opcode7 == 7'h28;

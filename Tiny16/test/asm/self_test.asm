@@ -49,15 +49,25 @@ next10:
 	beq next11
 	hlt
 next11:
-	call func				
-loop:
+	call next_tests
 	clr r0
+loop:
 	out r0, r0
 	wfi
-	inc r0
-	out r0, r0
-	wfi
+	xor r0, 1
 	jmp loop
 
-func:
+next_tests:
+	add r0, r1 ; 3
+	lda r1, variable1
+	mov @r1, r0
+	clr r0
+	mov r0, @r1
+	cmp r0, 3
+	beq next12
+	hlt
+next12:
 	ret
+
+.segment bss
+variable1: resw 1
