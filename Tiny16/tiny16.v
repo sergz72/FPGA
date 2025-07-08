@@ -65,7 +65,7 @@ module tiny16
     wire [5:0] alu_data6;
     wire [3:0] alu_op;
     wire br, jmp, movi, movrr, aluop, aluopi, call, movmr, movrm, in, out, halt, wfi_, ret, reti, loadsp;
-    wire push, pop;
+    wire push, pop, aluop_or_i;
 `ifdef RCALL
     wire rcall;
 `endif        
@@ -168,6 +168,8 @@ module tiny16
     assign movi = opcode == 5;
     // format |2'h3|data,2bit|alu_op,4bit|data,4bit|dst,4bit|
     assign aluopi = opcode2 == 3;
+
+    assign aluop_or_i = aluop | aluopi;
 
     assign go = start & !hlt;
 
@@ -282,10 +284,10 @@ module tiny16
                         halt: hlt <= 1;
                         wfi_: wfi <= 1;
                         movrr: registers_wr_data <= reg_src;
-                        aluop | aluopi: alu_clk <= 1;
+                        aluop_or_i: alu_clk <= 1;
                         loadsp: sp <= reg_src2;
                     endcase
-                    stage_reset <= halt | jmp | wfi_ | br | movrr | movrm | out | in | call | loadsp | push | (aluop && ((alu_op == ALU_OP_CMP) || (alu_op == ALU_OP_TEST)))
+                    stage_reset <= halt | jmp | wfi_ | br | movrr | movrm | out | in | call | loadsp | push | (aluop_or_i && ((alu_op == ALU_OP_CMP) || (alu_op == ALU_OP_TEST)))
 `ifdef RCALL
                     | rcall
 `endif                    
@@ -296,7 +298,7 @@ module tiny16
                 end
                 8: begin
                     registers_wr_addr <= dst_reg;
-                    registers_wr <= movmr | aluop | aluopi | movi | pop;
+                    registers_wr <= movmr | aluop_or_i | movi | pop;
                     if (ret | pop)
                         sp <= sp + 1;
                     case (1'b1)
@@ -306,7 +308,7 @@ module tiny16
                             in_interrupt <= 0;
                         end
                         movmr | movi | pop: registers_wr_data <= src;
-                        aluop | aluopi: registers_wr_data <= acc;
+                        aluop_or_i: registers_wr_data <= acc;
                     endcase
                     alu_clk <= 0;
                 end

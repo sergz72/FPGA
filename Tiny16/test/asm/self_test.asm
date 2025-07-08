@@ -67,6 +67,16 @@ next_tests:
 	beq next12
 	hlt
 next12:
+	sub r0, 4
+	bc next13
+	hlt
+next13:
+	mov r2, 2
+	and r0, r2
+	cmp r0, 2
+	beq next14
+	hlt
+next14:
 	ret
 
 .segment bss
