@@ -13,12 +13,14 @@ internal sealed class ConstantsInstruction : Instruction
     
     public override uint[] BuildCode(uint labelAddress, uint pc)
     {
-        return _compiler.GetConstants(pc);
+        var arr = _compiler.GetConstants(pc);
+        return arr.Length == 0 ? [0] : arr;
     }
 
     public override void UpdateSize(uint labelAddress, uint pc)
     {
-        Size = _compiler.BuildConstants(pc);
+        var s = _compiler.BuildConstants(pc);
+        Size = s == 0 ? 1 : s;
     }
 }
 

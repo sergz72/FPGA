@@ -26,7 +26,7 @@ internal sealed class MovInstructionCreator : InstructionCreator
         if (parameters.Count != 4 || parameters[3].Type != TokenType.Name ||
             !GetRegisterNumber(compiler, parameters[3].StringValue, out var registerNumber2))
             throw new InstructionException("register name2 expected");
-        return new OpCode7Instruction(line, file, lineNo, InstructionCodes.Movrm, registerNumber, registerNumber2);
+        return new OpCode7Instruction(line, file, lineNo, InstructionCodes.Movrm, registerNumber2, registerNumber);
     }
 
     private static Instruction CreateMovmr(ICompiler compiler, uint registerNumber, List<Token> parameters, string line, string file, int lineNo)
@@ -34,7 +34,7 @@ internal sealed class MovInstructionCreator : InstructionCreator
         if (parameters.Count != 4 || parameters[3].Type != TokenType.Name ||
             !GetRegisterNumber(compiler, parameters[3].StringValue, out var registerNumber2))
             throw new InstructionException("register name expected");
-        return new OpCode7Instruction(line, file, lineNo, InstructionCodes.Movmr, registerNumber, registerNumber2);
+        return new OpCode7Instruction(line, file, lineNo, InstructionCodes.Movmr, registerNumber2, registerNumber);
     }
     
     private static Instruction CreateMovr(ICompiler compiler, uint registerNumber, List<Token> parameters, string line, string file, int lineNo)
@@ -45,7 +45,7 @@ internal sealed class MovInstructionCreator : InstructionCreator
             return CreateMovmr(compiler, registerNumber, parameters, line, file, lineNo);
         if (parameters[2].Type == TokenType.Name &&
             GetRegisterNumber(compiler, parameters[2].StringValue, out var registerNumber2))
-            return new OpCode7Instruction(line, file, lineNo, InstructionCodes.Movrr, registerNumber, registerNumber2);
+            return new OpCode7Instruction(line, file, lineNo, InstructionCodes.Movrr, registerNumber2, registerNumber);
         var start = 2;
         var immediate = compiler.CalculateExpression(parameters, ref start);
         var instruction = new LoadImmediateInstruction(line, file, lineNo, registerNumber);

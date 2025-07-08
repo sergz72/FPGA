@@ -21,11 +21,12 @@ public interface ICompiler
 public class GenericCompiler: ICompiler
 {
     protected record BinaryItem(uint[] Code, string Line);
+    protected record LabelSegmentAndAddress(string SegmentName, uint Address);
     
     internal sealed class CompilerException(string fileName, int lineNo, string message) : Exception($"Error in {fileName}:{lineNo}: {message}");
 
     protected readonly Dictionary<string, InstructionCreator> InstructionCreators;
-    protected readonly Dictionary<string, uint> Labels = [];
+    protected readonly Dictionary<string, LabelSegmentAndAddress> Labels = [];
     protected readonly Dictionary<string, List<Instruction>> Instructions = [];
     protected readonly IParser Parser;
     protected readonly List<string> Sources;
@@ -81,7 +82,7 @@ public class GenericCompiler: ICompiler
 
     public uint? FindLabel(string name)
     {
-        return Labels.TryGetValue(name, out var address) ? address : null;
+        return Labels.TryGetValue(name, out var info) ? info.Address : null;
     }
 
     public string FindRegisterNumber(string registerName)
@@ -159,9 +160,9 @@ public class GenericCompiler: ICompiler
             {
                 if (instruction.RequiredLabel != null)
                 {
-                    var labelAddress = Labels[instruction.RequiredLabel];
+                    var labelInfo = Labels[instruction.RequiredLabel];
                     var size = instruction.Size;
-                    instruction.UpdateSize(labelAddress, pc);
+                    instruction.UpdateSize(labelInfo.Address, pc);
                     var diff = instruction.Size - size;
                     if (diff != 0)
                     {
@@ -181,7 +182,7 @@ public class GenericCompiler: ICompiler
         pc = StartAddress[section];
         foreach (var instruction in Instructions[section])
         {
-                var labelAddress = instruction.RequiredLabel != null ? Labels[instruction.RequiredLabel] : 0;
+                var labelAddress = instruction.RequiredLabel != null ? Labels[instruction.RequiredLabel].Address : 0;
                 var code = instruction.BuildCode(labelAddress, pc);
                 pc += (uint)code.Length;
                 bytes.Add(new BinaryItem(code, instruction.Line));
@@ -192,11 +193,11 @@ public class GenericCompiler: ICompiler
 
     private void UpdateLabelAddresses(uint pc, uint diff)
     {
-        var original = new Dictionary<string, uint>(Labels);
+        var original = new Dictionary<string, LabelSegmentAndAddress>(Labels);
         foreach (var label in original)
         {
-            if (label.Value > pc)
-                Labels[label.Key] = label.Value + diff;
+            if (label.Value.SegmentName == "code" && label.Value.Address > pc)
+                Labels[label.Key] = new LabelSegmentAndAddress(label.Key, label.Value.Address + diff);
         }
     }
 
@@ -411,7 +412,7 @@ public class GenericCompiler: ICompiler
 
     public void AddLabel(string fileName, string name)
     {
-        if (!Labels.TryAdd(name, Pc[CurrentSection]))
+        if (!Labels.TryAdd(name, new LabelSegmentAndAddress(CurrentSection, Pc[CurrentSection])))
             throw new CompilerException(fileName, CurrentLineNo, "duplicate label");
     }
 }

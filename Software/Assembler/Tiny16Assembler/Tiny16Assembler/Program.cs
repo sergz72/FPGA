@@ -8,7 +8,7 @@ var noRem32 = true;
 var noDiv16 = true;
 var noRem16 = true;
 var noMul = true;
-var arch = "v3";
+var arch = "v6";
 var archExpected = false;
 
 foreach (var arg in args)

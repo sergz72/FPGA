@@ -67,11 +67,11 @@ internal sealed class Tiny16V6Compiler : GenericCompiler
         
         {"jmp", new JmpInstructionCreator(InstructionCodes.Jmp)},
         {"call", new JmpInstructionCreator(InstructionCodes.Call)},
-        {"rcall", new OneRegisterInstructionCreator(InstructionCodes.RCall)},
-        {"rjmp", new OneRegisterInstructionCreator(InstructionCodes.LoadPc)},
-        {"loadsp", new OneRegisterInstructionCreator(InstructionCodes.LoadSp)},
-        {"push", new OneRegisterInstructionCreator(InstructionCodes.Push)},
-        {"pop", new OneRegisterInstructionCreator(InstructionCodes.Pop)},
+        {"rcall", new OneRegisterInstructionCreator(InstructionCodes.RCall, false)},
+        {"rjmp", new OneRegisterInstructionCreator(InstructionCodes.LoadPc, false)},
+        {"loadsp", new OneRegisterInstructionCreator(InstructionCodes.LoadSp, false)},
+        {"push", new OneRegisterInstructionCreator(InstructionCodes.Push, true)},
+        {"pop", new OneRegisterInstructionCreator(InstructionCodes.Pop, false)},
 
         {"in", new TwoRegistersInstructionCreator(InstructionCodes.In)},
         {"out", new TwoRegistersInstructionCreator(InstructionCodes.Out)},
