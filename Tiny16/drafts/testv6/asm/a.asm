@@ -50,7 +50,14 @@ next10:
 	hlt
 next11:
 	call func				
+loop:
+	clr r0
+	out r0, r0
 	wfi
+	inc r0
+	out r0, r0
+	wfi
+	jmp loop
 
 func:
 	ret
