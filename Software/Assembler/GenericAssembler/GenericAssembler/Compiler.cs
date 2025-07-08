@@ -15,6 +15,7 @@ public interface ICompiler
     uint? FindLabel(string name);
     void RaiseException(string errorMessage);
     Token GetNextToken(List<Token> tokens, ref int start);
+    void AddLabel(string fileName, string name);
 }
 
 public class GenericCompiler: ICompiler
@@ -217,8 +218,7 @@ public class GenericCompiler: ICompiler
             {
                 if (tokens[0].Type != TokenType.Name)
                     throw new CompilerException(fileName, CurrentLineNo, "unexpected token " + tokens[0]);
-                if (!Labels.TryAdd(tokens[0].StringValue, Pc[CurrentSection]))
-                    throw new CompilerException(fileName, CurrentLineNo, "duplicate label");
+                AddLabel(fileName, tokens[0].StringValue);
                 if (tokens.Count == 2)
                     continue;
                 tokens = tokens[2..];
@@ -407,5 +407,11 @@ public class GenericCompiler: ICompiler
         {
             throw new CompilerException(CurrentFileName, CurrentLineNo, e.Message);
         }
+    }
+
+    public void AddLabel(string fileName, string name)
+    {
+        if (!Labels.TryAdd(name, Pc[CurrentSection]))
+            throw new CompilerException(fileName, CurrentLineNo, "duplicate label");
     }
 }

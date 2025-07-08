@@ -10,7 +10,7 @@ public abstract class Instruction(string line, string file, int lineNo)
     
     public string? RequiredLabel { get; init; }
 
-    public uint Size { get; init; } = 1;
+    public uint Size { get; set; } = 1;
     
     public virtual void UpdateSize(uint labelAddress, uint pc) {}
     

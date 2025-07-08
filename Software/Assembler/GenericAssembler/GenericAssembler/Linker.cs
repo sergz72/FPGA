@@ -171,4 +171,9 @@ public sealed class Linker: ICompiler
             throw new GenericCompiler.CompilerException(_currentFileName, _currentLineNo, "unexpected end of line");
         return tokens[start++];
     }
+
+    public void AddLabel(string fileName, string name)
+    {
+        throw new NotImplementedException();
+    }
 }

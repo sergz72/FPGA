@@ -49,7 +49,7 @@ internal sealed class MovInstructionCreator : InstructionCreator
         var start = 2;
         var immediate = compiler.CalculateExpression(parameters, ref start);
         var instruction = new LoadImmediateInstruction(line, file, lineNo, registerNumber);
-        (compiler as Tiny16V6Compiler)?.RegisterInstructionForImmediate(instruction, (short)immediate);
+        (compiler as Tiny16V6Compiler)?.RegisterInstructionForImmediate(instruction, (uint)immediate);
         return instruction;
     }
 }

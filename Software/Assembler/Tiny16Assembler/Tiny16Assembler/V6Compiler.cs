@@ -3,14 +3,18 @@ using Tiny16Assembler.V6Instructions;
 
 namespace Tiny16Assembler;
 
+internal record ConstantValue(uint? Immediate, string? Label);
 internal record ImmediateInstructionInformation(
-    LoadImmediateInstruction LoadImmediateInstruction, short? Immediate, string? Label);
+    LoadImmediateInstruction Instruction, ConstantValue Value);
+internal record ImmediateInstructions(List<LoadImmediateInstruction> Instructions, ConstantValue Value);
+
 internal sealed class Tiny16V6Compiler : GenericCompiler
 {
-    private readonly List<ImmediateInstructionInformation> _loadConstantInstructions = [];
+    private readonly List<ImmediateInstructionInformation> _loadConstantInstructionList = [];
+    private List<ImmediateInstructions> _loadConstantInstructions = [];
     
     internal Tiny16V6Compiler(List<string> sources, OutputFormat outputFormat) :
-        base(sources, outputFormat, Creators, new GenericParser(), 2, 2, 2)
+        base(sources, outputFormat, Creators, new GenericParser(), 4, 4, 4)
     {
         InstructionCreator.MaxRegNo = 15;
     }
@@ -73,18 +77,41 @@ internal sealed class Tiny16V6Compiler : GenericCompiler
         {"out", new TwoRegistersInstructionCreator(InstructionCodes.Out)},
     };
 
-    public void RegisterInstructionForImmediate(LoadImmediateInstruction instruction, short immediate)
+    public void RegisterInstructionForImmediate(LoadImmediateInstruction instruction, uint immediate)
     {
-        _loadConstantInstructions.Add(new ImmediateInstructionInformation(instruction, immediate, null));
+        _loadConstantInstructionList.Add(new ImmediateInstructionInformation(instruction, new ConstantValue(immediate, null)));
     }
 
     public void RegisterInstructionForLabel(LoadImmediateInstruction instruction, string label)
     {
-        _loadConstantInstructions.Add(new ImmediateInstructionInformation(instruction, null, label));
+        _loadConstantInstructionList.Add(new ImmediateInstructionInformation(instruction, new ConstantValue(null, label)));
     }
 
-    public uint[] BuildConstants(uint pc)
+    public uint[] GetConstants(uint pc)
     {
-        //todo
+        List<uint> constants = [];
+        foreach (var instruction in _loadConstantInstructions)
+        {
+            instruction.Instructions.ForEach(i => i.SetValue(pc));
+            constants.Add(GetConstantValue(instruction.Value));
+            pc++;
+        }
+        return constants.ToArray();
+    }
+
+    private uint GetConstantValue(ConstantValue value)
+    {
+        if (value.Immediate.HasValue)
+            return value.Immediate.Value;
+        var l = value.Label!;
+        return FindLabel(l) ?? throw new Exception($"Label {l} not found");
+    }
+
+    public uint BuildConstants(uint pc)
+    {
+        _loadConstantInstructions = _loadConstantInstructionList.GroupBy(i => i.Value)
+            .Select(g => 
+                new ImmediateInstructions(g.Select(i => i.Instruction).ToList(), g.Key)).ToList();
+        return (uint)_loadConstantInstructions.Count;
     }
 }

@@ -116,7 +116,7 @@ public sealed class ExpressionParser
                     {
                         if (_prevOp && token.StringValue != "~" && token.StringValue != "-")
                             SyntaxError();
-                        Operation(token.StringValue == "-" ? "U-" : token.StringValue);
+                        Operation(_prevOp && token.StringValue == "-" ? "U-" : token.StringValue);
                         _prevOp = true;
                     }
                     break;
