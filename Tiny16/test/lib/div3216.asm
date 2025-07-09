@@ -10,12 +10,11 @@
 ;------
 ; Step-1: First the registers are initialized with corresponding values (Q = Dividend, M = Divisor, A = 0, n = number of bits in dividend)
 div3216:    		clr   R13
-			clr   R15
-			add   R15, 32
+			mov   R15, 32
 ; Step-2: Then the content of register A and Q is shifted left as if they are a single unit
 div_l2:			shl  R10, R10
-			rl   R11, R11
-			rl	  R13, R13
+			rol  R11, R11
+			rol  R13, R13
 ; Step-3: Then content of register M is subtracted from A and result is stored in C
 			mov   R14, R13
 			sub   R14, R12

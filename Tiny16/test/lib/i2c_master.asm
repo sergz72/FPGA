@@ -1,97 +1,104 @@
-.def address r14
-.def byte12 r15
+.def i2c_address r14
+.def i2c_byte12 r13
+.def i2c_port_address r15
+.def i2c_wait_counter r12
+.def i2c_mask r11
+.def i2c_bit_counter r10
+.def i2c_temp r9
+.def i2c_ack r8
 
 .if I2C_WAIT_COUNTER > 0
 i2c_wait:
-    mov r13, I2C_WAIT_COUNTER
+    mov i2c_wait_counter, I2C_WAIT_COUNTER
 i2c_wait_loop:    
-    dec r13
+    dec i2c_wait_counter
     bne i2c_wait_loop
     ret
 .endif
 
 i2c_send_bit:
-    mov r19, r16
-    shr r19, 7
-    and r19, SDA_BIT
-    out [r20], r19
+    clr i2c_temp
+    test i2c_address, i2c_mask
+    beq i2c_send0
+    or  i2c_temp, SDA_BIT
+send0:
+    out @i2c_port_address, i2c_temp
 .if I2C_WAIT_COUNTER > 0
     call i2c_wait
 .endif
-    or r19, SCL_BIT
-    out [r20], r19 ; scl high
+    or i2c_temp, SCL_BIT
+    out @i2c_port_address, i2c_temp ; scl high
 .if I2C_WAIT_COUNTER > 0
     call i2c_wait
 .endif
-    and r19, ~SCL_BIT
-    out [r20], r19 ; scl low
+    and i2c_temp, ~SCL_BIT
+    out @i2c_port_address, i2c_temp ; scl low
 .if I2C_WAIT_COUNTER > 0
     call i2c_wait
 .endif
     ret
 
 i2c_send_byte:
-    mov r12, 8
+    mov i2c_bit_counter, 8
 i2c_send_byte_loop:
     call i2c_send_bit
-    shl r14, r14
-    dec r12
+    shl i2c_address, i2c_address
+    dec i2c_bit_counter
     jmpnz i2c_send_byte_loop
-    mov r14, $80
+    mov i2c_address, i2c_mask
     call i2c_send_bit ; ack
     ret
 
 i2c_read_bit:
-    mov r19, SDA_BIT
-    out [r20], r19 ; sda high
+    mov i2c_temp, SDA_BIT
+    out @i2c_port_address, i2c_temp ; sda high
 .if I2C_WAIT_COUNTER > 0
     call i2c_wait
 .endif
-    mov r19, SCL_BIT | SDA_BIT
-    out [r20], r19 ; scl high
+    mov i2c_temp, SCL_BIT | SDA_BIT
+    out @i2c_port_address, i2c_temp ; scl high
 .if I2C_WAIT_COUNTER > 0
     call i2c_wait
 .endif
 
-    in r18, [r20]
-    and r18, SDA_BIT
-    or  r16, r16, r18
+    in i2c_temp, @i2c_port_address
+    and i2c_temp, SDA_BIT
+    or  i2c_address, i2c_temp
 
-    mov r19, SDA_BIT
-    out [r20], r19 ; scl low
+    mov i2c_temp, SDA_BIT
+    out @i2c_port_address, i2c_temp ; scl low
 .if I2C_WAIT_COUNTER > 0
     call i2c_wait
 .endif
     ret
 
-; output byte in r18
+; output byte in r13
 i2c_read_byte:
-    mov r21, 8
-    clr r16
+    mov i2c_bit_counter, 8
+    clr i2c_address
 i2c_read_byte_loop:
-    shl r16, 1
+    shl i2c_address
     call i2c_read_bit
-    dec r21
-    jmpnz i2c_read_byte_loop
-    mov  r18, r16
-    mov  r16, r23
+    dec i2c_bit_counter
+    bne i2c_read_byte_loop
+    mov  i2c_byte12, i2c_address
+    mov i2c_address, i2c_ack
     call i2c_send_bit ; ack
-    mov r19, SDA_BIT
-    out [r20], r19 ; sda high
+    mov i2c_temp, SDA_BIT
+    out @i2c_port_address, i2c_temp ; sda high
 .if I2C_WAIT_COUNTER > 0
     call i2c_wait
 .endif
     ret
     
 i2c_start:
-    mov r20, I2C_PORT_ADDRESS
-    mov r19, SCL_BIT
-    out [r20], r19 ; sda low
+    mov i2c_temp, SCL_BIT
+    out @i2c_port_address, i2c_temp ; sda low
 .if I2C_WAIT_COUNTER > 0
     call i2c_wait
 .endif
-    clr r19
-    out [r20], r19 ; scl low
+    clr i2c_temp
+    out @i2c_port_address, i2c_temp ; scl low
 .if I2C_WAIT_COUNTER > 0
     call i2c_wait
 .endif
@@ -100,48 +107,65 @@ i2c_start:
     ret
 
 i2c_master_write1:
+    mov i2c_mask, $80
     call i2c_start
     jmp i2c_w1
 
 i2c_master_write2:
+    mov i2c_mask, $80
     call i2c_start
-    mov r16, byte12
+    mov i2c_address, byte12
 ; byte1
     call i2c_send_byte
-    shr byte12, 8
+    shr byte12
+    shr byte12
+    shr byte12
+    shr byte12
+    shr byte12
+    shr byte12
+    shr byte12
+    shr byte12
 ; byte2
 i2c_w1:
-    mov r16, byte12
+    mov i2c_address, byte12
     call i2c_send_byte
 i2c_stop:
-    clr r19
-    out [r20], r19 ; sda low
+    clr i2c_temp
+    out @i2c_port_address, i2c_temp ; sda low
 .if I2C_WAIT_COUNTER > 0
     call i2c_wait
 .endif
-    mov r19, SCL_BIT
-    out [r20], r19 ; scl high
+    mov i2c_temp, SCL_BIT
+    out @i2c_port_address, i2c_temp ; scl high
 .if I2C_WAIT_COUNTER > 0
     call i2c_wait
 .endif
-    mov r19, SCL_BIT | SDA_BIT
-    out [r20], r19 ; sda high
+    mov i2c_temp, SCL_BIT | SDA_BIT
+    out @i2c_port_address, i2c_temp ; sda high
 .if I2C_WAIT_COUNTER > 0
     call i2c_wait
 .endif
     ret
 
-; out in r17
+; out in r15
 i2c_master_read2:
-    or   r16, 1
+    mov i2c_mask, $80
+    or   i2c_address, 1
     call i2c_start
 ; byte1
-    clr r23
+    clr i2c_ack
     call i2c_read_byte
-    mov r17, r18
-    shl r17, 8
+    mov i2c_port_address, i2c_byte12
+    shl i2c_port_address
+    shl i2c_port_address
+    shl i2c_port_address
+    shl i2c_port_address
+    shl i2c_port_address
+    shl i2c_port_address
+    shl i2c_port_address
+    shl i2c_port_address
 ; byte2
-    mov r23, $80
+    mov i2c_ack, $80
     call i2c_read_byte
-    or r17, r17, r18
+    or i2c_port_address, i2c_byte12
     jmp i2c_stop
