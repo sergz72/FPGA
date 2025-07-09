@@ -4,5 +4,28 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Cpu16Emulator.Tiny16v6View">
-    Welcome to Avalonia!
+    <Grid ColumnDefinitions="30,45,30,45,30,20,40,20,20,20,20,20,20,20,70,20,50,*" RowDefinitions="Auto,Auto,Auto">
+        <Label Content="Registers" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="16"/>
+        <Grid Name="GRegisters" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="16"
+              ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+              RowDefinitions="Auto,Auto"/>
+        <Label Content="Pc" Grid.Column="0" Grid.Row="2"/>
+        <Label Name="LbPc" Grid.Column="1" Grid.Row="2" Content="0000"/>
+        <Label Content="Sp" Grid.Column="2" Grid.Row="2"/>
+        <Label Name="LbSp" Grid.Column="3" Grid.Row="2" Content="0000"/>
+        <Label Content="Hlt" Grid.Column="4" Grid.Row="2"/>
+        <Label Name="LbHlt" Grid.Column="5" Grid.Row="2"  Content="0"/>
+        <Label Content="Error" Grid.Column="6" Grid.Row="2"/>
+        <Label Name="LbError" Grid.Column="7" Grid.Row="2"  Content="0"/>
+        <Label Content="C" Grid.Column="8" Grid.Row="2"/>
+        <Label Name="LbC" Grid.Column="9" Grid.Row="2"  Content="0"/>
+        <Label Content="Z" Grid.Column="10" Grid.Row="2"/>
+        <Label Name="LbZ" Grid.Column="11" Grid.Row="2"  Content="0"/>
+        <Label Content="N" Grid.Column="12" Grid.Row="2"/>
+        <Label Name="LbN" Grid.Column="13" Grid.Row="2"  Content="0"/>
+        <Label Content="Interrupt" Grid.Column="14" Grid.Row="2"/>
+        <Label Name="LbInterrupt" Grid.Column="15" Grid.Row="2"  Content="0"/>
+        <Label Content="Ticks" Grid.Column="16" Grid.Row="2"/>
+        <Label Name="LbTicks" Grid.Column="17" Grid.Row="2"  Content="0"/>
+    </Grid>
 </UserControl>

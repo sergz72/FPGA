@@ -14,6 +14,6 @@ mul1616_next2:
 mul1616_next:
     shl  r11, r11
     rol  r15, r15
-    shr  r12, 1
+    shr  r12, r12
     bne mul1616_next2
     ret

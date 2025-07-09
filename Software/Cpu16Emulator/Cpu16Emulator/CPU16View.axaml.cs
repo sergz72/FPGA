@@ -77,7 +77,7 @@ public partial class CPU16View : UserControl, ICpuView
         }
     }
 
-    private static void UpdateContent(Label l, uint v, bool markChangesAsBold, string format)
+    public static void UpdateContent(Label l, uint v, bool markChangesAsBold, string format)
     {
         var text = v.ToString(format);
         if (text != l.Content?.ToString())
@@ -90,7 +90,7 @@ public partial class CPU16View : UserControl, ICpuView
             l.FontWeight = FontWeight.Normal;
     }
     
-    private static void UpdateContent(Label l, ushort v, bool markChangesAsBold, string format)
+    public static void UpdateContent(Label l, ushort v, bool markChangesAsBold, string format)
     {
         var text = v.ToString(format);
         if (text != l.Content?.ToString())
@@ -103,7 +103,7 @@ public partial class CPU16View : UserControl, ICpuView
             l.FontWeight = FontWeight.Normal;
     }
 
-    private static void UpdateContent(Label l, bool v, bool markChangesAsBold)
+    public static void UpdateContent(Label l, bool v, bool markChangesAsBold)
     {
         var text = v ? "1" : "0";
         if (text != l.Content?.ToString())
