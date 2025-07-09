@@ -3,10 +3,10 @@ using Cpu16EmulatorCpus;
 
 namespace Cpu16Emulator;
 
-public partial class Tiny16v4View : UserControl, ICpuView
+public partial class Tiny16v6View : UserControl, ICpuView
 {
-    private Tiny16v4? _cpu;
-    public Tiny16v4? Cpu
+    private Tiny16v6? _cpu;
+    public Tiny16v6? Cpu
     {
         get => _cpu;
         set
@@ -16,7 +16,7 @@ public partial class Tiny16v4View : UserControl, ICpuView
         }
     }
 
-    public Tiny16v4View()
+    public Tiny16v6View()
     {
         InitializeComponent();
     }

@@ -1,0 +1,9 @@
+{
+  "Cpu": "Tiny16v6",
+  "CpuSpeed": 100,
+  "LogFile": "emulator.log",
+  "LogLevel": "Error",
+  "IODevices": [
+  ],
+  "CpuOptions": ["TRACE","MEMORY_SIZE=4096"]
+}

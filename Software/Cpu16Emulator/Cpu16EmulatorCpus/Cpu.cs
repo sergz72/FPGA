@@ -129,7 +129,7 @@ public abstract class Cpu
         Cpu cpu = config.Cpu switch
         {
             "Cpu16Lite" => new Cpu16Lite(code, config.CpuSpeed * 1000),
-            "Tiny16v4" => new Tiny16v4(code, config.CpuSpeed * 1000),
+            "Tiny16v6" => new Tiny16v6(code, config.CpuSpeed * 1000, config.CpuOptions),
             "ForthCPU" => new ForthCPU(code, config.CpuSpeed * 1000, 256, 256, 16,
                                         config.CpuOptions),
             "JavaCPU" => new JavaCPU(code, config.CpuSpeed * 1000, 256, 256, config.CpuOptions),

@@ -38,7 +38,7 @@ public partial class App : Application
                     ICpuView cpuView = cpu switch
                     {
                         Cpu16Lite cpu16 => new CPU16View { Cpu = cpu16 },
-                        Tiny16v4 t16v4 => new Tiny16v4View { Cpu = t16v4 },
+                        Tiny16v6 t16v6 => new Tiny16v6View { Cpu = t16v6 },
                         ForthCPU fcpu => new ForthCPUView { Cpu = fcpu },
                         _ => throw new Exception("unknown cpu")
                     };

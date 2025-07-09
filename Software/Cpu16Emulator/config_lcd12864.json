@@ -2,8 +2,8 @@
   "CpuSpeed": 100,
   "LogFile": "lcd12864.log",
   "IODevices": [
-    { "FileName": "IODeviceMemory/bin/Debug/net8.0/IODeviceMemory.dll", "Parameters": "address=0x6000 size=512 readonly=true contents=characters.mem control=None" },
-    { "FileName": "IODeviceMemory/bin/Debug/net8.0/IODeviceMemory.dll", "Parameters": "address=0x8000 size=512 control=LCD1,128,4,true" },
-    { "FileName": "IODeviceLCD1/bin/Debug/net8.0/IODeviceLCD1.dll", "Parameters": "addressRange=0-0x0F driver=ks0108 driverParameters=e,dc,cs2,cs1" }
+    { "FileName": "IODeviceMemory/bin/Debug/net9.0/IODeviceMemory.dll", "Parameters": "address=0x6000 size=512 readonly=true contents=characters.mem control=None" },
+    { "FileName": "IODeviceMemory/bin/Debug/net9.0/IODeviceMemory.dll", "Parameters": "address=0x8000 size=512 control=LCD1,128,4,true" },
+    { "FileName": "IODeviceLCD1/bin/Debug/net9.0/IODeviceLCD1.dll", "Parameters": "addressRange=0-0x0F driver=ks0108 driverParameters=e,dc,cs2,cs1" }
   ]
 }

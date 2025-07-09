@@ -3,9 +3,9 @@
   "CpuSpeed": 100,
   "LogFile": "vf_meter.log",
   "IODevices": [
-    { "FileName": "IODeviceFrequencyCounter/bin/Debug/net8.0/IODeviceFrequencyCounter.dll", "Parameters": "address=0x4000 value=123456789" },
-    { "FileName": "IODeviceI2CSlave/bin/Debug/net8.0/IODeviceI2CSlave.dll", "Parameters": "address=0x8000 devices=i2cConfig_vf_meter.json" },
-    { "FileName": "IODeviceTimer/bin/Debug/net8.0/IODeviceTimer.dll", "Parameters": "address=0xC000 bits=14 interrupt=1" },
-    { "FileName": "IODeviceLcdHD44780/bin/Debug/net8.0/IODeviceLcdHD44780.dll", "Parameters": "address=0 rows=2 columns=16" }
+    { "FileName": "IODeviceFrequencyCounter/bin/Debug/net9.0/IODeviceFrequencyCounter.dll", "Parameters": "address=0x4000 value=123456789" },
+    { "FileName": "IODeviceI2CSlave/bin/Debug/net9.0/IODeviceI2CSlave.dll", "Parameters": "address=0x8000 devices=i2cConfig_vf_meter.json" },
+    { "FileName": "IODeviceTimer/bin/Debug/net9.0/IODeviceTimer.dll", "Parameters": "address=0xC000 bits=14 interrupt=1" },
+    { "FileName": "IODeviceLcdHD44780/bin/Debug/net9.0/IODeviceLcdHD44780.dll", "Parameters": "address=0 rows=2 columns=16" }
   ]
 }
