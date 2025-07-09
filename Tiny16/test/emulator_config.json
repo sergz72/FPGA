@@ -4,6 +4,7 @@
   "LogFile": "emulator.log",
   "LogLevel": "Info",
   "IODevices": [
+    { "FileName": "../../../../../../Rider/Cpu16Emulator/IODeviceI2CSlave/bin/Debug/net9.0/IODeviceI2CSlave.dll", "Parameters": "address=0x0000 devices=i2cConfig.json" }
   ],
   "CpuOptions": ["TRACE","MEMORY_SIZE=4096","STOP_ON_WFI"]
 }
