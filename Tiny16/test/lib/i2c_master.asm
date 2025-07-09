@@ -106,12 +106,23 @@ i2c_start:
     call i2c_send_byte
     ret
 
+i2c_master_write_nostop:
+    push i2c_address
+    mov i2c_mask, $80
+    call i2c_start
+    mov i2c_address, byte12
+    call i2c_send_byte
+    pop i2c_address
+    ret
+
 i2c_master_write1:
+    push i2c_address
     mov i2c_mask, $80
     call i2c_start
     jmp i2c_w1
 
 i2c_master_write2:
+    push i2c_address
     mov i2c_mask, $80
     call i2c_start
     mov i2c_address, byte12
@@ -129,6 +140,11 @@ i2c_master_write2:
 i2c_w1:
     mov i2c_address, byte12
     call i2c_send_byte
+i2c_stop_pop:
+    call i2c_stop
+    pop i2c_address
+    ret
+
 i2c_stop:
     clr i2c_temp
     out @i2c_port_address, i2c_temp ; sda low
@@ -149,6 +165,7 @@ i2c_stop:
 
 ; out in r15
 i2c_master_read2:
+    push i2c_address
     mov i2c_mask, $80
     or   i2c_address, 1
     call i2c_start
@@ -168,4 +185,4 @@ i2c_master_read2:
     mov i2c_ack, $80
     call i2c_read_byte
     or i2c_port_address, i2c_byte12
-    jmp i2c_stop
+    jmp i2c_stop_pop
