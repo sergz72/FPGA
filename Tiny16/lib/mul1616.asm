@@ -1,3 +1,5 @@
+.segment code
+
 ; r11 - op1
 ; r12 - op2
 ; r13:r14 - result

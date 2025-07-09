@@ -1,3 +1,5 @@
+.segment code
+
 ;------
 ; FUNCTION DEF: Div
 ; DESCRIPTION:  unsigned 32/16 division, R11|R10 / R12 = R11:R10, Remainder in R13
