@@ -96,7 +96,15 @@ public class Tiny16v6: Cpu
             offset9 |= 0xFFFFFF00;
         Pc = (uint)((int)Pc + (int)offset9);
     }
-    
+
+    private void RegisterDump()
+    {
+        Logger?.Info($"R0 ={Registers[0]:X4} R1 ={Registers[1]:X4} R2 ={Registers[2]:X4} R3 ={Registers[3]:X4}");
+        Logger?.Info($"R4 ={Registers[4]:X4} R5 ={Registers[5]:X4} R6 ={Registers[6]:X4} R7 ={Registers[7]:X4}");
+        Logger?.Info($"R8 ={Registers[8]:X4} R9 ={Registers[9]:X4} R10={Registers[10]:X4} R11={Registers[11]:X4}");
+        Logger?.Info($"R12={Registers[12]:X4} R13={Registers[13]:X4} R14={Registers[14]:X4} R15={Registers[15]:X4}");
+    }
+
     private void StepMisc(uint codeMisc, uint srcReg, uint dstReg)
     {
         IoEvent ev;
@@ -105,6 +113,7 @@ public class Tiny16v6: Cpu
         {
             case OPCODE7_HLT:
                 Logger?.Info($"{Ticks}: HLT {Pc:X4}");
+                RegisterDump();
                 Hlt = true;
                 Pc++;
                 break;
@@ -339,17 +348,9 @@ public class Tiny16v6: Cpu
         Error = true;
     }
 
-    private bool CheckWfi()
-    {
-        var continueRun = !Wfi & !Breakpoints.Contains(Pc);
-        if (_stopOnWfi)
-            return continueRun |= Wfi;
-        return continueRun;
-    }
-    
     public override void Run()
     {
-        while (!Error & !Hlt & CheckWfi())
+        while (!Error & !Hlt & !(_stopOnWfi & Wfi) & !Breakpoints.Contains(Pc))
             Step();
     }
 }
