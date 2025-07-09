@@ -61,11 +61,12 @@ public class Tiny16v6: Cpu
     private static uint GetOpCode(uint instruction) => instruction >> 13;
     private static uint GetOpCode7(uint instruction) => instruction >> 9;
     
-    private readonly bool _trace;
+    private readonly bool _trace, _stopOnWfi;
     
     public Tiny16v6(string[] code, int speed, string[]? cpuOptions): base(code, speed, 0)
     {
         _trace = cpuOptions?.Contains("TRACE") ?? false;
+        _stopOnWfi = cpuOptions?.Contains("STOP_ON_WFI") ?? false;
         var memoryStr = cpuOptions?.FirstOrDefault(op => op.StartsWith("MEMORY_SIZE=")) ?? "MEMORY_SIZE=4096";
         var memorySize = int.Parse(memoryStr[12..]);
         Registers = BuildUShortRegisters(16);
@@ -336,5 +337,19 @@ public class Tiny16v6: Cpu
     {
         Logger?.Error($"Step: {Pc:X4} {message}");
         Error = true;
+    }
+
+    private bool CheckWfi()
+    {
+        var continueRun = !Wfi & !Breakpoints.Contains(Pc);
+        if (_stopOnWfi)
+            return continueRun |= Wfi;
+        return continueRun;
+    }
+    
+    public override void Run()
+    {
+        while (!Error & !Hlt & CheckWfi())
+            Step();
     }
 }
