@@ -1,5 +1,5 @@
 module main
-#(parameter RAM_BITS = 12, RESET_BIT = 19)
+#(parameter RAM_BITS = 12, RESET_BIT = 19, TIME_PERIOD = 2700000)
 (
     input wire clk,
     input wire clk_probe,
@@ -34,8 +34,9 @@ module main
     tiny16 #(.RAM_BITS(RAM_BITS)) cpu(.clk(clk), .nwr(nwr), .nreset(nreset), .address(address), .data_in(data_selector), .data_out(data_in),
                                         .hlt(hlt), .interrupt(interrupt), .in_interrupt(in_interrupt), .wfi(wfi), .mem_valid(mem_valid), .mem_ready(mem_ready));
 
-    logic_probe #() probe(.clk(clk_probe), .nreset(nreset), .comp_data_hi(comp_out_hi), .comp_data_lo(comp_out_lo), .data(probe_data), .address(address[3:0]),
-                            .data_request(probe_data_request), .data_ready(probe_data_ready), .interrupt(interrupt), .interrupt_clear(interrupt_clear));
+    logic_probe #(.TIME_PERIOD(TIME_PERIOD))
+        probe(.clk(clk_probe), .nreset(nreset), .comp_data_hi(comp_out_hi), .comp_data_lo(comp_out_lo), .data(probe_data), .address(address[3:0]),
+                .data_request(probe_data_request), .data_ready(probe_data_ready), .interrupt(interrupt), .interrupt_clear(interrupt_clear));
 
     assign nhlt = !hlt;
     assign nwfi = !wfi;
