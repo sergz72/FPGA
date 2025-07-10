@@ -9,7 +9,9 @@ module main
     input wire button1,
     input wire button2,
     output reg [4:0] dac1_code,
-    output reg [4:0] dac2_code
+    output reg [4:0] dac2_code,
+    input wire comp_out_hi,
+    input wire comp_out_lo
 );
     wire [15:0] address;
     wire nwr, hlt;

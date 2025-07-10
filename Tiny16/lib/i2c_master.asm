@@ -35,9 +35,9 @@ i2c_send0:
 .endif
     and i2c_temp, ~SCL_BIT
     out @i2c_port_address, i2c_temp ; scl low
-.if I2C_WAIT_COUNTER > 0
-    call i2c_wait
-.endif
+;.if I2C_WAIT_COUNTER > 0
+;    call i2c_wait
+;.endif
     ret
 
 i2c_send_byte:
@@ -101,9 +101,9 @@ i2c_start:
 .endif
     clr i2c_temp
     out @i2c_port_address, i2c_temp ; scl low
-.if I2C_WAIT_COUNTER > 0
-    call i2c_wait
-.endif
+;.if I2C_WAIT_COUNTER > 0
+;    call i2c_wait
+;.endif
 ; address
     call i2c_send_byte
     ret
@@ -148,6 +148,9 @@ i2c_stop_pop:
     ret
 
 i2c_stop:
+.if I2C_WAIT_COUNTER > 0
+    call i2c_wait
+.endif
     clr i2c_temp
     out @i2c_port_address, i2c_temp ; sda low
 .if I2C_WAIT_COUNTER > 0
@@ -161,6 +164,7 @@ i2c_stop:
     mov i2c_temp, SCL_BIT | SDA_BIT
     out @i2c_port_address, i2c_temp ; sda high
 .if I2C_WAIT_COUNTER > 0
+    call i2c_wait
     call i2c_wait
 .endif
     ret
