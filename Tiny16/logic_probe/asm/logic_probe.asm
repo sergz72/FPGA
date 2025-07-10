@@ -26,8 +26,7 @@ start:
 	clr r13 ; y
 	call lcd_draw_char
 	mov r15, 1 ; char
-	mov r14, 1 ; x
-	clr r13 ; y
+	inc r14 ; x
 	call lcd_draw_char
 	call lcd_update
 	hlt
