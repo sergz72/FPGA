@@ -20,4 +20,6 @@ start:
 	loadsp  r0
 	mov r15, I2C_PORT
 	call ssd1306_init
+	call lcd_clear_screen
+	call lcd_update
 	hlt

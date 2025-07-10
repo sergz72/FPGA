@@ -151,18 +151,42 @@ lcd_update:
     mov r5, LCD_BUFFER_SIZE
     lda r6, lcd_buffer
 ssd1306_write_next:
+    mov r14, SSD1306_I2C_ADDRESS
     mov r13, $40
     call i2c_master_write_nostop
-    mov r7, 16
-ssd1306_write_next_byte:
+    mov r7, 8
+ssd1306_write_next_word:
     mov r13, @r6
+    mov r14, r13
+    call i2c_send_byte
+    inc r6
+    mov r14, r13
+    shr r14, r14
+    shr r14, r14
+    shr r14, r14
+    shr r14, r14
+    shr r14, r14
+    shr r14, r14
+    shr r14, r14
+    shr r14, r14
     call i2c_send_byte
     inc r6
     dec r7
-    bne ssd1306_write_next_byte
+    bne ssd1306_write_next_word
     call i2c_stop
-    sub r5, 16
-    bge ssd1306_write_next
+    sub r5, 8
+    bgt ssd1306_write_next
+    ret
+
+lcd_clear_screen:
+    mov r15, LCD_BUFFER_SIZE
+    lda r14, lcd_buffer
+    clr r13
+lcd_clear_screen_next:
+    mov @r14, r13
+    inc r14
+    dec r15
+    bne lcd_clear_screen_next
     ret
 
 .segment bss

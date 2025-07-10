@@ -35,9 +35,6 @@ i2c_send0:
 .endif
     and i2c_temp, ~SCL_BIT
     out @i2c_port_address, i2c_temp ; scl low
-;.if I2C_WAIT_COUNTER > 0
-;    call i2c_wait
-;.endif
     ret
 
 i2c_send_byte:
@@ -101,9 +98,6 @@ i2c_start:
 .endif
     clr i2c_temp
     out @i2c_port_address, i2c_temp ; scl low
-;.if I2C_WAIT_COUNTER > 0
-;    call i2c_wait
-;.endif
 ; address
     call i2c_send_byte
     ret
