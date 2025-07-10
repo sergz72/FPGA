@@ -3,7 +3,7 @@
 logic_probe.asm \
 ../../lib/i2c_master.asm \
 ../../lib/ssd1306.asm \
-../../lib/mul1616.asm \
+../../lib/div3216.asm \
 font.asm \
 lcd.asm \
 ldscript.ld

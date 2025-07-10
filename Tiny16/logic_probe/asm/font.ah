@@ -1,0 +1,7 @@
+.equ FONT_WIDTH   8
+.equ CHAR_PUNKT   10
+.equ CHAR_F       11
+.equ CHAR_H       12
+.equ CHAR_L       13
+.equ CHAR_z       14
+.equ CHAR_PERCENT 15
