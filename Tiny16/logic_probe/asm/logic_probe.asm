@@ -21,5 +21,13 @@ start:
 	mov r15, I2C_PORT
 	call ssd1306_init
 	call lcd_clear_screen
+	clr r15 ; char
+	clr r14 ; x
+	clr r13 ; y
+	call lcd_draw_char
+	mov r15, 1 ; char
+	mov r14, 1 ; x
+	clr r13 ; y
+	call lcd_draw_char
 	call lcd_update
 	hlt

@@ -1,0 +1,855 @@
+	; 
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	;!
+	dw $0
+	dw $0
+	dw $0
+	dw $5F
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	;"
+	dw $0
+	dw $0
+	dw $7
+	dw $0
+	dw $7
+	dw $0
+	dw $0
+	dw $0
+	;#
+	dw $0
+	dw $A4
+	dw $7E
+	dw $A5
+	dw $7E
+	dw $25
+	dw $0
+	dw $0
+	;$
+	dw $0
+	dw $24
+	dw $EA
+	dw $2B
+	dw $12
+	dw $0
+	dw $0
+	dw $0
+	;%
+	dw $0
+	dw $A
+	dw $2D
+	dw $5A
+	dw $28
+	dw $0
+	dw $0
+	dw $0
+	;&
+	dw $0
+	dw $30
+	dw $4C
+	dw $52
+	dw $72
+	dw $40
+	dw $0
+	dw $0
+	;'
+	dw $0
+	dw $0
+	dw $0
+	dw $7
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	;(
+	dw $0
+	dw $0
+	dw $0
+	dw $3C
+	dw $C3
+	dw $0
+	dw $0
+	dw $0
+	;)
+	dw $0
+	dw $0
+	dw $C3
+	dw $3C
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	;*
+	dw $0
+	dw $2
+	dw $A
+	dw $7
+	dw $A
+	dw $2
+	dw $0
+	dw $0
+	;+
+	dw $0
+	dw $8
+	dw $8
+	dw $7F
+	dw $8
+	dw $8
+	dw $0
+	dw $0
+	;,
+	dw $0
+	dw $0
+	dw $80
+	dw $C0
+	dw $40
+	dw $0
+	dw $0
+	dw $0
+	;-
+	dw $0
+	dw $8
+	dw $8
+	dw $8
+	dw $8
+	dw $8
+	dw $0
+	dw $0
+	;.
+	dw $0
+	dw $0
+	dw $40
+	dw $40
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	;/
+	dw $0
+	dw $80
+	dw $60
+	dw $18
+	dw $6
+	dw $1
+	dw $0
+	dw $0
+	;0
+	dw $0
+	dw $3E
+	dw $41
+	dw $41
+	dw $41
+	dw $3E
+	dw $0
+	dw $0
+	;1
+	dw $0
+	dw $40
+	dw $41
+	dw $7F
+	dw $40
+	dw $40
+	dw $0
+	dw $0
+	;2
+	dw $0
+	dw $62
+	dw $51
+	dw $49
+	dw $45
+	dw $42
+	dw $0
+	dw $0
+	;3
+	dw $0
+	dw $22
+	dw $41
+	dw $49
+	dw $49
+	dw $36
+	dw $0
+	dw $0
+	;4
+	dw $0
+	dw $18
+	dw $14
+	dw $52
+	dw $7F
+	dw $50
+	dw $0
+	dw $0
+	;5
+	dw $0
+	dw $20
+	dw $4F
+	dw $49
+	dw $49
+	dw $31
+	dw $0
+	dw $0
+	;6
+	dw $0
+	dw $3C
+	dw $4A
+	dw $49
+	dw $49
+	dw $31
+	dw $0
+	dw $0
+	;7
+	dw $0
+	dw $3
+	dw $1
+	dw $61
+	dw $19
+	dw $7
+	dw $0
+	dw $0
+	;8
+	dw $0
+	dw $36
+	dw $49
+	dw $49
+	dw $49
+	dw $36
+	dw $0
+	dw $0
+	;9
+	dw $0
+	dw $46
+	dw $49
+	dw $49
+	dw $29
+	dw $1E
+	dw $0
+	dw $0
+	;:
+	dw $0
+	dw $0
+	dw $44
+	dw $44
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	;;
+	dw $0
+	dw $0
+	dw $C0
+	dw $64
+	dw $24
+	dw $0
+	dw $0
+	dw $0
+	;<
+	dw $0
+	dw $8
+	dw $8
+	dw $14
+	dw $14
+	dw $22
+	dw $0
+	dw $0
+	;=
+	dw $0
+	dw $14
+	dw $14
+	dw $14
+	dw $14
+	dw $14
+	dw $0
+	dw $0
+	;>
+	dw $0
+	dw $22
+	dw $14
+	dw $14
+	dw $8
+	dw $8
+	dw $0
+	dw $0
+	;?
+	dw $0
+	dw $2
+	dw $41
+	dw $59
+	dw $6
+	dw $0
+	dw $0
+	dw $0
+	;@
+	dw $0
+	dw $7E
+	dw $81
+	dw $99
+	dw $A5
+	dw $BE
+	dw $0
+	dw $0
+	;A
+	dw $40
+	dw $60
+	dw $5D
+	dw $13
+	dw $5C
+	dw $60
+	dw $40
+	dw $0
+	;B
+	dw $41
+	dw $7F
+	dw $49
+	dw $49
+	dw $49
+	dw $36
+	dw $0
+	dw $0
+	;C
+	dw $0
+	dw $3E
+	dw $41
+	dw $41
+	dw $41
+	dw $23
+	dw $0
+	dw $0
+	;D
+	dw $41
+	dw $7F
+	dw $41
+	dw $41
+	dw $22
+	dw $1C
+	dw $0
+	dw $0
+	;E
+	dw $0
+	dw $41
+	dw $7F
+	dw $49
+	dw $49
+	dw $63
+	dw $0
+	dw $0
+	;F
+	dw $0
+	dw $41
+	dw $7F
+	dw $49
+	dw $9
+	dw $3
+	dw $0
+	dw $0
+	;G
+	dw $0
+	dw $3E
+	dw $41
+	dw $41
+	dw $51
+	dw $33
+	dw $10
+	dw $0
+	;H
+	dw $41
+	dw $7F
+	dw $49
+	dw $8
+	dw $49
+	dw $7F
+	dw $41
+	dw $0
+	;I
+	dw $0
+	dw $41
+	dw $41
+	dw $7F
+	dw $41
+	dw $41
+	dw $0
+	dw $0
+	;J
+	dw $0
+	dw $30
+	dw $41
+	dw $41
+	dw $3F
+	dw $1
+	dw $0
+	dw $0
+	;K
+	dw $41
+	dw $7F
+	dw $49
+	dw $8
+	dw $15
+	dw $63
+	dw $41
+	dw $0
+	;L
+	dw $0
+	dw $41
+	dw $7F
+	dw $41
+	dw $40
+	dw $70
+	dw $0
+	dw $0
+	;M
+	dw $41
+	dw $7F
+	dw $47
+	dw $8
+	dw $47
+	dw $7F
+	dw $41
+	dw $0
+	;N
+	dw $41
+	dw $7F
+	dw $47
+	dw $18
+	dw $61
+	dw $7F
+	dw $1
+	dw $0
+	;O
+	dw $0
+	dw $3E
+	dw $41
+	dw $41
+	dw $41
+	dw $3E
+	dw $0
+	dw $0
+	;P
+	dw $0
+	dw $41
+	dw $7F
+	dw $51
+	dw $11
+	dw $E
+	dw $0
+	dw $0
+	;Q
+	dw $0
+	dw $3E
+	dw $41
+	dw $C1
+	dw $C1
+	dw $BE
+	dw $0
+	dw $0
+	;R
+	dw $0
+	dw $41
+	dw $7F
+	dw $51
+	dw $11
+	dw $2E
+	dw $40
+	dw $0
+	;S
+	dw $0
+	dw $66
+	dw $49
+	dw $49
+	dw $4A
+	dw $33
+	dw $0
+	dw $0
+	;T
+	dw $0
+	dw $3
+	dw $41
+	dw $7F
+	dw $41
+	dw $3
+	dw $0
+	dw $0
+	;U
+	dw $1
+	dw $3F
+	dw $41
+	dw $40
+	dw $41
+	dw $3F
+	dw $1
+	dw $0
+	;V
+	dw $1
+	dw $1F
+	dw $21
+	dw $40
+	dw $21
+	dw $1F
+	dw $1
+	dw $0
+	;W
+	dw $1
+	dw $3F
+	dw $41
+	dw $3C
+	dw $41
+	dw $3F
+	dw $1
+	dw $0
+	;X
+	dw $41
+	dw $63
+	dw $14
+	dw $8
+	dw $14
+	dw $63
+	dw $41
+	dw $0
+	;Y
+	dw $1
+	dw $3
+	dw $45
+	dw $78
+	dw $45
+	dw $3
+	dw $1
+	dw $0
+	;Z
+	dw $0
+	dw $63
+	dw $51
+	dw $49
+	dw $45
+	dw $63
+	dw $0
+	dw $0
+	;[
+	dw $0
+	dw $0
+	dw $0
+	dw $FF
+	dw $81
+	dw $0
+	dw $0
+	dw $0
+	;\
+	dw $0
+	dw $1
+	dw $6
+	dw $38
+	dw $C0
+	dw $0
+	dw $0
+	dw $0
+	;]
+	dw $0
+	dw $0
+	dw $81
+	dw $FF
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	;^
+	dw $0
+	dw $4
+	dw $2
+	dw $1
+	dw $2
+	dw $4
+	dw $0
+	dw $0
+	;_
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	;`
+	dw $0
+	dw $0
+	dw $1
+	dw $2
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	;a
+	dw $0
+	dw $68
+	dw $54
+	dw $54
+	dw $54
+	dw $78
+	dw $40
+	dw $0
+	;b
+	dw $41
+	dw $7F
+	dw $48
+	dw $44
+	dw $44
+	dw $38
+	dw $0
+	dw $0
+	;c
+	dw $0
+	dw $38
+	dw $44
+	dw $44
+	dw $44
+	dw $4C
+	dw $0
+	dw $0
+	;d
+	dw $0
+	dw $38
+	dw $44
+	dw $44
+	dw $49
+	dw $7F
+	dw $40
+	dw $0
+	;e
+	dw $0
+	dw $38
+	dw $54
+	dw $54
+	dw $54
+	dw $58
+	dw $0
+	dw $0
+	;f
+	dw $0
+	dw $0
+	dw $44
+	dw $7E
+	dw $45
+	dw $45
+	dw $0
+	dw $0
+	;g
+	dw $0
+	dw $38
+	dw $44
+	dw $44
+	dw $48
+	dw $FC
+	dw $4
+	dw $0
+	;h
+	dw $41
+	dw $7F
+	dw $48
+	dw $4
+	dw $44
+	dw $78
+	dw $40
+	dw $0
+	;i
+	dw $0
+	dw $44
+	dw $44
+	dw $7D
+	dw $40
+	dw $40
+	dw $0
+	dw $0
+	;j
+	dw $0
+	dw $4
+	dw $4
+	dw $5
+	dw $FC
+	dw $0
+	dw $0
+	dw $0
+	;k
+	dw $41
+	dw $7F
+	dw $10
+	dw $54
+	dw $6C
+	dw $44
+	dw $0
+	dw $0
+	;l
+	dw $0
+	dw $40
+	dw $41
+	dw $7F
+	dw $40
+	dw $40
+	dw $0
+	dw $0
+	;m
+	dw $44
+	dw $7C
+	dw $4
+	dw $78
+	dw $4
+	dw $78
+	dw $0
+	dw $0
+	;n
+	dw $44
+	dw $7C
+	dw $48
+	dw $4
+	dw $44
+	dw $78
+	dw $40
+	dw $0
+	;o
+	dw $0
+	dw $38
+	dw $44
+	dw $44
+	dw $44
+	dw $38
+	dw $0
+	dw $0
+	;p
+	dw $4
+	dw $FC
+	dw $48
+	dw $44
+	dw $44
+	dw $38
+	dw $0
+	dw $0
+	;q
+	dw $0
+	dw $38
+	dw $44
+	dw $44
+	dw $48
+	dw $FC
+	dw $4
+	dw $0
+	;r
+	dw $0
+	dw $44
+	dw $7C
+	dw $48
+	dw $44
+	dw $4
+	dw $0
+	dw $0
+	;s
+	dw $0
+	dw $48
+	dw $54
+	dw $54
+	dw $54
+	dw $24
+	dw $0
+	dw $0
+	;t
+	dw $4
+	dw $3E
+	dw $44
+	dw $44
+	dw $44
+	dw $20
+	dw $0
+	dw $0
+	;u
+	dw $4
+	dw $3C
+	dw $40
+	dw $40
+	dw $24
+	dw $7C
+	dw $40
+	dw $0
+	;v
+	dw $4
+	dw $1C
+	dw $64
+	dw $40
+	dw $34
+	dw $C
+	dw $4
+	dw $0
+	;w
+	dw $4
+	dw $3C
+	dw $44
+	dw $30
+	dw $44
+	dw $3C
+	dw $4
+	dw $0
+	;x
+	dw $0
+	dw $44
+	dw $6C
+	dw $10
+	dw $6C
+	dw $44
+	dw $0
+	dw $0
+	;y
+	dw $4
+	dw $C
+	dw $34
+	dw $C0
+	dw $34
+	dw $C
+	dw $4
+	dw $0
+	;z
+	dw $0
+	dw $4C
+	dw $64
+	dw $54
+	dw $4C
+	dw $64
+	dw $0
+	dw $0
+	;{
+	dw $0
+	dw $0
+	dw $10
+	dw $FE
+	dw $1
+	dw $0
+	dw $0
+	dw $0
+	;|
+	dw $0
+	dw $0
+	dw $0
+	dw $FF
+	dw $0
+	dw $0
+	dw $0
+	dw $0
+	;}
+	dw $0
+	dw $0
+	dw $1
+	dw $FE
+	dw $10
+	dw $0
+	dw $0
+	dw $0
+	;~
+	dw $0
+	dw $10
+	dw $8
+	dw $18
+	dw $10
+	dw $8
+	dw $0
+	dw $0

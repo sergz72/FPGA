@@ -36,7 +36,7 @@
 
 .equ LCD_MAX_CONTRAST $8F
 
-.equ LCD_BUFFER_SIZE LCD_WIDTH * LCD_HEIGHT / 16
+.equ LCD_BUFFER_SIZE LCD_WIDTH * LCD_HEIGHT / 8
 
 ; Scrolling .equs
 .equ SSD1306_ACTIVATE_SCROLL $2F
@@ -154,27 +154,15 @@ ssd1306_write_next:
     mov r14, SSD1306_I2C_ADDRESS
     mov r13, $40
     call i2c_master_write_nostop
-    mov r7, 8
-ssd1306_write_next_word:
-    mov r13, @r6
-    mov r14, r13
-    call i2c_send_byte
-    inc r6
-    mov r14, r13
-    shr r14, r14
-    shr r14, r14
-    shr r14, r14
-    shr r14, r14
-    shr r14, r14
-    shr r14, r14
-    shr r14, r14
-    shr r14, r14
+    mov r7, 16
+ssd1306_write_next_byte:
+    mov r14, @r6
     call i2c_send_byte
     inc r6
     dec r7
-    bne ssd1306_write_next_word
+    bne ssd1306_write_next_byte
     call i2c_stop
-    sub r5, 8
+    sub r5, 16
     bgt ssd1306_write_next
     ret
 
