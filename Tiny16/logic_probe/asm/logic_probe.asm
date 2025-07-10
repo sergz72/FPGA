@@ -53,7 +53,10 @@ start:
 	call lcd_draw_char
 	mov r14, 10
 	call lcd_draw_char
-	mov r14, 14
+	mov r14, 13
+	clr r15
+	call lcd_draw_char
+	inc r14
 	mov r15, CHAR_H
 	call lcd_draw_char
 	inc r14
@@ -69,7 +72,10 @@ start:
 	call lcd_draw_char
 	mov r14, 10
 	call lcd_draw_char
-	mov r14, 14
+	mov r14, 13
+	clr r15
+	call lcd_draw_char
+	inc r14
 	mov r15, CHAR_H
 	call lcd_draw_char
 	inc r14
@@ -88,7 +94,10 @@ start:
 	call lcd_draw_char
 	mov r14, 10
 	call lcd_draw_char
-	mov r14, 14
+	mov r14, 13
+	clr r15
+	call lcd_draw_char
+	inc r14
 	mov r15, CHAR_H
 	call lcd_draw_char
 	inc r14
@@ -159,20 +168,27 @@ interrupt_handler:
 	call show_frequency
 
 	call lcd_update
+
+	; interrupt_clear
+	mov r15, I2C_PORT
+	mov r0, 7
+	out @r15, r0
+	mov r0, 3
+	out @r15, r0
+
 	reti
 
 show_frequency:
+	push r9
 	mov r12, 10
 	call div3216
 	mov r15, r13
-	mov r14, 15
+	mov r14, 12
 	mov r13, r9
 	call draw_char_div
 	dec r14
 	call draw_char_div
 	dec r14
-	call draw_char_div
-	dec r14
 	dec r14
 	call draw_char_div
 	dec r14
@@ -180,12 +196,15 @@ show_frequency:
 	dec r14
 	call draw_char_div
 	dec r14
+	dec r14
+	call draw_char_div
 	dec r14
 	call draw_char_div
 	dec r14
 	call draw_char_div
 	dec r14
 	call lcd_draw_char
+	pop r9
 	ret
 
 draw_char_div:
