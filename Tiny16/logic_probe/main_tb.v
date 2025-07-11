@@ -5,9 +5,11 @@ module main_tb;
     wire sda;
     reg button1, button2, comp_out_hi, comp_out_lo;
     wire [4:0] dac1_code, dac2_code;
+    wire dout;
 
     main #(.RESET_BIT(2)) m(.clk(clk), .nhlt(nhlt), .nwfi(nwfi), .scl(scl), .sda(sda), .button1(button1), .button2(button2),
-            .dac1_code(dac1_code), .dac2_code(dac2_code), .comp_out_hi(comp_out_hi), .comp_out_lo(comp_out_lo), .clk_probe(clk_probe));
+            .dac1_code(dac1_code), .dac2_code(dac2_code), .comp_out_hi(comp_out_hi), .comp_out_lo(comp_out_lo), .clk_probe(clk_probe),
+            .dout(dout));
 
     pullup(scl);
     pullup(sda);

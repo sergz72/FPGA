@@ -10,7 +10,8 @@ module top
     output wire [4:0] dac1_code,
     output wire [4:0] dac2_code,
     input wire comp_out_hi,
-    input wire comp_out_lo
+    input wire comp_out_lo,
+    output wire dout
 );
     wire clk_probe;
 
@@ -20,6 +21,7 @@ module top
     );
 
     main #(.TIME_PERIOD(12900000)) m(.clk(clk), .nhlt(nhlt), .nwfi(nwfi), .scl(scl), .sda(sda), .button1(button1), .button2(button2),
-                                        .dac1_code(dac1_code), .dac2_code(dac2_code), .comp_out_hi(comp_out_hi), .comp_out_lo(comp_out_lo), .clk_probe(clk_probe));
+                                        .dac1_code(dac1_code), .dac2_code(dac2_code), .comp_out_hi(comp_out_hi), .comp_out_lo(comp_out_lo),
+                                        .clk_probe(clk_probe), .dout(dout));
 
 endmodule
