@@ -6,7 +6,7 @@ module ws2812b_tb;
     reg mem_valid;
     wire mem_ready;
 
-    ws2812b #(.DIV0P1US(2), .MAX_ADDRESS(1), .COUNT_BITS(1))
+    ws2812b #(.MAX_ADDRESS(1), .COUNT_BITS(1))
         w(.clk(clk), .nreset(nreset), .address(address), .r(r), .g(g), .b(b), .mem_valid(mem_valid), .mem_ready(mem_ready), .dout(dout));
     
     always #1 clk = ~clk;

@@ -1,5 +1,5 @@
 module ws2812b
-#(parameter DIV0P1US = 5, MAX_ADDRESS = 0, COUNT_BITS = 1)
+#(parameter COUNTER_0P4 = 4, COUNTER_0P8 = 8, MAX_ADDRESS = 0, COUNT_BITS = 1)
 (
     input wire clk,
     input wire nreset,
@@ -25,12 +25,12 @@ module ws2812b
 
     task init_counters;
         if (current[23] == 0) begin
-            one_counter <= DIV0P1US * 4;
-            zero_counter <= DIV0P1US * 8;
+            one_counter <= COUNTER_0P4;
+            zero_counter <= COUNTER_0P8;
         end
         else begin
-            one_counter <= DIV0P1US * 8;
-            zero_counter <= DIV0P1US * 4;
+            one_counter <= COUNTER_0P8;
+            zero_counter <= COUNTER_0P4;
         end
     endtask
 

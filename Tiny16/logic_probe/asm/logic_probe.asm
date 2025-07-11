@@ -18,10 +18,11 @@
 
 .equ RAM_SIZE 4096
 
-.equ I2C_PORT 0
-.equ LOGIC_PROBE_PORT $4000
-.equ DAC1_PORT $8000
-.equ DAC2_PORT $C000
+.equ I2C_PORT         0
+.equ LOGIC_PROBE_PORT $2000
+.equ DAC1_PORT        $4000
+.equ DAC2_PORT        $6000
+.equ WS2812B_PORT     $8000
 
 .equ I2C_WAIT_COUNTER 15
 .equ SCL_BIT 2
@@ -154,6 +155,14 @@ interrupt_handler:
 	inc r15
 	in freq_counter_rs_hi, @r15
 
+	; interrupt_clear
+	mov r15, I2C_PORT
+	mov r0, 7
+	out @r15, r0
+	mov r0, 3
+	out @r15, r0
+
+	; UI update
 	clr r9 ; y
 	mov r10, freq_counter_high_lo
 	mov r11, freq_counter_high_hi
@@ -169,12 +178,47 @@ interrupt_handler:
 
 	call lcd_update
 
-	; interrupt_clear
-	mov r15, I2C_PORT
-	mov r0, 7
-	out @r15, r0
-	mov r0, 3
-	out @r15, r0
+	; ws2812b update
+	mov r15, WS2812B_PORT
+	
+	; zero led
+	mov r9, counter_low
+	mov r10, $07C0
+	and r9, r10
+	shl r9, r9
+	shl r9, r9
+	shl r9, r9
+	shl r9, r9
+	shl r9, r9 ;* 32
+	out @r15, r9
+
+	; z led
+	inc r15
+	mov r9, counter_z
+	and r9, r10
+	mov r11, r9
+	shl r9, r9
+	shl r9, r9
+	shl r9, r9
+	shl r9, r9
+	shl r9, r9 ;* 32
+	or  r9, r11
+	out @r15, r9
+
+	; one led
+	inc r15
+	mov r9, counter_high
+	and r9, r10
+	out @r15, r9
+
+	; pulse led
+	inc r15
+	mov r9, freq_counter_rs_lo
+	or  r9, freq_counter_rs_hi
+	beq pulse_off
+	mov r9, $1F
+pulse_off:	
+	out @r15, r9
 
 	reti
 

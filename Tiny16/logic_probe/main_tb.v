@@ -7,14 +7,14 @@ module main_tb;
     wire [4:0] dac1_code, dac2_code;
     wire dout;
 
-    main #(.RESET_BIT(2)) m(.clk(clk), .nhlt(nhlt), .nwfi(nwfi), .scl(scl), .sda(sda), .button1(button1), .button2(button2),
+    main #(.RESET_BIT(2), .TIME_PERIOD(5000)) m(.clk(clk), .nhlt(nhlt), .nwfi(nwfi), .scl(scl), .sda(sda), .button1(button1), .button2(button2),
             .dac1_code(dac1_code), .dac2_code(dac2_code), .comp_out_hi(comp_out_hi), .comp_out_lo(comp_out_lo), .clk_probe(clk_probe),
             .dout(dout));
 
     pullup(scl);
     pullup(sda);
 
-    always #4 clk <= ~clk;
+    always #1 clk <= ~clk;
     always #1 clk_probe <= ~clk_probe;
     
     initial begin
@@ -28,7 +28,7 @@ module main_tb;
         button2 = 1;
         comp_out_hi = 0;
         comp_out_lo = 0;
-        #100000
+        #10000000
         $finish;
     end
 endmodule

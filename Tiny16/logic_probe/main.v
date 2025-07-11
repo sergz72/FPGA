@@ -1,5 +1,5 @@
 module main
-#(parameter RAM_BITS = 12, RESET_BIT = 19, TIME_PERIOD = 2700000)
+#(parameter RAM_BITS = 12, RESET_BIT = 19, TIME_PERIOD = 2700000, COUNTER_0P4 = 11, COUNTER_0P8 = 22)
 (
     input wire clk,
     input wire clk_probe,
@@ -42,7 +42,7 @@ module main
         probe(.clk(clk_probe), .nreset(nreset), .comp_data_hi(comp_out_hi), .comp_data_lo(comp_out_lo), .data(probe_data), .address(address[3:0]),
                 .data_request(probe_data_request), .data_ready(probe_data_ready), .interrupt(interrupt), .interrupt_clear(interrupt_clear));
 
-    ws2812b #(.DIV0P1US(3), .MAX_ADDRESS(3), .COUNT_BITS(2))
+    ws2812b #(.COUNTER_0P4(COUNTER_0P4), .COUNTER_0P8(COUNTER_0P8), .MAX_ADDRESS(3), .COUNT_BITS(2))
             w(.clk(clk), .nreset(nreset), .address(address[1:0]), .r(r), .g(g), .b(b), .mem_valid(ws2812b_write), .mem_ready(ws2812b_ready), .dout(dout));
 
     assign nhlt = !hlt;
@@ -62,9 +62,9 @@ module main
 
     assign data_selector = probe_selected ? probe_data : {12'b0, button1, button2, scl, sda};
 
-    assign r = {3'h0, data_in[15:11]};
+    assign r = {2'h0, data_in[15:11], 1'b0};
     assign g = {2'h0, data_in[10:5]};
-    assign b = {3'h0, data_in[4:0]};
+    assign b = {2'h0, data_in[4:0], 1'b0};
 
     always @(posedge clk) begin
         if (counter[RESET_BIT])
