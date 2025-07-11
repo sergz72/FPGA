@@ -20,8 +20,8 @@ module main_tb;
     initial begin
         $dumpfile("main_tb.vcd");
         $dumpvars(0, main_tb);
-        $monitor("time=%t clk=%d nhlt=%d nwfi=%d scl=%d sda=%d button1=%d button2=%d dac1_code=%d dac2_code=%d",
-                    $time, clk, nhlt, nwfi, scl, sda, button1, button2, dac1_code, dac2_code);
+        $monitor("time=%t dout=%d",
+                    $time, dout);
         clk = 0;
         clk_probe = 0;
         button1 = 1;

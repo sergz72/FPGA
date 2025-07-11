@@ -114,7 +114,7 @@ module tiny16
     assign condition_temp = condition & {c, z, n};
     assign condition_pass = (condition_temp[0] | condition_temp[1] | condition_temp[2]) ^ condition_neg;
 
-    assign nwr = in;
+    assign nwr = !out;
     assign address = reg_src;
     assign data_out = reg_src2;
 

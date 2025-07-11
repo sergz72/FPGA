@@ -11,45 +11,38 @@ module ws2812b
     output reg mem_ready = 0,
     output reg dout = 0
 );
+    localparam COUNTER_MAX = COUNTER_0P4 + COUNTER_0P8 - 1;
+
     reg [23:0] mem [0:(1<<COUNT_BITS) - 1];
     reg [23:0] current;
     reg [4:0] bit_counter;
-    reg [8:0] one_counter;
-    reg [8:0] zero_counter;
+    reg [8:0] counter;
+    reg [8:0] duty;
     reg [COUNT_BITS:0] current_address;
     reg busy = 0;
-    reg prev_busy = 0;
-    wire one_counter_nonzero;
+    wire counter_is_max;
 
-    assign one_counter_nonzero = one_counter != 0;
-
-    task init_counters;
-        if (current[23] == 0) begin
-            one_counter <= COUNTER_0P4;
-            zero_counter <= COUNTER_0P8;
-        end
-        else begin
-            one_counter <= COUNTER_0P8;
-            zero_counter <= COUNTER_0P4;
-        end
-    endtask
+    assign counter_is_max = counter == COUNTER_MAX;
 
     always @(posedge clk) begin
         mem_ready <= mem_valid;
         if (!nreset) begin
             busy <= 0;
-            prev_busy <= 0;
+            dout <= 0;
         end
         else begin
-            if (!prev_busy & busy)
-                init_counters;
-            else if (busy) begin
-                dout <= one_counter_nonzero;
-                if (one_counter_nonzero) begin
-                    one_counter <= one_counter - 1;
+            if (mem_valid) begin
+                mem[address] <= {g, r, b};
+                if (address == MAX_ADDRESS) begin
+                    current_address <= 0;
+                    bit_counter <= 23;
+                    busy <= 1;
+                    counter <= COUNTER_MAX - 1;
                 end
-                else if (zero_counter != 0) begin
-                    if (zero_counter == 2) begin
+            end
+            else begin
+                if (busy) begin
+                    if (counter == COUNTER_MAX - 1) begin
                         if (bit_counter == 23) begin
                             if (current_address == MAX_ADDRESS + 1)
                                 busy <= 0;
@@ -59,29 +52,20 @@ module ws2812b
                                 current_address <= current_address + 1;
                             end
                         end
-                        else begin
-                            current <= current << 1;
+                        else
                             bit_counter <= bit_counter + 1;
-                        end
                     end
-                    if (zero_counter == 1) begin
-                        init_counters;
+                    else if (counter_is_max) begin
+                        duty <= current[23] ? COUNTER_0P8 - 1 : COUNTER_0P4 - 1;
+                        current <= current << 1;
+                        counter <= 0;
+                        dout <= 1;
                     end
-                    else
-                        zero_counter <= zero_counter - 1;
-                end
-            end
-            else if (mem_valid) begin
-                mem[address] <= {g, r, b};
-                if (address == MAX_ADDRESS) begin
-                    current_address <= 1;
-                    current <= mem[0];
-                    bit_counter <= 0;
-                    dout <= 0;
-                    busy <= 1;
+                    else if (counter == duty)
+                        dout <= 0;
+                    counter <= counter_is_max ? 0 : counter + 1;
                 end
             end
         end
-        prev_busy <= busy;
     end
 endmodule
