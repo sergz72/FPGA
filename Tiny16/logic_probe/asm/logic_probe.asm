@@ -157,10 +157,10 @@ interrupt_handler:
 
 	; interrupt_clear
 	mov r15, I2C_PORT
-	mov r0, 7
-	out @r15, r0
-	mov r0, 3
-	out @r15, r0
+	mov r14, 7
+	out @r15, r14
+	mov r14, 3
+	out @r15, r14
 
 	; UI update
 	clr r9 ; y
