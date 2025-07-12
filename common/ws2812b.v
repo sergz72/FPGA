@@ -17,12 +17,8 @@ module ws2812b
     reg [23:0] current;
     reg [4:0] bit_counter;
     reg [8:0] counter;
-    reg [8:0] duty;
     reg [COUNT_BITS:0] current_address;
     reg busy = 0;
-    wire counter_is_max;
-
-    assign counter_is_max = counter == COUNTER_MAX;
 
     always @(posedge clk) begin
         mem_ready <= mem_valid;
@@ -37,33 +33,36 @@ module ws2812b
                     current_address <= 0;
                     bit_counter <= 23;
                     busy <= 1;
-                    counter <= COUNTER_MAX - 1;
+                    counter <= COUNTER_MAX;
                 end
             end
             else begin
                 if (busy) begin
-                    if (counter == COUNTER_MAX - 1) begin
-                        if (bit_counter == 23) begin
-                            if (current_address == MAX_ADDRESS + 1)
-                                busy <= 0;
+                    case (counter)
+                        0: dout <= 1;
+                        COUNTER_0P4: begin
+                            if (!current[23])
+                                dout <= 0;
+                        end
+                        COUNTER_0P8: dout <= 0;
+                        COUNTER_MAX: begin
+                            if (bit_counter == 23) begin
+                                if (current_address == MAX_ADDRESS + 1)
+                                    busy <= 0;
+                                else begin
+                                    bit_counter <= 0;
+                                    current <= mem[current_address[COUNT_BITS - 1:0]];
+                                    current_address <= current_address + 1;
+                                end
+                            end
                             else begin
-                                bit_counter <= 0;
-                                current <= mem[current_address[COUNT_BITS - 1:0]];
-                                current_address <= current_address + 1;
+                                current <= current << 1;
+                                bit_counter <= bit_counter + 1;
                             end
                         end
-                        else
-                            bit_counter <= bit_counter + 1;
-                    end
-                    else if (counter_is_max) begin
-                        duty <= current[23] ? COUNTER_0P8 - 1 : COUNTER_0P4 - 1;
-                        current <= current << 1;
-                        counter <= 0;
-                        dout <= 1;
-                    end
-                    else if (counter == duty)
-                        dout <= 0;
-                    counter <= counter_is_max ? 0 : counter + 1;
+                        default: begin end
+                    endcase
+                    counter <= counter == COUNTER_MAX ? 0 : counter + 1;
                 end
             end
         end

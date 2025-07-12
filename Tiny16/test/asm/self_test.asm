@@ -57,8 +57,9 @@ next10:
 next11:
 	call next_tests
 	clr r5
+	mov r1, $2222
 loop:
-	out @r0, r5
+	out @r1, r5
 	wfi
 	xor r5, 1
 	jmp loop
@@ -137,7 +138,8 @@ next24:
 	beq next25
 	hlt
 next25:
-	in r5, @r0
+	mov r1, $3333
+	in r5, @r1
 	mov r9, $55AA
 	cmp r5, r9
 	beq next26

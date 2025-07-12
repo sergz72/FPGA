@@ -16,9 +16,10 @@ module main
     wire in_interrupt;
     wire wfi;
     wire mem_valid;
+    reg mem_ready = 0;
 
     tiny16 #(.RAM_BITS(RAM_BITS)) cpu(.clk(clk), .nwr(nwr), .nreset(nreset), .address(address), .data_in(data_out), .data_out(data_in),
-                                        .hlt(hlt), .interrupt(interrupt), .in_interrupt(in_interrupt), .wfi(wfi), .mem_valid(mem_valid), .mem_ready(1'b1));
+                                        .hlt(hlt), .interrupt(interrupt), .in_interrupt(in_interrupt), .wfi(wfi), .mem_valid(mem_valid), .mem_ready(mem_ready));
 
     assign nhlt = !hlt;
     assign nwfi = !wfi;
@@ -37,6 +38,7 @@ module main
     end
 
     always @(negedge clk) begin
+        mem_ready <= mem_valid;
         if (!nwr && mem_valid)
             led <= data_in[0];
     end
