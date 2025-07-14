@@ -15,7 +15,7 @@ module fifo
     reg [SIZE_BITS-1:0] w_ptr, r_ptr;
     reg [WIDTH-1:0] data [0:(1<<SIZE_BITS) - 1];
 
-    always@(negedge clk) begin
+    always@(posedge clk) begin
         if(!nrst) begin
             r_ptr <= 0;
             rack <= 0;
@@ -29,7 +29,7 @@ module fifo
         end
     end
 
-    always@(negedge clk) begin
+    always@(posedge clk) begin
         if(!nrst) begin
             w_ptr <= 0;
             wack <= 0;

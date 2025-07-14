@@ -34,7 +34,7 @@ module uart_fifo
 
     assign ack = wack | rack;
     
-    always @(negedge clk) begin
+    always @(posedge clk) begin
         if (!nreset) begin
             interrupt_clear <= 0;
             send_next <= 0;
