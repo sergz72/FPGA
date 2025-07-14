@@ -1,6 +1,6 @@
-#define LED_ADDRESS ((volatile int*)0xF8000000)
+#define LED_ADDRESS ((volatile int*)0xC0000000)
 
-static int state = 7;
+static int state = 1;
 
 int wfi(void);
 int getq(void);
@@ -12,7 +12,7 @@ int main(void)
   while (1)
   {
     wfi();
-    state ^= 4;
+    state ^= 1;
     *LED_ADDRESS = state;
   }
 }

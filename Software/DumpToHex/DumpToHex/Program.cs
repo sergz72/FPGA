@@ -109,11 +109,9 @@ string? BuildCodeLine(string line)
 
     if (!start) return null;
     
-    if (line[0] != ' ')
-        return "// " + line;
-    var parts = line.Split(new char[] {' ', '\t'}, 3, StringSplitOptions.RemoveEmptyEntries);
+    var parts = line.Split([' ', '\t'], 3, StringSplitOptions.RemoveEmptyEntries);
     if (parts.Length != 3)
-        return null;
+        return "// " + line;
     var code = parts[1];
     if (code.Length == 4) // 16 bit something
     {

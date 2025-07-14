@@ -1,4 +1,4 @@
-#include "../../../custom_ops.S"
+#include "../../custom_ops.S"
 
 .section .reset_vec
 .globl _start, wfi, getq
