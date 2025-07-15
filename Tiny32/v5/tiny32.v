@@ -448,7 +448,7 @@ module tiny32
                     current_instruction <= mem_rdata;
                 end
                 STAGE_DECODE: begin
-                    error <= (!lb & !lh &!lw & !lbu & !lhu & !alu_clk & !auipc & ! sb & !sh & !sw & !lui & !jalr & !jal & !hlt_ & !wfi_ & !reti & !in & !out) |
+                    error <= (!lb & !lh & !lw & !lbu & !lhu & !alu_clk & !auipc & !sb & !sh & !sw & !lui & !jalr & !jal & !hlt_ & !wfi_ & !reti & !in & !out) |
                             ((lh | lhu | sh) & source_address[0]) | ((lw | sw) && source_address[1:0] != 0);
 
                     wfi <= wfi_;
@@ -499,6 +499,7 @@ module tiny32
                     endcase
                 end
                 STAGE_MEMORY: begin
+                    error <= !internal_selected;
                     case (1'b1)
                         lb: registers_data_wr <= data_load_byte_signed(address[1:0]);
                         lh: registers_data_wr <= address[1] ? {{16{mem_rdata[31]}}, mem_rdata[31:16]} : {{16{mem_rdata[15]}}, mem_rdata[15:0]};
@@ -506,6 +507,7 @@ module tiny32
                         lbu: registers_data_wr <= data_load_byte_unsigned(address[1:0]);
                         default: registers_data_wr <= source_address[1] ? {16'h0, mem_rdata[31:16]} : {16'h0, mem_rdata[15:0]};
                     endcase
+                    mem_nwr <= 4'b1111;
                     registers_wr <= load;
                     stage <= STAGE_INTERRUPT_CHECK;
                 end
