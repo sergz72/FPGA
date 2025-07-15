@@ -13,3 +13,5 @@ mytest_ret:
 mytest_fail:
   halt_insn();
   j .
+  j .
+
