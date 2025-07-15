@@ -16,3 +16,9 @@ r_type_insn(0, 0, 0, 1, 0, 0b0001011)
 
 #define halt_insn() \
 r_type_insn(0, 0, 0, 2, 0, 0b0001011)
+
+#define in_insn(_rd, _addr) \
+r_type_insn(0, 0, _addr, 3, _rd, 0b0001011)
+
+#define out_insn(_rs, _addr) \
+r_type_insn(0, _rs, _addr, 4, 0, 0b0001011)

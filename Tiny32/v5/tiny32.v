@@ -448,7 +448,7 @@ module tiny32
                     current_instruction <= mem_rdata;
                 end
                 STAGE_DECODE: begin
-                    error <= (!lb & !lh &!lw & !lbu & !lhu & !alu_clk & !auipc & ! sb & !sh & !sw & !lui & !jalr & !jal & !hlt_ & !wfi_ & !reti) |
+                    error <= (!lb & !lh &!lw & !lbu & !lhu & !alu_clk & !auipc & ! sb & !sh & !sw & !lui & !jalr & !jal & !hlt_ & !wfi_ & !reti & !in & !out) |
                             ((lh | lhu | sh) & source_address[0]) | ((lw | sw) && source_address[1:0] != 0);
 
                     wfi <= wfi_;
