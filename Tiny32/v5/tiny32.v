@@ -13,9 +13,9 @@ module tiny32
     output reg hlt = 0,
     output reg error = 0,
     output reg wfi = 0,
-    output wire [31:0] io_address,
+    output reg [31:0] io_address,
     input wire [31:0] io_data_in,
-    output wire [31:0] io_data_out,
+    output reg [31:0] io_data_out,
     output reg io_req = 0,
     output wire io_nwr,
     input wire io_ready,
@@ -208,9 +208,6 @@ module tiny32
     assign alu_op = alu_op_f(alu_op_id);
 
     assign io_nwr = !out;
-    assign io_address = source1_reg_data;
-    assign io_data_out = source2_reg_data;
-
 
     function [3:0] alu_op_f(input [6:0] source);
         casez (source)
@@ -460,6 +457,8 @@ module tiny32
                     case (1'b1)
                         in | out: begin
                             io_req <= 1;
+                            io_address <= source1_reg_data;
+                            io_data_out <= source2_reg_data;
                             stage <= STAGE_WAITREADY;
                         end
                         load | store: begin
