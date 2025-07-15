@@ -2,3 +2,4 @@
 *.vcd
 obj_dir
 *.log
+asm
