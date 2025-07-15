@@ -1,24 +1,33 @@
 OUTPUT_ARCH( "riscv" )
 ENTRY( _start )
 
+/* Highest address of the user mode stack */
+_sp = ORIGIN(RAM) + LENGTH(RAM); /* end of "RAM" Ram type memory */
+
+_Min_Heap_Size = 0; /* required amount of heap */
+_Min_Stack_Size = 0x400; /* required amount of stack */
+
 MEMORY
 { 
-  ROM   (rx) : ORIGIN = 0x00000000, LENGTH = 4K
-  RAM   (rw) : ORIGIN = 0x40000000, LENGTH = 4K
+  ROM   (rx) : ORIGIN = 0x40000000, LENGTH = 32K
+  RAM   (rw) : ORIGIN = 0x80000000, LENGTH = 16K
 }
 
 SECTIONS
 {
-  stack_size = 256;
-
   . = ALIGN(4);
 
   .text :
   {
     KEEP(*(.reset_vec)) /* Startup code */
     *(.text)
+    *(.text*)
     *(.rodata)
     *(.srodata)
+
+    KEEP (*(.init))
+    KEEP (*(.fini))
+
   } >ROM
 
   . = ALIGN(4);
@@ -39,10 +48,22 @@ SECTIONS
     PROVIDE( _bss_end = . );
   } >RAM
 
-  .stack ORIGIN(RAM) + LENGTH(RAM) - stack_size :
+  /* User_heap_stack section, used to check that there is enough "RAM" Ram  type memory left */
+  ._user_heap_stack :
   {
-    PROVIDE( _heap_end = . );
-    . = stack_size;  
-    PROVIDE( _sp = . ); 
+    . = ALIGN(8);
+    PROVIDE ( end = . );
+    PROVIDE ( _end = . );
+    . = . + _Min_Heap_Size;
+    . = . + _Min_Stack_Size;
+    . = ALIGN(8);
   } >RAM
+
+  /* Remove information from the compiler libraries */
+  /DISCARD/ :
+  {
+    libc.a ( * )
+    libm.a ( * )
+    libgcc.a ( * )
+  }
 }

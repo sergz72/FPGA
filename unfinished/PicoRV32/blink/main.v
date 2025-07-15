@@ -3,7 +3,6 @@
 module main
 #(parameter
 RESET_BIT = 19,
-TIMER_BITS = 23,
 // 4k 32 bit words RAM
 RAM_BITS = 12,
 // 8k 32 bit words ROM
@@ -20,9 +19,6 @@ ROM_BITS = 13)
     localparam MEMORY_SELECTOR_START_BIT = 30;
 
     reg nreset = 0;
-
-    reg timer_interrupt;
-    wire timer_interrupt_clear;
 
     wire trap;
 
@@ -48,7 +44,7 @@ ROM_BITS = 13)
     wire [RAM_BITS - 1:0] ram_address;
     wire [31-MEMORY_SELECTOR_START_BIT:0] memory_selector;
 
-    reg[TIMER_BITS-1:0] timer = 0;
+    reg[RESET_BIT:0] timer = 0;
 
     reg [31:0] rom [0:(1<<ROM_BITS)-1];
     reg [7:0] ram1 [0:(1<<RAM_BITS)-1];
@@ -58,7 +54,7 @@ ROM_BITS = 13)
 
     assign ntrap = ~trap;
 
-    assign irq = {28'h0, timer_interrupt, 3'h0};
+    assign irq = 32'h0; //{28'h0, timer_interrupt, 3'h0};
 
     assign memory_selector = mem_la_addr[31:MEMORY_SELECTOR_START_BIT];
 
@@ -67,8 +63,6 @@ ROM_BITS = 13)
     assign port_selected = memory_selector == 3;
 
     assign mem_rdata = mem_rdata_f(memory_selector);
-
-    assign timer_interrupt_clear = eoi[3];
     
     assign ram_address = mem_la_addr[RAM_BITS + 1:2];
 
@@ -94,7 +88,7 @@ ROM_BITS = 13)
                .PROGADDR_IRQ(32'h4000_0010),
                .PROGADDR_RESET(32'h4000_0000),
                .BARREL_SHIFTER(1),
-               .ENABLE_IRQ_TIMER(0),
+               .ENABLE_IRQ_TIMER(1),
                .ENABLE_COUNTERS(0),
                .ENABLE_COUNTERS64(0),
                .LATCHED_IRQ(0)
@@ -131,19 +125,11 @@ ROM_BITS = 13)
     always @(posedge clk) begin
         if (timer[RESET_BIT])
             nreset <= 1;
-        if (timer[TIMER_BITS - 1]) begin
-            timer <= 0;
-            timer_interrupt <= 1;
-        end
-        else begin
-            timer <= timer + 1;
-            if (timer_interrupt_clear)
-                timer_interrupt <= 0;
-        end
+        timer <= timer + 1;
     end
 
     always @(posedge clk) begin
-        mem_ready <= mem_valid & rom_selected | ram_selected | port_selected;
+        mem_ready <= mem_valid & (rom_selected | ram_selected | port_selected);
     end
 
     always @(posedge clk) begin
@@ -153,10 +139,10 @@ ROM_BITS = 13)
 
     always @(posedge clk) begin
         if (mem_valid & ram_selected) begin
-            if (mem_wstrb[0]) ram1[ram_address] <= mem_la_wdata[ 7: 0];
-            if (mem_wstrb[1]) ram2[ram_address] <= mem_la_wdata[15: 8];
-            if (mem_wstrb[2]) ram3[ram_address] <= mem_la_wdata[23:16];
-            if (mem_wstrb[3]) ram4[ram_address] <= mem_la_wdata[31:24];
+            if (mem_wstrb[0]) ram1[ram_address] <= mem_wdata[ 7: 0];
+            if (mem_wstrb[1]) ram2[ram_address] <= mem_wdata[15: 8];
+            if (mem_wstrb[2]) ram3[ram_address] <= mem_wdata[23:16];
+            if (mem_wstrb[3]) ram4[ram_address] <= mem_wdata[31:24];
             ram_rdata <= {ram4[ram_address], ram3[ram_address], ram2[ram_address], ram1[ram_address]};
         end
     end

@@ -18,9 +18,6 @@ ROM_BITS = 10)
     output wire hlt,
     output wire error,
     output wire wfi,
-`ifdef MEMORY_DEBUG
-    output wire [31:0] address,
-`endif
     output reg led = 1
 );
     localparam MEMORY_SELECTOR_START_BIT = 30;
@@ -29,10 +26,6 @@ ROM_BITS = 10)
 
     reg [TIMER_BITS - 1:0] timer = 0;
     reg timer_interrupt = 0;
-
-`ifndef MEMORY_DEBUG
-    wire [31:0] address;
-`endif
 
     wire [7:0] irq, interrupt_ack;
     wire [31:0] data_in, mem_rdata;
@@ -54,18 +47,15 @@ ROM_BITS = 10)
 
     assign irq = {7'h0, timer_interrupt};
 
-    assign cpu_clk = timer[CPU_CLOCK_BIT];
-    assign rom_selected = address[31:MEMORY_SELECTOR_START_BIT] === 0;
-    assign ram_selected = address[31:MEMORY_SELECTOR_START_BIT] === 1;
+    assign rom_selected = address[31:MEMORY_SELECTOR_START_BIT] === 1;
+    assign ram_selected = address[31:MEMORY_SELECTOR_START_BIT] === 2;
     assign ports_selected = address[31:MEMORY_SELECTOR_START_BIT] === 3;
     assign mem_rdata = rom_selected ? rom_rdata : ram_rdata;
 
     assign ram_address = address[RAM_BITS + 1:2];
     assign rom_address = address[ROM_BITS + 1:2];
 
-    assign mem_clk = nrd & (nwr === 4'b1111);
-
-    tiny32 cpu(.clk(cpu_clk), .nrd(nrd), .nwr(nwr), .wfi(wfi), .nreset(nreset), .address(address), .data_in(mem_rdata), .data_out(data_in), .stage(stage),
+    tiny32 cpu(.clk(clk), .nrd(nrd), .nwr(nwr), .wfi(wfi), .nreset(nreset), .address(address), .data_in(mem_rdata), .data_out(data_in), .stage(stage),
                  .error(error), .hlt(hlt), .ready(1), .interrupt(irq), .interrupt_ack(interrupt_ack));
 
     initial begin

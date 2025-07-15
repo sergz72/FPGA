@@ -7,7 +7,7 @@ void hlt(void);
 
 extern int interrupt;
 
-int main(void)
+__attribute__((naked)) int main(void)
 {
   while (1)
   {

@@ -6,7 +6,7 @@ module test;
     wire led;
     wire tx, rx;
 
-    main #(.RESET_BIT(3), .TIMER_BITS(9))
+    main #(.RESET_BIT(3))
          m(.clk(clk), .ntrap(ntrap), .led(led), .tx(tx), .rx(rx));
     always #1 clk = ~clk;
 
@@ -15,7 +15,7 @@ module test;
         $dumpvars(0, test);
         $monitor("time=%t led=%d", $time, led);
         clk = 0;
-        #500000
+        #150000
         $finish;
     end
 endmodule

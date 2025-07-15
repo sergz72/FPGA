@@ -1,4 +1,3 @@
-`include "main.vh"
 `include "tiny32.vh"
 
 module main
@@ -18,9 +17,6 @@ ROM_BITS = 10)
     output wire hlt,
     output wire error,
     output wire wfi,
-`ifdef MEMORY_DEBUG
-    output wire [31:0] address,
-`endif
     output reg led = 1
 );
     localparam MEMORY_SELECTOR_START_BIT = 30;
@@ -30,16 +26,13 @@ ROM_BITS = 10)
     reg [TIMER_BITS - 1:0] timer = 0;
     reg timer_interrupt = 0;
 
-`ifndef MEMORY_DEBUG
     wire [31:0] address;
-`endif
 
     wire [7:0] irq, interrupt_ack;
     wire [31:0] data_in, mem_rdata;
     reg [31:0] rom_rdata, ram_rdata;
     wire [3:0] mem_nwr;
     wire mem_valid;
-    wire cpu_clk;
     wire rom_selected, ram_selected, ports_selected;
     wire [`STAGE_WIDTH - 1:0] stage;
     wire [RAM_BITS - 1:0] ram_address;
@@ -54,7 +47,6 @@ ROM_BITS = 10)
 
     assign irq = {7'h0, timer_interrupt};
 
-    assign cpu_clk = timer[CPU_CLOCK_BIT];
     assign rom_selected = address[31:MEMORY_SELECTOR_START_BIT] === 0;
     assign ram_selected = address[31:MEMORY_SELECTOR_START_BIT] === 1;
     assign ports_selected = address[31:MEMORY_SELECTOR_START_BIT] === 3;
@@ -63,7 +55,7 @@ ROM_BITS = 10)
     assign ram_address = address[RAM_BITS + 1:2];
     assign rom_address = address[ROM_BITS + 1:2];
 
-    tiny32 cpu(.clk(cpu_clk), .mem_valid(mem_valid), .mem_nwr(mem_nwr), .wfi(wfi), .nreset(nreset), .address(address), .data_in(mem_rdata), .data_out(data_in), .stage(stage),
+    tiny32 cpu(.clk(clk), .mem_valid(mem_valid), .mem_nwr(mem_nwr), .wfi(wfi), .nreset(nreset), .address(address), .data_in(mem_rdata), .data_out(data_in), .stage(stage),
                  .error(error), .hlt(hlt), .mem_ready(mem_ready), .interrupt(irq), .interrupt_ack(interrupt_ack));
 
     initial begin
@@ -75,6 +67,8 @@ ROM_BITS = 10)
     end
 
     always @(posedge clk) begin
+        if (timer[RESET_DELAY_BIT])
+            nreset <= 1;
         if (interrupt_ack[0])
             timer_interrupt <= 0;
         else if (timer == {TIMER_BITS{1'b1}})
@@ -82,11 +76,7 @@ ROM_BITS = 10)
         timer <= timer + 1;
     end
 
-    always @(negedge timer[RESET_DELAY_BIT]) begin
-        nreset <= 1;
-    end
-
-    always @(negedge cpu_clk) begin
+    always @(negedge clk) begin
         if (mem_valid & ram_selected) begin
             if (!mem_nwr[0])
                 ram1[ram_address] <= data_in[7:0];
@@ -101,12 +91,12 @@ ROM_BITS = 10)
         mem_ready <= mem_valid & (ram_selected | rom_selected | ports_selected);
     end
 
-    always @(negedge cpu_clk) begin
+    always @(negedge clk) begin
         if (mem_valid & rom_selected)
             rom_rdata <= rom[rom_address];
     end
 
-    always @(negedge cpu_clk) begin
+    always @(negedge clk) begin
         if (mem_valid & ports_selected) begin
             if (!mem_nwr[0]) led <= data_in[0];
         end
