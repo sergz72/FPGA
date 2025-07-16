@@ -22,6 +22,12 @@ module tiny32
     input wire [7:0] interrupt,
     output reg [7:0] interrupt_ack = 0
 );
+    localparam FUNC3_SLB = 0;
+    localparam FUNC3_SLH = 1;
+    localparam FUNC3_SLW = 2;
+    localparam FUNC3_LBU = 4;
+    localparam FUNC3_LHU = 5;
+
     localparam STAGE_IREAD           = 0;
     localparam STAGE_DECODE          = 1;
     localparam STAGE_WFI             = 2;
@@ -465,46 +471,54 @@ module tiny32
                             stage <= STAGE_MEMORY;
                             address <= source_address;
 
-                            case (1'b1)
-                                sb: data_out <= data_out_byte(source_address[1:0]);
-                                sh: data_out <= source_address[1] ? {source2_reg_data[15:0], 16'h0} : {16'h0, source2_reg_data[15:0]};
-                                sw: data_out <= source2_reg_data;
-                            endcase
-                            case (1'b1)
-                                sb: mem_nwr <= store_f(source_address[1:0]);
-                                sh: mem_nwr <= source_address[1] ? 4'b0011 : 4'b1100;
-                                sw: mem_nwr <= 0;
-                                default: mem_nwr <= 4'b1111;
-                            endcase
+                            if (store) begin
+                                case (func3)
+                                    FUNC3_SLB: data_out <= data_out_byte(source_address[1:0]);
+                                    FUNC3_SLH: data_out <= source_address[1] ? {source2_reg_data[15:0], 16'h0} : {16'h0, source2_reg_data[15:0]};
+                                    default: data_out <= source2_reg_data;
+                                endcase
+                                case (func3)
+                                    FUNC3_SLB: mem_nwr <= store_f(source_address[1:0]);
+                                    FUNC3_SLH: mem_nwr <= source_address[1] ? 4'b0011 : 4'b1100;
+                                    FUNC3_SLW: mem_nwr <= 0;
+                                    default: mem_nwr <= 4'b1111;
+                                endcase
+                            end
                         end
                         wfi_: stage <= STAGE_WFI;
                         auipc | lui | jalr | jal | reti | hlt_: stage <= STAGE_INTERRUPT_CHECK;
                         default: stage <= STAGE_ALU;
                     endcase
                     registers_wr <= auipc | lui | jalr | jal;
-                    case (1'b1)
-                        auipc: registers_data_wr <= pc + imm20u_shifted;
-                        lui: registers_data_wr <= imm20u_shifted;
+                    case (op)
+                        //auipc
+                        23: registers_data_wr <= pc + imm20u_shifted;
+                        //lui
+                        55: registers_data_wr <= imm20u_shifted;
                         default: registers_data_wr <= pc + 4;
                     endcase
-                    case (1'b1)
-                        reti: begin
-                            in_interrupt <= 0;
-                            interrupt_ack <= 0;
-                            pc <= saved_pc;
+                    case (op)
+                        //jalr
+                        103: pc <= source1_reg_data + imm12i_sign_extended;
+                        //jal
+                        111: pc <= pc + { {11{imm20j[19]}}, imm20j, 1'b0 };
+                        default: begin
+                            if (reti) begin
+                                in_interrupt <= 0;
+                                interrupt_ack <= 0;
+                                pc <= saved_pc;
+                            end
+                            else if (!br) pc <= pc + 4;
                         end
-                        jalr: pc <= source1_reg_data + imm12i_sign_extended;
-                        jal: pc <= pc + { {11{imm20j[19]}}, imm20j, 1'b0 };
-                        default: if (!br) pc <= pc + 4;
                     endcase
                 end
                 STAGE_MEMORY: begin
                     error <= !internal_selected;
-                    case (1'b1)
-                        lb: registers_data_wr <= data_load_byte_signed(address[1:0]);
-                        lh: registers_data_wr <= address[1] ? {{16{mem_rdata[31]}}, mem_rdata[31:16]} : {{16{mem_rdata[15]}}, mem_rdata[15:0]};
-                        lw: registers_data_wr <= mem_rdata;
-                        lbu: registers_data_wr <= data_load_byte_unsigned(address[1:0]);
+                    case (func3)
+                        FUNC3_SLB: registers_data_wr <= data_load_byte_signed(address[1:0]);
+                        FUNC3_SLH: registers_data_wr <= address[1] ? {{16{mem_rdata[31]}}, mem_rdata[31:16]} : {{16{mem_rdata[15]}}, mem_rdata[15:0]};
+                        FUNC3_SLW: registers_data_wr <= mem_rdata;
+                        FUNC3_LBU: registers_data_wr <= data_load_byte_unsigned(address[1:0]);
                         default: registers_data_wr <= source_address[1] ? {16'h0, mem_rdata[31:16]} : {16'h0, mem_rdata[15:0]};
                     endcase
                     mem_nwr <= 4'b1111;
@@ -519,11 +533,11 @@ module tiny32
                 end
                 STAGE_ALU: begin
                     if (alu_done) begin
-                        case (1'b1)
-                            alu_clk_no_br_slt_sltu: registers_data_wr <= mulhu ? alu_out2 : alu_out;
-                            sltu: registers_data_wr <= {31'h0, c};
-                            slt: registers_data_wr <= {31'h0, signed_lt};
-                            br: pc <= pc + (condition_f(func3) ? { {19{imm12b[11]}}, imm12b, 1'b0 } : 4);
+                        case (op)
+                            // alu
+                            19, 51: registers_data_wr <= mulhu ? alu_out2 : (sltu ? {31'h0, c} : (slt ? {31'h0, signed_lt} : alu_out));
+                            //br
+                            99: pc <= pc + (condition_f(func3) ? { {19{imm12b[11]}}, imm12b, 1'b0 } : 4);
                         endcase
                         stage <= STAGE_INTERRUPT_CHECK;
                         registers_wr <= alu_clk_no_br_slt_sltu | sltu | slt;
