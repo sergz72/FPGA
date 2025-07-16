@@ -32,7 +32,7 @@ main:
 	xor a0, a0, a0
 next:
 	jal wfi
-	lw  a0, 0(s0)
+//	lw  a0, 0(s0)
 	lui a1, 0xc0000
 	xori a0, a0, 1
 	sw a0, 0(s0)

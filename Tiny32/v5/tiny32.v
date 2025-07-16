@@ -338,9 +338,11 @@ module tiny32
                 ALU_OP_XOR: alu_out <= source1_reg_data ^ alu_op2;
                 ALU_OP_ADD: alu_out <= source1_reg_data + alu_op2;
                 ALU_OP_SUB: {c, alu_out} <= source1_reg_data - alu_op2;
+`ifdef MUL                
                 ALU_OP_MUL: {alu_out2, alu_out} <= source1_reg_data * alu_op2;
                 ALU_OP_MULS: {alu_out, alu_out2} <= $signed(source1_reg_data) * $signed(alu_op2);
                 ALU_OP_MULSU: {dc1, dc2, alu_out, alu_out2} <= $signed({source1_reg_data[31], source1_reg_data}) * $signed({1'b0, alu_op2});
+`endif
 `ifdef DIV
                 ALU_OP_DIV: begin
                     if (alu_done) begin
