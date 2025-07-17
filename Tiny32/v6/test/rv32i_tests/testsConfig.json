@@ -1,0 +1,8 @@
+{
+  "TestsDir": "tests",
+  "BuildCommand": "build_gcc.sh",
+  "SimulatorCommand": "run_verilator.sh",
+  "Flag": "wfi=1",
+  "Error": "hlt=1",
+  "Ok": "wfi=1"
+}
