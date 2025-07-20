@@ -1,6 +1,6 @@
-#define PORT_ADDRESS ((volatile unsigned int*)0xA0000000)
-#define UART_CONTROL_ADDRESS ((volatile unsigned int*)0xC0000000)
-#define UART_DATA_ADDRESS ((volatile unsigned char*)0xE0000000)
+#define PORT_ADDRESS ((volatile unsigned int*)0x30000000)
+#define UART_DATA_ADDRESS ((volatile unsigned char*)0x40000000)
+#define UART_CONTROL_ADDRESS ((volatile unsigned int*)0x50000000)
 #define UART_TX_FIFO_FULL 1
 #define UART_RX_FIFO_EMPTY 2
 
@@ -43,11 +43,11 @@ __attribute__((naked)) int main(void)
 
   while (1)
   {
-    timer(270000);
+    timer(2700000);
     wfi();
-    uart_handler();
-    if (counter == 99)
+    if (counter == 9)
     {
+      uart_handler();
       counter = 0;
       state ^= 1;
       *PORT_ADDRESS = state;

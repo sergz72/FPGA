@@ -9,8 +9,8 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 
 MEMORY
 { 
-  ROM   (rx) : ORIGIN = 0x40000000, LENGTH = 32K
-  RAM   (rw) : ORIGIN = 0x80000000, LENGTH = 16K
+  ROM   (rx) : ORIGIN = 0x10000000, LENGTH = 32K
+  RAM   (rw) : ORIGIN = 0x20000000, LENGTH = 16K
 }
 
 SECTIONS

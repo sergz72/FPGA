@@ -1,8 +1,6 @@
-`timescale 1 ns / 1 ps
-
 module test;
     reg clk;
-    wire ntrap;
+    wire hlt, error, wfi;
     wire led;
     wire tx, rx;
     reg [7:0] data_in;
@@ -11,8 +9,8 @@ module test;
     reg send;
     wire busy;
 
-    main #(.RESET_BIT(3), .UART_CLOCK_DIV(8), .UART_CLOCK_COUNTER_BITS(4))
-         m(.clk(clk), .ntrap(ntrap), .led(led), .tx(tx), .rx(rx));
+    main #(.TIMER_BITS(10), .RESET_DELAY_BIT(3), .UART_CLOCK_DIV(8), .UART_CLOCK_COUNTER_BITS(4))
+         m(.clk(clk), .wfi(wfi), .error(error), .hlt(hlt), .led(led), .tx(tx), .rx(rx));
 
     uart1tx #(.CLOCK_DIV(8), .CLOCK_COUNTER_BITS(4)) utx(.clk(clk), .tx(rx), .data(data_in), .send(send), .busy(busy), .nreset(nreset));
 

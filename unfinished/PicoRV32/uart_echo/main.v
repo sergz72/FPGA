@@ -2,6 +2,8 @@
 
 module main
 #(parameter
+UART_CLOCK_DIV = 234,
+UART_CLOCK_COUNTER_BITS = 8,
 RESET_BIT = 19,
 // 4k 32 bit words RAM
 RAM_BITS = 12,
@@ -14,9 +16,9 @@ ROM_BITS = 13)
     output wire tx,
     input wire rx
 );
-    localparam RAM_START = 32'h80000000;
+    localparam RAM_START = 32'h20000000;
     localparam RAM_END = RAM_START + (4<<RAM_BITS);
-    localparam MEMORY_SELECTOR_START_BIT = 30;
+    localparam MEMORY_SELECTOR_START_BIT = 28;
 
     reg nreset = 0;
 
@@ -38,7 +40,7 @@ ROM_BITS = 13)
 	wire [31:0] pcpi_rs2;
 	wire trace_valid;
 	wire [35:0] trace_data;
-    wire rom_selected, ram_selected, port_selected;
+    wire rom_selected, ram_selected, port_selected, uart_data_selected, uart_control_selected;
     reg wr = 0;
     reg rd = 0;
     wire [RAM_BITS - 1:0] ram_address;
@@ -52,6 +54,11 @@ ROM_BITS = 13)
     reg [7:0] ram3 [0:(1<<RAM_BITS)-1];
     reg [7:0] ram4 [0:(1<<RAM_BITS)-1];
 
+    wire uart_rx_fifo_empty, uart_tx_fifo_full;
+    wire uart_req;
+    wire uart_ack;
+    wire [7:0] uart_data_out;
+
     assign ntrap = ~trap;
 
     assign irq = 32'h0; //{28'h0, timer_interrupt, 3'h0};
@@ -61,17 +68,14 @@ ROM_BITS = 13)
     assign rom_selected = memory_selector == 1;
     assign ram_selected = memory_selector == 2;
     assign port_selected = memory_selector == 3;
+    assign uart_data_selected = memory_selector == 4;
+    assign uart_control_selected = memory_selector == 5;
 
-    assign mem_rdata = mem_rdata_f(memory_selector);
+    assign mem_rdata = rom_selected ? rom_rdata : (ram_selected ? ram_rdata : (uart_data_selected ? {24'h0, uart_data_out} : {30'h0, uart_rx_fifo_empty, uart_tx_fifo_full}));
     
     assign ram_address = mem_la_addr[RAM_BITS + 1:2];
 
-    function [31:0] mem_rdata_f(input [31-MEMORY_SELECTOR_START_BIT:0] source);
-        case (source)
-            1: mem_rdata_f = rom_rdata;
-            default: mem_rdata_f = ram_rdata;
-        endcase
-    endfunction
+    assign uart_req = uart_data_selected & mem_valid;
 
     initial begin
         $readmemh("asm/code.hex", rom);
@@ -85,8 +89,8 @@ ROM_BITS = 13)
                .ENABLE_FAST_MUL(1),
                .ENABLE_DIV(1),
                .STACKADDR(RAM_END),
-               .PROGADDR_IRQ(32'h4000_0010),
-               .PROGADDR_RESET(32'h4000_0000),
+               .PROGADDR_IRQ(32'h1000_0010),
+               .PROGADDR_RESET(32'h1000_0000),
                .BARREL_SHIFTER(1),
                .ENABLE_IRQ_TIMER(1),
                .ENABLE_COUNTERS(0),
@@ -122,6 +126,10 @@ ROM_BITS = 13)
                 .trace_data(trace_data)
         );
 
+    uart_fifo #(.CLOCK_DIV(UART_CLOCK_DIV), .CLOCK_COUNTER_BITS(UART_CLOCK_COUNTER_BITS))
+        ufifo(.clk(clk), .tx(tx), .rx(rx), .data_in(mem_wdata[7:0]), .data_out(uart_data_out), .nwr(!mem_wstrb[0]), .req(uart_req), .nreset(nreset),
+                .full(uart_tx_fifo_full), .empty(uart_rx_fifo_empty), .ack(uart_ack));
+
     always @(posedge clk) begin
         if (timer[RESET_BIT])
             nreset <= 1;
@@ -129,7 +137,7 @@ ROM_BITS = 13)
     end
 
     always @(posedge clk) begin
-        mem_ready <= mem_valid & (rom_selected | ram_selected | port_selected);
+        mem_ready <= mem_valid & (rom_selected | ram_selected | port_selected | uart_control_selected | uart_ack);
     end
 
     always @(posedge clk) begin
