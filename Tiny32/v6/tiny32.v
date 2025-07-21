@@ -22,22 +22,22 @@ module tiny32
     input wire [7:0] interrupt,
     output reg [7:0] interrupt_ack
 );
-    localparam OP_LOAD    = 3;
-    localparam OP_SPECIAL = 11;
-    localparam OP_ALU19   = 19;
-    localparam OP_AUIPC   = 23;
-    localparam OP_STORE   = 35;
-    localparam OP_ALU51   = 51;
-    localparam OP_LUI     = 55;
-    localparam OP_BR      = 99;
-    localparam OP_JALR    = 103;
-    localparam OP_JAL     = 111;
+    localparam OP_LOAD        = 3;
+    localparam OP_SPECIAL     = 11;
+    localparam OP_ALU19       = 19;
+    localparam OP_AUIPC       = 23;
+    localparam OP_STORE       = 35;
+    localparam OP_ALU51       = 51;
+    localparam OP_LUI         = 55;
+    localparam OP_BR          = 99;
+    localparam OP_JALR        = 103;
+    localparam OP_JAL         = 111;
+    localparam OP_PRIVILEGED  = 115;
 
     localparam FUNC3_WFI  = 0;
-    localparam FUNC3_RETI = 1;
-    localparam FUNC3_HLT  = 2;
-    localparam FUNC3_IN   = 3;
-    localparam FUNC3_OUT  = 4;
+    localparam FUNC3_HLT  = 1;
+    localparam FUNC3_IN   = 2;
+    localparam FUNC3_OUT  = 3;
 
     localparam FUNC3_SLB = 0;
     localparam FUNC3_SLH = 1;
@@ -313,13 +313,6 @@ module tiny32
                                             pc <= pc + 4;
                                             stage_reset <= 1;
                                         end
-                                        // reti
-                                        FUNC3_RETI: begin
-                                            in_interrupt <= 0;
-                                            interrupt_ack <= 0;
-                                            pc <= saved_pc;
-                                            stage_reset <= 1;
-                                        end
                                         // hlt
                                         FUNC3_HLT: hlt <= 1;
                                         default: stage_reset <= 0;
@@ -336,6 +329,13 @@ module tiny32
                                 OP_JAL: begin
                                     registers_data_wr <= pc + 4;
                                     pc <= pc + { {11{imm20j_in[19]}}, imm20j_in, 1'b0 };
+                                    stage_reset <= 1;
+                                end
+                                // mret
+                                OP_PRIVILEGED: begin
+                                    in_interrupt <= 0;
+                                    interrupt_ack <= 0;
+                                    pc <= saved_pc;
                                     stage_reset <= 1;
                                 end
                                 default: stage_reset <= 0;

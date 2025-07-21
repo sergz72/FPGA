@@ -2,7 +2,8 @@ module timer
 #(parameter BITS = 32, MHZ_TIMER_BITS = 4, MHZ_TIMER_VALUE = 26)
 (
     input wire clk,
-    input wire nwr,
+    input wire req,
+    output reg ack,
     input wire nreset,
     input wire [BITS-1:0] value,
     output reg interrupt = 0,
@@ -18,9 +19,11 @@ module timer
             mhz_timer <= 0;
             interrupt <= 0;
             done <= 1;
+            ack <= 0;
         end
         else begin
-            if (!nwr) begin
+            ack <= req;
+            if (req) begin
                 counter <= value;
                 mhz_timer <= 0;
                 interrupt <= 0;
