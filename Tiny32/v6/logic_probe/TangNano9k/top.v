@@ -21,9 +21,9 @@ module top
     wire clk_probe;
 
     Gowin_rPLL pll(
-        .clkout(clk_probe), //output clkout
-        .clkoutd(clk_main),
-        .clkin(clk) //input clkin
+        .clkout(clk_probe), //129.6MHz
+        .clkoutd(clk_main), //32.4MHz
+        .clkin(clk) //27MHz
     );
 
     main m(.clk(clk_main), .clk_probe(clk_probe), .nwfi(nwfi), .nerror(nerror), .nhlt(nhlt), .led(led), .tx(tx), .rx(rx), .sck(sck),
