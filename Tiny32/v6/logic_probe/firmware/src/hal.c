@@ -34,14 +34,15 @@ void delayms(unsigned int ms)
   wfi();
 }
 
-void ST7789_WriteBytes(unsigned int flags, unsigned char *data, unsigned int size)
+/*void ST7789_WriteBytes(unsigned int flags, unsigned char *data, unsigned int size)
 {
-  while (size)
+  while (size--)
   {
-    if (in(PORT_ADDRESS) & SPI_LCD_FIFO_FULL)
-      continue;
+    //if (in(PORT_ADDRESS) & SPI_LCD_FIFO_FULL)
+    //  continue;
     unsigned int v = *data++;
     out(v|flags, SPI_LCD_ADDRESS);
-    size--;
+    //size--;
   }
-}
+}*/
+

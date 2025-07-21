@@ -41,7 +41,7 @@ module test;
         send = 1;
         #5
         send = 0;
-        #1500000
+        #10000000
         $finish;
     end
 endmodule

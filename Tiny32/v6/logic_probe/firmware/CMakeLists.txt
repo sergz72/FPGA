@@ -21,6 +21,7 @@ project(riscv_logic_probe C ASM)
 
 file(GLOB SOURCES
         "src/main.c"
+        "src/main.S"
         "src/hal.c"
         "../../start.S"
         "/home/sergzz/serg/my/Programs/ARM_CLION/common_lib/display/lcd_st7789.c"
