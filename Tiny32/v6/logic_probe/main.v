@@ -9,20 +9,20 @@ module main
   // 8k 32 bit words ROM
   ROM_BITS = 13,
   CPU_CLOCK_BIT = 0,
-  SPI_LCD_FIFO_BITS = 13,
-  SPI_LCD_CLOCK_DIVIDER = 4,
-  SPI_LCD_CLOCK_DIVIDER_BITS = 3,
-  MHZ_TIMER_BITS = 5,
-  MHZ_TIMER_VALUE = 27,
-  PROBE_TIME_PERIOD = 2700000
+  SPI_LCD_FIFO_BITS = 10,
+  SPI_LCD_CLOCK_DIVIDER = 2,
+  SPI_LCD_CLOCK_DIVIDER_BITS = 2,
+  MHZ_TIMER_BITS = 6,
+  MHZ_TIMER_VALUE = 32,
+  PROBE_TIME_PERIOD = 25920000
 )
 (
     input wire clk,
     input wire clk_probe,
-    output wire hlt,
-    output wire error,
-    output wire wfi,
-    output reg led = 1,
+    output wire nhlt,
+    output wire nerror,
+    output wire nwfi,
+    output reg led,
     output wire tx,
     input wire rx,
     output wire sck,
@@ -65,6 +65,12 @@ module main
     reg probe_interrupt_clear = 0;
     reg probe_nreset = 0;
 
+    wire hlt, error, wfi;
+
+    assign nhlt = !hlt;
+    assign nwfi = !wfi;
+    assign nerror = !error;
+    
     assign cpu_clk = timer[CPU_CLOCK_BIT];
 
     assign io_selector = io_address[31:IO_SELECTOR_START_BIT];

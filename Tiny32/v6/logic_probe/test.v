@@ -1,6 +1,6 @@
 module test;
     reg clk, nreset;
-    wire hlt, error, wfi, led;
+    wire nhlt, nerror, nwfi, led;
     wire tx, rx, busy;
     reg [7:0] data_in;
     reg send;
@@ -10,7 +10,7 @@ module test;
     reg comp_out_hi, comp_out_lo;
 
     main #(.RESET_BIT(3), .UART_CLOCK_DIV(8), .UART_CLOCK_COUNTER_BITS(4))
-         m(.clk(clk), .clk_probe(clk), .wfi(wfi), .error(error), .hlt(hlt), .led(led), .tx(tx), .rx(rx), .sck(sck),
+         m(.clk(clk), .clk_probe(clk), .nwfi(nwfi), .nerror(nerror), .nhlt(nhlt), .led(led), .tx(tx), .rx(rx), .sck(sck),
             .mosi(mosi), .ncs(ncs), .dc(dc), .button1(button1), .button2(button2), .dac1_code(dac1_code),
             .dac2_code(dac2_code), .comp_out_hi(comp_out_hi), .comp_out_lo(comp_out_lo));
 

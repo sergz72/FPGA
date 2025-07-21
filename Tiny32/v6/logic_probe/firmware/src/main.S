@@ -5,14 +5,12 @@
 // a1 = address
 // a2 = size
 ST7789_WriteBytes:
-    mv   a4, a1
-    mv   a5, a0
-    lui  a1, 0x40000
+    lui  a3, 0x40000
 ST7789_WriteBytes_loop:
-    lbu  a0, 0(a4)
-    addi a4, a4, 1
-    or   a0, a0, a5
-    out_insn(10, 11)
+    lbu  a4, 0(a1)
+    addi a1, a1, 1
+    or   a4, a4, a0
+    out_insn(14, 13)
     addi a2,a2,-1
     bnez a2, ST7789_WriteBytes_loop
     ret
