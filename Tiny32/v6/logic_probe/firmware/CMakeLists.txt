@@ -22,6 +22,10 @@ project(riscv_logic_probe C ASM)
 file(GLOB SOURCES
         "src/main.c"
         "src/main.S"
+        "src/font16.c"
+        "src/ui_240x135.c"
+        "src/ui_common.c"
+        "src/display.c"
         "src/hal.c"
         "../../start.S"
         "/home/sergzz/serg/my/Programs/ARM_CLION/common_lib/display/lcd_st7789.c"

@@ -1,4 +1,6 @@
-﻿const string contentsLineStart = "Contents of section ";
+﻿using System.Text;
+
+const string contentsLineStart = "Contents of section ";
 const string codeFileName = "code.hex";
 const string dataFileNamePrefix = "data";
 const string dataFileNameSuffix = ".hex";
@@ -62,6 +64,16 @@ for (var idx = 1; idx <= count; idx++)
 
 return;
 
+string RevertBytes(string part)
+{
+    var sb = new StringBuilder();
+
+    for (var i = part.Length - 2; i >= 0; i -= 2)
+        sb.Append(part.AsSpan(i, 2));
+
+    return sb.ToString().PadRight(8, '0');
+}
+
 List<string> BuildDataLines(string line, params string[] sections)
 {
     if (line.Length == 0)
@@ -77,10 +89,12 @@ List<string> BuildDataLines(string line, params string[] sections)
     if (!start) return [];
     
     var parts = line.Split(' ');
+    if (parts.Length < 3)
+        return [];
     var spaces = 0;
     var idx = 0;
     var lines = new List<string>();
-    foreach (var part in parts)
+    foreach (var part in parts[1..^1])
     {
         if (part.Length == 0)
         {
@@ -90,7 +104,7 @@ List<string> BuildDataLines(string line, params string[] sections)
             continue;
         }
         if (idx > 0)
-            lines.Add(part.PadRight(8, '0'));
+            lines.Add(RevertBytes(part));
         idx++;
     }
     return lines;

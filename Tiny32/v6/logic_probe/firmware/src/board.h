@@ -26,6 +26,24 @@
 
 #define NO_ST7789_RESET
 
+#define DEFAULT_DACH_VOLTAGE 24
+#define DEFAULT_DACL_VOLTAGE 4
+
+#define COUNTERS_MAX 1000
+
+#define BUTTON1_BIT 0x20
+#define BUTTON2_BIT 0x10
+
+#define DISPLAY_MAX_COLUMNS    13
+#define DISPLAY_MAX_ROWS       6
+#define DISPLAY_MAX_RECTANGLES 4
+
+extern unsigned int counter_low, counter_high, counter_z;
+extern unsigned int counter_freq_low, counter_freq_high, counter_freq_rs;
+
 void delayms(unsigned int ms);
+
+void set_l_voltage(unsigned int value);
+void set_h_voltage(unsigned int value);
 
 #endif
