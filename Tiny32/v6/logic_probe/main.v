@@ -9,7 +9,7 @@ module main
   // 8k 32 bit words ROM
   ROM_BITS = 13,
   CPU_CLOCK_BIT = 0,
-  SPI_LCD_FIFO_BITS = 10,
+  SPI_LCD_FIFO_BITS = 13,
   SPI_LCD_CLOCK_DIVIDER = 2,
   SPI_LCD_CLOCK_DIVIDER_BITS = 2,
   MHZ_TIMER_BITS = 6,
