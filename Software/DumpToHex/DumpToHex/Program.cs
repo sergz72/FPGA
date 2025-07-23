@@ -88,24 +88,15 @@ List<string> BuildDataLines(string line, params string[] sections)
 
     if (!start) return [];
     
-    var parts = line.Split(' ');
+    var parts = line.Trim().Split(' ');
     if (parts.Length < 3)
         return [];
-    var spaces = 0;
-    var idx = 0;
     var lines = new List<string>();
-    foreach (var part in parts[1..^1])
+    foreach (var part in parts[1..])
     {
         if (part.Length == 0)
-        {
-            spaces++;
-            if (spaces > 1)
-                break;
-            continue;
-        }
-        if (idx > 0)
-            lines.Add(RevertBytes(part));
-        idx++;
+            break;
+        lines.Add(RevertBytes(part));
     }
     return lines;
 }
