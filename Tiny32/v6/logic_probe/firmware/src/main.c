@@ -82,6 +82,8 @@ __attribute__((naked)) int main(void)
 
   UI_Init();
 
+  pwm_set_frequency_and_duty(10000, 50);
+
   out(PROBE_NRESET, PORT_ADDRESS);
 
   while (1)

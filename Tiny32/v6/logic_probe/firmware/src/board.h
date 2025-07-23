@@ -14,6 +14,7 @@
 #define LOGIC_PROBE_ADDRESS   0x80000000
 #define DAC1_ADDRESS          0xA0000000
 #define DAC2_ADDRESS          0xC0000000
+#define PWM_ADDRESS           0xE0000000
 #define UART_TX_FIFO_FULL     1
 #define UART_RX_FIFO_EMPTY    2
 #define SPI_LCD_FIFO_FULL     4
@@ -52,6 +53,8 @@
 
 #define PRINTF_BUFFER_LENGTH 200
 #define USE_MYVSPRINTF
+
+#define PWM_CLOCK_FREQUENCY 60000000
 
 extern unsigned int counter_low, counter_high, counter_z;
 extern unsigned int counter_freq_low, counter_freq_high, counter_freq_rs;

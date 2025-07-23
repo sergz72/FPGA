@@ -67,5 +67,11 @@ unsigned int get_h_voltage(void)
 
 void pwm_set_frequency_and_duty(unsigned int frequency, unsigned int duty)
 {
-  //todo
+  unsigned int period = PWM_CLOCK_FREQUENCY / frequency;
+  if (!period)
+    period = 1;
+  if (duty > 99)
+    duty = 99;
+  out(period - 1, PWM_ADDRESS);
+  out(period * duty / 100, PWM_ADDRESS + 1);
 }
