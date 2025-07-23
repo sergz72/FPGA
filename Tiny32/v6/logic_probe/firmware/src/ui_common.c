@@ -26,28 +26,15 @@ static int uh_index, ul_index;
 static unsigned int prev_button1_pressed, prev_button2_pressed;
 static int button1_pressed, button2_pressed;
 unsigned int uh_changed_to, ul_changed_to;
-int voltmeter_mode;
-unsigned int led_data[4];
 
 void UI_CommonInit(void)
 {
-  memset(led_data, 0, sizeof(led_data));
   uh_index = 0;
   ul_index = 1;
   uh_changed_to = DEFAULT_DACH_VOLTAGE;
   ul_changed_to = DEFAULT_DACL_VOLTAGE;
   prev_button1_pressed = prev_button2_pressed = 0;
-  button1_pressed = button2_pressed = voltmeter_mode = 0;
-}
-
-void calculate_led_data(void)
-{
-  led_data[0] = RGB(counter_low * 0xFF / COUNTERS_MAX, 0, 0);
-  unsigned int z_value = counter_z * 0xFF / COUNTERS_MAX;
-  led_data[1] = RGB(z_value, z_value, 0);
-  led_data[2] = RGB(0, counter_high * 0xFF / COUNTERS_MAX, 0);
-  int pulse = (counter_freq_rs != 0) || ((counter_freq_high != 0) && (counter_freq_low != 0));
-  led_data[3] = pulse ? BLUE_COLOR : BLACK_COLOR;
+  button1_pressed = button2_pressed = 0;
 }
 
 static void button1_short_press(void)

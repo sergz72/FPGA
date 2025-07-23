@@ -128,11 +128,11 @@ void UI_Init(void)
   r.width = 32;
   r.height = 33;
   DisplayInitRectangle(0, &r);
-  r.y += 33;
+  r.y += 34;
   DisplayInitRectangle(1, &r);
-  r.y += 33;
+  r.y += 34;
   DisplayInitRectangle(2, &r);
-  r.y += 33;
+  r.y += 34;
   DisplayInitRectangle(3, &r);
 }
 
@@ -183,15 +183,24 @@ static void ShowVoltage(unsigned int column, unsigned int value)
 
 static void ShowLedData(void)
 {
-  DisplaySetRectangleColor(0, led_data[0]);
-  DisplaySetRectangleColor(1, led_data[1]);
-  DisplaySetRectangleColor(2, led_data[2]);
-  DisplaySetRectangleColor(3, led_data[3]);
+  unsigned int value = (counter_low << 8) / COUNTERS_MAX;
+  if (value > 0xFF)
+    value = 0xFF;
+  DisplaySetRectangleColor(0, RGB(value, 0, 0));
+  value = (counter_z << 8) / COUNTERS_MAX;
+  if (value > 0xFF)
+    value = 0xFF;
+  DisplaySetRectangleColor(1, RGB(value, value, 0));
+  value = (counter_high << 8) / COUNTERS_MAX;
+  if (value > 0xFF)
+    value = 0xFF;
+  DisplaySetRectangleColor(2, RGB(0, value, 0));
+  int pulse = (counter_freq_rs != 0) || ((counter_freq_high != 0) && (counter_freq_low != 0));
+  DisplaySetRectangleColor(3, pulse ? BLUE_COLOR : BLACK_COLOR);
 }
 
 void Process_Timer_Event(void)
 {
-  calculate_led_data();
   ShowLedData();
 
   Process_Button_Events();
