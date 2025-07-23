@@ -65,6 +65,8 @@ module main
     wire probe_req, probe_ack, probe_interrupt;
     reg probe_interrupt_clear = 0;
     reg probe_nreset = 0;
+    reg probe_interrupt_filtered = 0;
+    reg prev_probe_interrupt = 0;
 
     wire hlt, error, wfi;
 
@@ -113,12 +115,20 @@ module main
         probe(.clk(clk_probe), .nreset(probe_nreset), .comp_data_hi(comp_out_hi), .comp_data_lo(comp_out_lo), .data(probe_data), .address(io_address[2:0]),
                 .data_request(probe_req), .data_ready(probe_ack), .interrupt(probe_interrupt), .interrupt_clear(probe_interrupt_clear));
 
-    assign irq = {6'h0, probe_interrupt, timer_interrupt};
+    assign irq = {6'h0, probe_interrupt_filtered, timer_interrupt};
 
     always @(posedge clk) begin
         if (timer[RESET_BIT])
             nreset <= 1;
         timer <= timer + 1;
+    end
+
+    always @(posedge clk) begin
+        if (!prev_probe_interrupt & probe_interrupt)
+            probe_interrupt_filtered <= 1;
+        else if (interrupt_ack[1])
+            probe_interrupt_filtered <= 0;
+        prev_probe_interrupt <= probe_interrupt;
     end
 
     always @(negedge cpu_clk) begin
