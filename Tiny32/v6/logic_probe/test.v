@@ -9,7 +9,7 @@ module test;
     wire [4:0] dac1_code, dac2_code;
     reg comp_out_hi, comp_out_lo;
 
-    main #(.RESET_BIT(3), .UART_CLOCK_DIV(8), .UART_CLOCK_COUNTER_BITS(4))
+    main #(.RESET_BIT(3), .UART_CLOCK_DIV(8), .UART_CLOCK_COUNTER_BITS(4), .PROBE_TIME_PERIOD(200000))
          m(.clk(clk), .clk_probe(clk), .nwfi(nwfi), .nerror(nerror), .nhlt(nhlt), .led(led), .tx(tx), .rx(rx), .sck(sck),
             .mosi(mosi), .ncs(ncs), .dc(dc), .button1(button1), .button2(button2), .dac1_code(dac1_code),
             .dac2_code(dac2_code), .comp_out_hi(comp_out_hi), .comp_out_lo(comp_out_lo));
@@ -41,7 +41,7 @@ module test;
         send = 1;
         #5
         send = 0;
-        #10000000
+        #20000000
         $finish;
     end
 endmodule

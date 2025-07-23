@@ -6,6 +6,7 @@
 
 unsigned int counter_low, counter_high, counter_z;
 unsigned int counter_freq_low, counter_freq_high, counter_freq_rs;
+volatile unsigned int probe_interrupt;
 
 // timer interrupt
 void __attribute__((interrupt("machine"))) isr1(void)
@@ -15,7 +16,7 @@ void __attribute__((interrupt("machine"))) isr1(void)
 // logic probe interrupt
 void __attribute__((interrupt("machine"))) isr2(void)
 {
-
+  probe_interrupt = 1;
 }
 
 void DrawChar(unsigned int x, unsigned int y, unsigned int ch, unsigned int text_color, unsigned int bk_color)
@@ -28,27 +29,40 @@ __attribute__((naked)) int main(void)
 {
   counter_low = counter_high = counter_z = 0;
   counter_freq_low = counter_freq_high = counter_freq_rs = 0;
+  probe_interrupt = 0;
 
-  unsigned int port_state = 0;
+  unsigned int led_state = 0;
+  unsigned int cnt_led = 0;
 
-  out(port_state, PORT_ADDRESS);
+  out(0, PORT_ADDRESS);
 
-  /*LcdInit(ST7789_MADCTL_VALUE);
-  DrawChar(0, 0, 0, YELLOW_COLOR, BLACK_COLOR);
-  DrawChar(16, 0, 9, YELLOW_COLOR, BLACK_COLOR);
-  DrawChar(32, 0, 10, YELLOW_COLOR, BLACK_COLOR);
-  DrawChar(48, 0, 11, YELLOW_COLOR, BLACK_COLOR);
-  DrawChar(64, 0, 16, YELLOW_COLOR, BLACK_COLOR);*/
   UI_Init();
 
-  while (1)
-    wfi();
+  out(PROBE_NRESET, PORT_ADDRESS);
 
-  /*while (1)
+  while (1)
   {
-    wfi();
-    uart_handler();
-    state ^= 1;
-    out(state, LED_ADDRESS);
-  }*/
+    while (!probe_interrupt)
+      ;
+    probe_interrupt = 0;
+    unsigned int address = LOGIC_PROBE_ADDRESS;
+    counter_low = in(address++);
+    counter_z = in(address++);
+    counter_freq_low = in(address++);
+    counter_freq_high = in(address++);
+    counter_freq_rs = in(address);
+    unsigned int port_state = PROBE_NRESET | PROBE_INTERRUPT_CLEAR | led_state;
+    out(port_state, PORT_ADDRESS);
+    port_state = PROBE_NRESET | led_state;
+    out(port_state, PORT_ADDRESS);
+    counter_high = counter_low >> 16;
+    counter_low &= 0xFFFF;
+    cnt_led++;
+    if (cnt_led == TIMER_EVENT_FREQUENCY - 1)
+    {
+      led_state ^= LED;
+      cnt_led = 0;
+    }
+    Process_Timer_Event();
+  }
 }

@@ -38,6 +38,8 @@
 #define DISPLAY_MAX_ROWS       6
 #define DISPLAY_MAX_RECTANGLES 4
 
+#define TIMER_EVENT_FREQUENCY 10
+
 extern unsigned int counter_low, counter_high, counter_z;
 extern unsigned int counter_freq_low, counter_freq_high, counter_freq_rs;
 

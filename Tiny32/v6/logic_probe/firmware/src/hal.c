@@ -34,15 +34,12 @@ void delayms(unsigned int ms)
   wfi();
 }
 
-/*void ST7789_WriteBytes(unsigned int flags, unsigned char *data, unsigned int size)
+void set_l_voltage(unsigned int value)
 {
-  while (size--)
-  {
-    //if (in(PORT_ADDRESS) & SPI_LCD_FIFO_FULL)
-    //  continue;
-    unsigned int v = *data++;
-    out(v|flags, SPI_LCD_ADDRESS);
-    //size--;
-  }
-}*/
+  out(value, DAC1_ADDRESS);
+}
 
+void set_h_voltage(unsigned int value)
+{
+  out(value, DAC2_ADDRESS);
+}

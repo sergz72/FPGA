@@ -14,8 +14,8 @@ module main
   SPI_LCD_CLOCK_DIVIDER_BITS = 2,
   MHZ_TIMER_BITS = 6,
   MHZ_TIMER_VALUE = 32,
-  //200 ms
-  PROBE_TIME_PERIOD = 25920000
+  //100 ms
+  PROBE_TIME_PERIOD = 12960000
 )
 (
     input wire clk,
