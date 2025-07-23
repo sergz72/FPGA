@@ -1,10 +1,14 @@
 #include "board.h"
+#include "ui.h"
+#include <stdio.h>
 
-/*static void uart_send(unsigned int c)
+static unsigned int l_voltage, h_voltage;
+
+static void uart_send(unsigned int c)
 {
   while (1)
   {
-    unsigned int uart_status = in(UART_CONTROL_ADDRESS);
+    unsigned int uart_status = in(PORT_ADDRESS);
     if (!(uart_status & UART_TX_FIFO_FULL))
     {
       out(c, UART_DATA_ADDRESS);
@@ -13,20 +17,23 @@
   }
 }
 
-static void uart_handler(void)
+void puts_(const char *s)
+{
+  while (*s)
+    uart_send(*s++);
+}
+
+int getch_(void)
 {
   unsigned int uart_status;
   unsigned int uart_data;
 
-  while (1)
-  {
-    uart_status = in(UART_CONTROL_ADDRESS);
-    if (uart_status & UART_RX_FIFO_EMPTY)
-      return;
-    uart_data = in(UART_DATA_ADDRESS);
-    uart_send(uart_data);
-  }
-}*/
+  uart_status = in(PORT_ADDRESS);
+  if (uart_status & UART_RX_FIFO_EMPTY)
+    return EOF;
+  uart_data = in(UART_DATA_ADDRESS);
+  return (int)uart_data;
+}
 
 void delayms(unsigned int ms)
 {
@@ -37,9 +44,28 @@ void delayms(unsigned int ms)
 void set_l_voltage(unsigned int value)
 {
   out(value, DAC1_ADDRESS);
+  ul_changed_to = value;
+  l_voltage = value;
 }
 
 void set_h_voltage(unsigned int value)
 {
   out(value, DAC2_ADDRESS);
+  uh_changed_to = value;
+  h_voltage = value;
+}
+
+unsigned int get_l_voltage(void)
+{
+  return l_voltage;
+}
+
+unsigned int get_h_voltage(void)
+{
+  return h_voltage;
+}
+
+void pwm_set_frequency_and_duty(unsigned int frequency, unsigned int duty)
+{
+  //todo
 }

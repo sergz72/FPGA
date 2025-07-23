@@ -3,6 +3,10 @@
 
 #include <cpu.h>
 
+#ifndef NULL
+#define NULL 0
+#endif
+
 #define PORT_ADDRESS          0
 #define UART_DATA_ADDRESS     0x20000000
 #define SPI_LCD_ADDRESS       0x40000000
@@ -29,7 +33,7 @@
 #define DEFAULT_DACH_VOLTAGE 24
 #define DEFAULT_DACL_VOLTAGE 4
 
-#define COUNTERS_MAX 3149
+#define COUNTERS_MAX 3165
 
 #define BUTTON1_BIT 0x20
 #define BUTTON2_BIT 0x10
@@ -40,6 +44,15 @@
 
 #define TIMER_EVENT_FREQUENCY 10
 
+#define MAX_SHELL_COMMANDS 10
+#define MAX_SHELL_COMMAND_PARAMETERS 5
+#define MAX_SHELL_COMMAND_PARAMETER_LENGTH 20
+#define SHELL_HISTORY_SIZE 10
+#define SHELL_HISTORY_ITEM_LENGTH 100
+
+#define PRINTF_BUFFER_LENGTH 100
+#define USE_MYVSPRINTF
+
 extern unsigned int counter_low, counter_high, counter_z;
 extern unsigned int counter_freq_low, counter_freq_high, counter_freq_rs;
 
@@ -47,5 +60,9 @@ void delayms(unsigned int ms);
 
 void set_l_voltage(unsigned int value);
 void set_h_voltage(unsigned int value);
+unsigned int get_l_voltage(void);
+unsigned int get_h_voltage(void);
+void pwm_set_frequency_and_duty(unsigned int frequency, unsigned int duty);
+int getch_(void);
 
 #endif

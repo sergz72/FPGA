@@ -3,10 +3,17 @@
 #include "font16.h"
 #include "display.h"
 #include "ui.h"
+#include <shell.h>
+#include <getstring.h>
+#include <common_printf.h>
+#include <dac_commands.h>
+#include <pwm_commands.h>
+#include <counters_commands.h>
 
 unsigned int counter_low, counter_high, counter_z;
 unsigned int counter_freq_low, counter_freq_high, counter_freq_rs;
-volatile unsigned int probe_interrupt;
+static volatile unsigned int probe_interrupt;
+static char command_line[50];
 
 // timer interrupt
 void __attribute__((interrupt("machine"))) isr1(void)
@@ -25,6 +32,35 @@ void DrawChar(unsigned int x, unsigned int y, unsigned int ch, unsigned int text
   font16_symbols[ch](text_color, bk_color);
 }
 
+static void shell_handler(void)
+{
+  int rc;
+
+  if (!getstring_next())
+  {
+    switch (command_line[0])
+    {
+      case SHELL_UP_KEY:
+        puts_("\r\33[2K$ ");
+        getstring_buffer_init(shell_get_prev_from_history());
+        break;
+      case SHELL_DOWN_KEY:
+        puts_("\r\33[2K$ ");
+        getstring_buffer_init(shell_get_next_from_history());
+        break;
+      default:
+        rc = shell_execute(command_line);
+        if (rc == 0)
+          puts_("OK\r\n$ ");
+        else if (rc < 0)
+          puts_("Invalid command line\r\n$ ");
+        else
+          common_printf("shell_execute returned %d\n$ ", rc);
+        break;
+    }
+  }
+}
+
 __attribute__((naked)) int main(void)
 {
   counter_low = counter_high = counter_z = 0;
@@ -35,6 +71,14 @@ __attribute__((naked)) int main(void)
   unsigned int cnt_led = 0;
 
   out(0, PORT_ADDRESS);
+
+  shell_init(common_printf, NULL);
+
+  register_dac_commands();
+  register_pwm_commands();
+  register_counters_commands();
+
+  getstring_init(command_line, sizeof(command_line), getch_, puts_);
 
   UI_Init();
 
@@ -57,6 +101,7 @@ __attribute__((naked)) int main(void)
     out(port_state, PORT_ADDRESS);
     counter_high = counter_low >> 16;
     counter_low &= 0xFFFF;
+    shell_handler();
     cnt_led++;
     if (cnt_led == TIMER_EVENT_FREQUENCY - 1)
     {

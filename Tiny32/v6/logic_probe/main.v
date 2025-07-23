@@ -5,7 +5,7 @@ module main
   // about 100 ms delay
   RESET_BIT = 22,
   // 4k 32 bit words RAM
-  RAM_BITS = 12,
+  RAM_BITS = 11,
   // 8k 32 bit words ROM
   ROM_BITS = 13,
   CPU_CLOCK_BIT = 0,

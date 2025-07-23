@@ -26,7 +26,8 @@ module top
         .clkin(clk) //27MHz
     );
 
-    main m(.clk(clk_main), .clk_probe(clk_probe), .nwfi(nwfi), .nerror(nerror), .nhlt(nhlt), .led(led), .tx(tx), .rx(rx), .sck(sck),
+    main #(.UART_CLOCK_DIV(281), .UART_CLOCK_COUNTER_BITS(9))
+           m(.clk(clk_main), .clk_probe(clk_probe), .nwfi(nwfi), .nerror(nerror), .nhlt(nhlt), .led(led), .tx(tx), .rx(rx), .sck(sck),
             .mosi(mosi), .ncs(ncs), .dc(dc), .button1(button1), .button2(button2), .dac1_code(dac1_code),
             .dac2_code(dac2_code), .comp_out_hi(comp_out_hi), .comp_out_lo(comp_out_lo));
 

@@ -9,7 +9,7 @@ SET(CMAKE_C_COMPILER_WORKS 1)
 
 SET(CMAKE_VERBOSE_MAKEFILE ON)
 
-SET(LINKER_SCRIPT ../../../ldscript.ld)
+SET(LINKER_SCRIPT ../../ldscript.ld)
 
 SET(COMMON_FLAGS "-march=rv32i -ffunction-sections -fdata-sections -specs=nosys.specs -specs=nano.specs -nostartfiles")
 
@@ -29,9 +29,26 @@ file(GLOB SOURCES
         "src/hal.c"
         "../../start.S"
         "/home/sergzz/serg/my/Programs/ARM_CLION/common_lib/display/lcd_st7789.c"
+        "/home/sergzz/serg/my/Programs/ARM_CLION/common_lib/shell/shell.c"
+        "/home/sergzz/serg/my/Programs/ARM_CLION/common_lib/getstring.c"
+        "/home/sergzz/serg/my/Programs/ARM_CLION/common_lib/fixed_queue.c"
+        "/home/sergzz/serg/my/Programs/ARM_CLION/common_lib/common_printf.c"
+        "/home/sergzz/serg/my/Programs/ARM_CLION/common_lib/myprintf.c"
+        "/home/sergzz/serg/my/Programs/ARM_CLION/common_lib/ultoa.c"
+        "/home/sergzz/serg/my/Programs/ARM_CLION/logic_probe_core/dac_commands.c"
+        "/home/sergzz/serg/my/Programs/ARM_CLION/logic_probe_core/pwm_commands.c"
+        "/home/sergzz/serg/my/Programs/ARM_CLION/logic_probe_core/counters_commands.c"
+
 )
 
-include_directories(src ../.. /home/sergzz/serg/my/Programs/ARM_CLION/common_lib/display)
+include_directories(
+        src
+        ../..
+        /home/sergzz/serg/my/Programs/ARM_CLION/common_lib/display
+        /home/sergzz/serg/my/Programs/ARM_CLION/common_lib/shell
+        /home/sergzz/serg/my/Programs/ARM_CLION/common_lib
+        /home/sergzz/serg/my/Programs/ARM_CLION/logic_probe_core
+)
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 

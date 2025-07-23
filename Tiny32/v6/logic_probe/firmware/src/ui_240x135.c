@@ -143,13 +143,10 @@ static void ShowFrequency(unsigned int row, unsigned int frequency)
   d.quot = (int)frequency;
   for (int i = FREQUENCY_COLUMNS - 1; i >= 0; i--)
   {
-    char c;
-    if (i < 2 && !frequency)
+    if (i < 2 && !d.quot)
       d.rem = CHAR_SPACE;
     else
-    {
       d = div(d.quot, 10);
-    }
     DisplaySetChar(frequency_columns[i], row, d.rem);
   }
 }
@@ -183,17 +180,12 @@ static void ShowVoltage(unsigned int column, unsigned int value)
 
 static void ShowLedData(void)
 {
-  unsigned int value = (counter_low << 8) / COUNTERS_MAX;
-  if (value > 0xFF)
-    value = 0xFF;
+  // counter_low * 255 / COUNTERS_MAX
+  unsigned int value = ((counter_low << 8) - counter_low) / COUNTERS_MAX;
   DisplaySetRectangleColor(0, RGB(value, 0, 0));
-  value = (counter_z << 8) / COUNTERS_MAX;
-  if (value > 0xFF)
-    value = 0xFF;
+  value = ((counter_z << 8) - counter_z) / COUNTERS_MAX;
   DisplaySetRectangleColor(1, RGB(value, value, 0));
-  value = (counter_high << 8) / COUNTERS_MAX;
-  if (value > 0xFF)
-    value = 0xFF;
+  value = ((counter_high << 8) - counter_high) / COUNTERS_MAX;
   DisplaySetRectangleColor(2, RGB(0, value, 0));
   int pulse = (counter_freq_rs != 0) || ((counter_freq_high != 0) && (counter_freq_low != 0));
   DisplaySetRectangleColor(3, pulse ? BLUE_COLOR : BLACK_COLOR);
