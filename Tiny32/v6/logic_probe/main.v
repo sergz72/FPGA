@@ -20,6 +20,7 @@ module main
 (
     input wire clk,
     input wire clk_probe,
+    input wire clk_pwm,
     output wire nhlt,
     output wire nerror,
     output wire nwfi,
@@ -35,7 +36,8 @@ module main
     output reg [4:0] dac1_code,
     output reg [4:0] dac2_code,
     input wire comp_out_hi,
-    input wire comp_out_lo
+    input wire comp_out_lo,
+    output wire pwm_out
 );
     localparam IO_SELECTOR_START_BIT = 29;
 
@@ -47,7 +49,7 @@ module main
     wire cpu_clk;
     wire [31-IO_SELECTOR_START_BIT:0] io_selector;
     wire port_selected, uart_data_selected, spi_lcd_selected;
-    wire probe_selected, dac1_selected, dac2_selected, timer_selected;
+    wire probe_selected, dac1_selected, dac2_selected, timer_selected, pwm_selected;
     reg io_ready;
 
     reg [RESET_BIT:0] timer = 0;
@@ -68,6 +70,8 @@ module main
     reg probe_interrupt_filtered = 0;
     reg prev_probe_interrupt = 0;
 
+    wire pwm_req, pwm_ack;
+
     wire hlt, error, wfi;
 
     assign nhlt = !hlt;
@@ -85,6 +89,7 @@ module main
     assign probe_selected = io_selector == 4;
     assign dac1_selected = io_selector == 5;
     assign dac2_selected = io_selector == 6;
+    assign pwm_selected = io_selector == 7;
 
     assign io_data_out = uart_data_selected
             ? {24'h0, uart_data_out}
@@ -94,6 +99,7 @@ module main
     assign spi_lcd_req = spi_lcd_selected & io_req & !io_nwr;
     assign timer_req = timer_selected & io_req & !io_nwr;
     assign probe_req = probe_selected & io_req & io_nwr;
+    assign pwm_req = pwm_selected & io_req & !io_nwr;
 
     tiny32 #(.ROM_BITS(ROM_BITS), .RAM_BITS(RAM_BITS))
         cpu(.clk(cpu_clk), .io_req(io_req), .io_nwr(io_nwr), .wfi(wfi), .nreset(nreset), .io_address(io_address), .io_data_in(io_data_out),
@@ -115,6 +121,8 @@ module main
         probe(.clk(clk_probe), .nreset(probe_nreset), .comp_data_hi(comp_out_hi), .comp_data_lo(comp_out_lo), .data(probe_data), .address(io_address[2:0]),
                 .data_request(probe_req), .data_ready(probe_ack), .interrupt(probe_interrupt), .interrupt_clear(probe_interrupt_clear));
 
+    pwm3 p(.clk(clk_pwm), .nreset(nreset), .req(pwm_req), .ack(pwm_ack), .data(io_data_in), .address(io_address[0]), .out(pwm_out));
+
     assign irq = {6'h0, probe_interrupt_filtered, timer_interrupt};
 
     always @(posedge clk) begin
@@ -132,7 +140,7 @@ module main
     end
 
     always @(negedge cpu_clk) begin
-        io_ready <= io_req & (port_selected | dac1_selected | dac2_selected | uart_ack | timer_ack | probe_ack | spi_lcd_ack);
+        io_ready <= io_req & (port_selected | dac1_selected | dac2_selected | uart_ack | timer_ack | probe_ack | spi_lcd_ack | pwm_ack);
         if (port_selected & io_req & !io_nwr)
             {probe_nreset, probe_interrupt_clear, led} <= io_data_in[2:0];
     end

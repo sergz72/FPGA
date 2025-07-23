@@ -16,9 +16,11 @@ module top
     output wire dc,
     output wire tx,
     input wire rx,
-    output wire led
+    output wire led,
+    output wire pwm_out
 );
     wire clk_probe;
+    reg clk_pwm;
 
     Gowin_rPLL pll(
         .clkout(clk_probe), //129.6MHz
@@ -27,8 +29,13 @@ module top
     );
 
     main #(.UART_CLOCK_DIV(281), .UART_CLOCK_COUNTER_BITS(9))
-           m(.clk(clk_main), .clk_probe(clk_probe), .nwfi(nwfi), .nerror(nerror), .nhlt(nhlt), .led(led), .tx(tx), .rx(rx), .sck(sck),
-            .mosi(mosi), .ncs(ncs), .dc(dc), .button1(button1), .button2(button2), .dac1_code(dac1_code),
-            .dac2_code(dac2_code), .comp_out_hi(comp_out_hi), .comp_out_lo(comp_out_lo));
+           m(.clk(clk_main), .clk_probe(clk_probe), .clk_pwm(clk_pwm), .nwfi(nwfi), .nerror(nerror),
+             .nhlt(nhlt), .led(led), .tx(tx), .rx(rx), .sck(sck),
+             .mosi(mosi), .ncs(ncs), .dc(dc), .button1(button1), .button2(button2), .dac1_code(dac1_code),
+             .dac2_code(dac2_code), .comp_out_hi(comp_out_hi), .comp_out_lo(comp_out_lo), .pwm_out(pwm_out));
+
+    always @(posedge clk_probe) begin
+        clk_pwm = !clk_pwm;
+    end
 
 endmodule

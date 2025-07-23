@@ -8,11 +8,12 @@ module test;
     reg button1, button2;
     wire [4:0] dac1_code, dac2_code;
     reg comp_out_hi, comp_out_lo;
+    wire pwm_out;
 
     main #(.RESET_BIT(3), .UART_CLOCK_DIV(8), .UART_CLOCK_COUNTER_BITS(4), .PROBE_TIME_PERIOD(800000))
-         m(.clk(clk), .clk_probe(clk), .nwfi(nwfi), .nerror(nerror), .nhlt(nhlt), .led(led), .tx(tx), .rx(rx), .sck(sck),
+         m(.clk(clk), .clk_probe(clk), .clk_pwm(clk), .nwfi(nwfi), .nerror(nerror), .nhlt(nhlt), .led(led), .tx(tx), .rx(rx), .sck(sck),
             .mosi(mosi), .ncs(ncs), .dc(dc), .button1(button1), .button2(button2), .dac1_code(dac1_code),
-            .dac2_code(dac2_code), .comp_out_hi(comp_out_hi), .comp_out_lo(comp_out_lo));
+            .dac2_code(dac2_code), .comp_out_hi(comp_out_hi), .comp_out_lo(comp_out_lo), .pwm_out(pwm_out));
 
     uart1tx #(.CLOCK_DIV(8), .CLOCK_COUNTER_BITS(4)) utx(.clk(clk), .tx(rx), .data(data_in), .send(send), .busy(busy), .nreset(nreset));
 
