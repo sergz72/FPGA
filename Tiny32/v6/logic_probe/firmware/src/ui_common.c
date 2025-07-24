@@ -7,7 +7,7 @@
 #define MAX_UL_VOLTAGES 5
 
 static const unsigned int uh_voltages[MAX_UH_VOLTAGES] = {
-  25,
+  24,
   20,
   15,
   10,
@@ -29,9 +29,11 @@ unsigned int uh_changed_to, ul_changed_to;
 
 void UI_CommonInit(void)
 {
-  uh_index = 0;
+  uh_index = 1;
   ul_index = 1;
+  set_h_voltage(DEFAULT_DACH_VOLTAGE);
   uh_changed_to = DEFAULT_DACH_VOLTAGE;
+  set_l_voltage(DEFAULT_DACL_VOLTAGE);
   ul_changed_to = DEFAULT_DACL_VOLTAGE;
   prev_button1_pressed = prev_button2_pressed = 0;
   button1_pressed = button2_pressed = 0;

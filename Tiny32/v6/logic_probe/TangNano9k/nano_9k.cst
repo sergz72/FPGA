@@ -40,9 +40,9 @@ IO_PORT "dac1_code[1]" PULL_MODE=NONE DRIVE=4 IO_TYPE=LVCMOS33;
 IO_LOC "dac1_code[0]" IOR14B;
 IO_PORT "dac1_code[0]" PULL_MODE=NONE DRIVE=4 IO_TYPE=LVCMOS33;
 
-IO_LOC "comp_out_hi" IOR13A;
+IO_LOC "comp_out_hi" IOB15B;
 IO_PORT "comp_out_hi" PULL_MODE=DOWN IO_TYPE=LVCMOS33;
-IO_LOC "comp_out_lo" IOB15B;
+IO_LOC "comp_out_lo" IOR13A;
 IO_PORT "comp_out_lo" PULL_MODE=DOWN IO_TYPE=LVCMOS33;
 
 IO_LOC "dac2_code[4]" IOT38B;
