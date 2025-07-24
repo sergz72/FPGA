@@ -54,7 +54,7 @@
 #define PRINTF_BUFFER_LENGTH 200
 #define USE_MYVSPRINTF
 
-#define PWM_CLOCK_FREQUENCY 60000000
+#define PWM_CLOCK_FREQUENCY 105000000
 
 extern unsigned int counter_low, counter_high, counter_z;
 extern unsigned int counter_freq_low, counter_freq_high, counter_freq_rs;
