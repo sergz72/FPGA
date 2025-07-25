@@ -42,6 +42,7 @@ COMP_HI = IN > DAC_OUT_HI
     assign freq_counter_low_clk = interrupt ? clk : comp_data_lo;
     assign freq_counter_rs_clk = interrupt ? clk : rs;
 
+    // rs trigger
     nor (rs, comp_data_lo, nrs);
     nor (nrs, comp_data_hi, rs);
 

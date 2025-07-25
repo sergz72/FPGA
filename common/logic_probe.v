@@ -34,7 +34,7 @@ COMP_HI = IN > DAC_OUT_HI
     reg[COUNTERS_WIDTH*6-1:0] output_register;
     reg prev_clk_in;
     reg prev_interrupt;
-    reg rs;
+    reg rs, nrs;
     wire freq_counter_high_clk, freq_counter_low_clk, freq_counter_rs_clk;
 
     assign data = output_register[COUNTERS_WIDTH*6-1];
@@ -42,8 +42,9 @@ COMP_HI = IN > DAC_OUT_HI
     assign freq_counter_low_clk = interrupt ? clk : comp_data_lo;
     assign freq_counter_rs_clk = interrupt ? clk : rs;
 
-    always @ (posedge clk) // rs trigger simulation
-        rs <= comp_data_hi | (rs & !comp_data_lo);
+    // rs trigger
+    nor (rs, comp_data_lo, nrs);
+    nor (nrs, comp_data_hi, rs);
 
     always @(posedge clk) begin
         if (!nreset || interrupt_clear) begin

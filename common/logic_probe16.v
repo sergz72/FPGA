@@ -35,15 +35,16 @@ COMP_HI = IN > DAC_OUT_HI
     localparam TO16 = 32 - COUNTERS_WIDTH;
 
     reg[COUNTERS_WIDTH-1:0] counter_low, counter_high, counter_z, freq_counter_low, freq_counter_high, freq_counter_rs, time_counter;
-    reg rs;
+    reg rs, nrs;
     wire freq_counter_high_clk, freq_counter_low_clk, freq_counter_rs_clk;
 
     assign freq_counter_high_clk = interrupt ? clk : comp_data_hi;
     assign freq_counter_low_clk = interrupt ? clk : comp_data_lo;
     assign freq_counter_rs_clk = interrupt ? clk : rs;
 
-    always @ (posedge clk) // rs trigger simulation
-        rs <= comp_data_hi | (rs & !comp_data_lo);
+    // rs trigger
+    nor (rs, comp_data_lo, nrs);
+    nor (nrs, comp_data_hi, rs);
 
     always @(posedge clk) begin
         if (!nreset || interrupt_clear) begin
