@@ -14,7 +14,7 @@
 
 [Tiny16](tiny16) - 16 bit cpu.
 
-[Tiny32](tiny32) - RV32I(M) core.
+[Tiny32](tiny32) - RV32I core.
 
 [archived](archived) - archived projects.
 
