@@ -12,9 +12,9 @@
 
 [Software](Software) - Various software related to my FPGA projects (compilers, translators, etc...).
 
-[Tiny16](tiny16) - 16 bit cpu.
+[Tiny16](Tiny16) - 16 bit cpu.
 
-[Tiny32](tiny32) - RV32I core.
+[Tiny32](Tiny32) - RV32I core.
 
 [archived](archived) - archived projects.
 
