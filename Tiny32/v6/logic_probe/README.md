@@ -3,7 +3,7 @@
 ## Components: Tang nano 9k board, SPI-LCD, r-2r resistor networks, TLV3502 high speed comparator.
 
 ## Features:
-- Logic evel detection (one, zero, z)
+- Logic level detection (one, zero, z)
 - Pulse detection
 - 3 frequency counters:
   - from high-level comparator output
