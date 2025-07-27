@@ -13,16 +13,16 @@ object GenFullNoMmuNoCacheNoDebug extends App{
     config = VexRiscvConfig(
       plugins = List(
         new IBusSimplePlugin(
-          resetVector = 0x08000000l,
+          resetVector = 0x10000000l,
           cmdForkOnSecondStage = false,
           cmdForkPersistence = false,
           prediction = STATIC,
-          catchAccessFault = false,
-          compressedGen = false
+          catchAccessFault = true,
+          compressedGen = true
         ),
         new DBusSimplePlugin(
-          catchAddressMisaligned = false,
-          catchAccessFault = false
+          catchAddressMisaligned = true,
+          catchAccessFault = true
         ),
         new DecoderSimplePlugin(
           catchIllegalInstruction = true
@@ -57,7 +57,7 @@ object GenFullNoMmuNoCacheNoDebug extends App{
           misaExtensionsInit = 66,
           misaAccess     = CsrAccess.NONE,
           mtvecAccess    = CsrAccess.NONE,
-          mtvecInit      = 0x08000010l,
+          mtvecInit      = 0x1000000Al,
           mepcAccess     = CsrAccess.READ_WRITE,
           mscratchGen    = false,
           mcauseAccess   = CsrAccess.READ_ONLY,
