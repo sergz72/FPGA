@@ -6,6 +6,7 @@ const string dataFileNamePrefix = "data";
 const string dataFileNameSuffix = ".hex";
 
 string? prevCode = null;
+string? prevLine = null;
 
 if (args.Length != 3)
 {
@@ -124,12 +125,21 @@ string? BuildCodeLine(string line)
         {
             code += prevCode;
             prevCode = null;
+            prevLine = null;
         }
         else
         {
             prevCode = code;
+            prevLine = line;
             return null;
         }
     }
-    return code + " // " + parts[0].PadLeft(8) + " " + parts[2];
+    else if (prevCode != null)
+    {
+        var temp = code[..4];
+        code = code[4..8] + prevCode;
+        prevCode = temp;
+        prevLine = line;
+    }
+    return (prevLine == null ? "" : "// " + prevLine + "\n") + code + " // " + parts[0].PadLeft(8) + " " + parts[2];
 }

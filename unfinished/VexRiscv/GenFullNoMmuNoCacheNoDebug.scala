@@ -17,15 +17,15 @@ object GenFullNoMmuNoCacheNoDebug extends App{
           cmdForkOnSecondStage = false,
           cmdForkPersistence = false,
           prediction = STATIC,
-          catchAccessFault = true,
+          catchAccessFault = false,
           compressedGen = true
         ),
         new DBusSimplePlugin(
-          catchAddressMisaligned = true,
-          catchAccessFault = true
+          catchAddressMisaligned = false,
+          catchAccessFault = false
         ),
         new DecoderSimplePlugin(
-          catchIllegalInstruction = true
+          catchIllegalInstruction = false
         ),
         new RegFilePlugin(
           regFileReadyKind = plugin.SYNC,
@@ -57,7 +57,7 @@ object GenFullNoMmuNoCacheNoDebug extends App{
           misaExtensionsInit = 66,
           misaAccess     = CsrAccess.NONE,
           mtvecAccess    = CsrAccess.NONE,
-          mtvecInit      = 0x1000000Al,
+          mtvecInit      = 0x1000000Cl,
           mepcAccess     = CsrAccess.READ_WRITE,
           mscratchGen    = false,
           mcauseAccess   = CsrAccess.READ_ONLY,
@@ -72,7 +72,7 @@ object GenFullNoMmuNoCacheNoDebug extends App{
         )),
         new BranchPlugin(
           earlyBranch = false,
-          catchAddressMisaligned = true
+          catchAddressMisaligned = false
         ),
         new YamlPlugin("cpu0.yaml")
       )
