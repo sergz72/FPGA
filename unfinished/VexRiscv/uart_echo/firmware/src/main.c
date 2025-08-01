@@ -38,7 +38,7 @@ __attribute__((naked)) int main(void)
   unsigned int state = 1;
   while (1)
   {
-    delay(100000);
+    delay(1000);
     uart_handler();
     state ^= 1;
     *PORT_ADDRESS = state;

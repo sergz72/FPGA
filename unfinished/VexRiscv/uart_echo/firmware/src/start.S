@@ -5,6 +5,7 @@ TIMER_ADDRESS = 0x40000000
 _start:
 	la sp, _sp
 	j start
+	j .
 /*ISR address*/
 isr:
 	addi sp, sp, -8
