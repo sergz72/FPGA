@@ -5,7 +5,9 @@ SDRAM_ADDRESS_WIDTH = 11,
 SDRAM_COLUMN_ADDRESS_WIDTH = 8,
 BANK_BITS = 2,
 // burst length 1, cas latency 2
-MODE_REGISTER_VALUE = 'h20
+MODE_REGISTER_VALUE = 'h20,
+AUTOREFRESH_LATENCY = 3,
+CLK_FREQUENCY = 25000000
 )
 (
     input wire clk,
@@ -31,6 +33,7 @@ MODE_REGISTER_VALUE = 'h20
 );
     localparam NUM_BYTES = DATA_WIDTH/8;
     localparam ADDRESS_WIDTH = BANK_BITS+SDRAM_ADDRESS_WIDTH+SDRAM_COLUMN_ADDRESS_WIDTH;
+    localparam REFRESH_COUNTER_BITS = $clog2(CLK_FREQUENCY / 65536);
 
     localparam STATE_MODE_REGISTER_SET = 1;
     localparam STATE_IDLE              = 2;
@@ -40,10 +43,15 @@ MODE_REGISTER_VALUE = 'h20
     localparam STATE_NOP3              = 32;
     localparam STATE_NOP4              = 64;
     localparam STATE_READ              = 128;
+    localparam STATE_REFRESH           = 256;
+    localparam STATE_WAIT              = 512;
 
-    reg [7:0] state;
+    reg [9:0] state;
     wire is_read;
     wire req;
+
+    reg [REFRESH_COUNTER_BITS-1:0] refresh_counter;
+    reg [2:0] autorefresh_counter;
 
     assign sdram_clk = !clk;
     assign sdram_data_out = cpu_data_in;
@@ -69,8 +77,11 @@ MODE_REGISTER_VALUE = 'h20
             sdram_nwe <= 1;
             cpu_ack <= 0;
             state <= STATE_MODE_REGISTER_SET;
+            refresh_counter <= 1;
         end
         else begin
+            if (refresh_counter != 0)
+                refresh_counter <= refresh_counter + 1;
             case (state)
                 STATE_MODE_REGISTER_SET: begin
                     sdram_ncs <= 0;
@@ -88,8 +99,15 @@ MODE_REGISTER_VALUE = 'h20
                     // bank activate
                     sdram_address <= cpu_address[ADDRESS_WIDTH-BANK_BITS-1:SDRAM_COLUMN_ADDRESS_WIDTH];
                     sdram_ba <= cpu_address[ADDRESS_WIDTH-1:ADDRESS_WIDTH-BANK_BITS];
-                    if (req)
+                    if (refresh_counter == 0) begin
+                        refresh_counter <= 1;
+                        state <= STATE_REFRESH;
+                        autorefresh_counter <= 0;
+                    end
+                    else if (req)
                         state <= STATE_NOP1;
+                    else begin
+                    end
                     if (!cpu_req)
                         cpu_ack <= 0;
                 end
@@ -116,6 +134,20 @@ MODE_REGISTER_VALUE = 'h20
                     state <= STATE_IDLE;
                     cpu_ack <= 1;
                     cpu_data_out <= sdram_data_in;
+                end
+                STATE_REFRESH: begin
+                    sdram_ncs <= 0;
+                    sdram_ras <= 0;
+                    sdram_cas <= 0;
+                    state <= STATE_WAIT;
+                end
+                STATE_WAIT: begin
+                    sdram_ras <= 1;
+                    sdram_cas <= 1;
+                    if (autorefresh_counter == AUTOREFRESH_LATENCY)
+                        state <= STATE_IDLE;
+                    else
+                        autorefresh_counter <= autorefresh_counter + 1;
                 end
             endcase
         end

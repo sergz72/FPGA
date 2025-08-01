@@ -2,8 +2,6 @@
 
 module main
 #(parameter
-UART_CLOCK_DIV = 234,
-UART_CLOCK_COUNTER_BITS = 8,
 RESET_BIT = 19,
 // 4k 32 bit words RAM
 RAM_BITS = 12,
@@ -11,7 +9,8 @@ RAM_BITS = 12,
 ROM_BITS = 13,
 SDRAM_ADDRESS_WIDTH = 11,
 SDRAM_COLUMN_ADDRESS_WIDTH = 8,
-SDRAM_BANK_BITS = 2
+SDRAM_BANK_BITS = 2,
+CLK_FREQUENCY = 25000000
 )
 (
     input wire clk,
@@ -35,6 +34,9 @@ SDRAM_BANK_BITS = 2
     localparam RAM_START = 32'h20000000;
     localparam RAM_END = RAM_START + (4<<RAM_BITS);
     localparam MEMORY_SELECTOR_START_BIT = 28;
+    localparam UART_CLOCK_COUNTER_BITS = $clog2(CLK_FREQUENCY / 115200);
+    localparam UART_CLOCK_DIV1 = CLK_FREQUENCY / 115200;
+    localparam UART_CLOCK_DIV = UART_CLOCK_DIV1[UART_CLOCK_COUNTER_BITS-1:0];
 
     reg nreset = 0;
 
