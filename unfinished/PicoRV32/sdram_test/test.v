@@ -1,0 +1,69 @@
+`timescale 1 ns / 1 ps
+
+module test;
+    reg clk;
+    wire ntrap;
+    wire led1, led2;
+    wire tx, rx;
+    reg [7:0] data_in;
+    wire interrupt;
+    reg interrupt_clear, nreset;
+    reg send;
+    wire busy;
+
+    wire sdram_clk;
+    wire [10:0] sdram_address;
+    wire [1:0] sdram_ba;
+    wire sdram_ncs;
+    wire sdram_ras;
+    wire sdram_cas;
+    wire sdram_nwe;
+    wire [31:0] sdram_data_out;
+    wire [3:0] sdram_dqm;
+    wire [31:0] sdram_data;
+
+    assign sdram_data = sdram_nwe ? 32'hz : sdram_data_out;
+
+    main #(.RESET_BIT(3), .UART_CLOCK_DIV(8), .UART_CLOCK_COUNTER_BITS(4))
+         m(.clk(clk), .clk_sdram(clk), .ntrap(ntrap), .led1(led1), .led2(led2), .tx(tx), .rx(rx), .sdram_clk(sdram_clk),
+            .sdram_address(sdram_address), .sdram_ba(sdram_ba),
+            .sdram_ncs(sdram_ncs), .sdram_ras(sdram_ras), .sdram_cas(sdram_cas), .sdram_nwe(sdram_nwe), .sdram_data_in(sdram_data),
+            .sdram_data_out(sdram_data_out), .sdram_dqm(sdram_dqm));
+
+    uart1tx #(.CLOCK_DIV(8), .CLOCK_COUNTER_BITS(4)) utx(.clk(clk), .tx(rx), .data(data_in), .send(send), .busy(busy), .nreset(nreset));
+
+    sdram_emulator sdram_e(.clk(sdram_clk), .cke(1'b1), .address(sdram_address), .ba(sdram_ba),
+                            .ncs(sdram_ncs), .ras(sdram_ras), .cas(sdram_cas), .nwe(sdram_nwe), .data(sdram_data),
+                            .dqm(sdram_dqm));
+                            
+    always #1 clk = ~clk;
+
+    initial begin
+        $dumpfile("main_tb.vcd");
+        $dumpvars(0, test);
+        $monitor("time=%t led1=%d led2=%d rx=%d tx=%d", $time, led1, led2, rx, tx);
+        clk = 0;
+        data_in = 8'h5A;
+        send = 0;
+        interrupt_clear = 0;
+        nreset = 0;
+        #100
+        nreset = 1;
+        #5
+        send = 1;
+        #5
+        send = 0;
+        #200
+        interrupt_clear = 1;
+        #5
+        interrupt_clear = 0;
+        data_in = 8'hA5;
+        send = 1;
+        #5
+        send = 0;
+        #200
+        interrupt_clear = 1;
+        #1500000
+        $finish;
+    end
+endmodule

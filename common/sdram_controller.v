@@ -27,26 +27,28 @@ MODE_REGISTER_VALUE = 'h20
     output reg sdram_nwe,
     input wire [DATA_WIDTH-1:0] sdram_data_in,
     output wire [DATA_WIDTH-1:0] sdram_data_out,
-    output wire dqm[DATA_WIDTH/8-1:0]
+    output wire [DATA_WIDTH/8-1:0] sdram_dqm
 );
     localparam NUM_BYTES = DATA_WIDTH/8;
     localparam ADDRESS_WIDTH = BANK_BITS+SDRAM_ADDRESS_WIDTH+SDRAM_COLUMN_ADDRESS_WIDTH;
 
     localparam STATE_MODE_REGISTER_SET = 1;
     localparam STATE_IDLE              = 2;
-    localparam STATE_CAS               = 4;
-    localparam STATE_WAIT1             = 8;
-    localparam STATE_WAIT2             = 16;
-    localparam STATE_READ              = 32;
+    localparam STATE_NOP1              = 4;
+    localparam STATE_NOP2              = 8;
+    localparam STATE_CAS               = 16;
+    localparam STATE_NOP3              = 32;
+    localparam STATE_NOP4              = 64;
+    localparam STATE_READ              = 128;
 
-    reg [5:0] state;
+    reg [7:0] state;
     wire is_read;
     wire req;
 
     assign sdram_clk = !clk;
     assign sdram_data_out = cpu_data_in;
 
-    assign dqm[0] = cpu_nwr[0];
+    assign sdram_dqm[0] = cpu_nwr[0];
 
     assign is_read = cpu_nwr == {NUM_BYTES{1'b1}};
     
@@ -54,8 +56,8 @@ MODE_REGISTER_VALUE = 'h20
 
     genvar i;
     generate
-        for (i = 1; i < NUM_BYTES; i = i + 1) begin
-            assign dqm[i] = cpu_nwr[i];
+        for (i = 1; i < NUM_BYTES; i = i + 1) begin : dqm_generate
+            assign sdram_dqm[i] = cpu_nwr[i];
         end
     endgenerate
 
@@ -87,10 +89,15 @@ MODE_REGISTER_VALUE = 'h20
                     sdram_address <= cpu_address[ADDRESS_WIDTH-BANK_BITS-1:SDRAM_COLUMN_ADDRESS_WIDTH];
                     sdram_ba <= cpu_address[ADDRESS_WIDTH-1:ADDRESS_WIDTH-BANK_BITS];
                     if (req)
-                        state <= STATE_CAS;
+                        state <= STATE_NOP1;
                     if (!cpu_req)
                         cpu_ack <= 0;
                 end
+                STATE_NOP1: begin
+                    state <= STATE_NOP2;
+                    sdram_ras <= 1;
+                end
+                STATE_NOP2: state <= STATE_CAS;
                 STATE_CAS: begin
                     sdram_ras <= 1;
                     sdram_cas <= 0;
@@ -98,10 +105,13 @@ MODE_REGISTER_VALUE = 'h20
                     // read/write with precharge
                     sdram_address <= {1'b1, cpu_address[SDRAM_ADDRESS_WIDTH-2:0]};
                     cpu_ack <= !is_read;
-                    state <= is_read ? STATE_WAIT1 : STATE_IDLE;
+                    state <= is_read ? STATE_NOP3 : STATE_IDLE;
                 end
-                STATE_WAIT1: state <= STATE_WAIT2;
-                STATE_WAIT2: state <= STATE_READ;
+                STATE_NOP3: begin
+                    state <= STATE_NOP4;
+                    sdram_cas <= 1;
+                end
+                STATE_NOP4: state <= STATE_READ;
                 STATE_READ: begin
                     state <= STATE_IDLE;
                     cpu_ack <= 1;
