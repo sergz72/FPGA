@@ -2,8 +2,7 @@
 
 module top
 #(parameter
-UART_CLOCK_DIV = 234,
-UART_CLOCK_COUNTER_BITS = 8,
+UART_BAUD = 115200,
 RESET_BIT = 19,
 // 4k 32 bit words RAM
 RAM_BITS = 12,
@@ -11,7 +10,10 @@ RAM_BITS = 12,
 ROM_BITS = 13,
 SDRAM_ADDRESS_WIDTH = 11,
 SDRAM_COLUMN_ADDRESS_WIDTH = 8,
-SDRAM_BANK_BITS = 2
+SDRAM_BANK_BITS = 2,
+CLK_FREQUENCY = 25000000,
+SDRAM_MODE_REGISTER_VALUE = 'h20,
+SDRAM_AUTOREFRESH_LATENCY = 3
 )
 (
     input wire clk,
@@ -35,8 +37,10 @@ SDRAM_BANK_BITS = 2
 
     assign sdram_data = sdram_nwe ? 32'hz : sdram_data_out;
 
-    main #(.RESET_BIT(RESET_BIT), .UART_CLOCK_DIV(UART_CLOCK_DIV), .UART_CLOCK_COUNTER_BITS(UART_CLOCK_COUNTER_BITS), .RAM_BITS(RAM_BITS),
-            .ROM_BITS(ROM_BITS), .SDRAM_ADDRESS_WIDTH(SDRAM_ADDRESS_WIDTH), .SDRAM_BANK_BITS(SDRAM_BANK_BITS), .SDRAM_COLUMN_ADDRESS_WIDTH(SDRAM_COLUMN_ADDRESS_WIDTH))
+    main #(.RESET_BIT(RESET_BIT), .CLK_FREQUENCY(CLK_FREQUENCY), .UART_BAUD(UART_BAUD), .RAM_BITS(RAM_BITS),
+            .ROM_BITS(ROM_BITS), .SDRAM_ADDRESS_WIDTH(SDRAM_ADDRESS_WIDTH), .SDRAM_BANK_BITS(SDRAM_BANK_BITS),
+            .SDRAM_COLUMN_ADDRESS_WIDTH(SDRAM_COLUMN_ADDRESS_WIDTH),
+            .SDRAM_MODE_REGISTER_VALUE(SDRAM_MODE_REGISTER_VALUE), .SDRAM_AUTOREFRESH_LATENCY(SDRAM_AUTOREFRESH_LATENCY))
          m(.clk(clk), .clk_sdram(clk_sdram), .ntrap(ntrap), .led1(led1), .led2(led2), .tx(tx), .rx(rx), .sdram_clk(sdram_clk),
             .sdram_address(sdram_address), .sdram_ba(sdram_ba),
             .sdram_ncs(sdram_ncs), .sdram_ras(sdram_ras), .sdram_cas(sdram_cas), .sdram_nwe(sdram_nwe), .sdram_data_in(sdram_data),

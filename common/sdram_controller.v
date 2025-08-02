@@ -33,7 +33,7 @@ CLK_FREQUENCY = 25000000
 );
     localparam NUM_BYTES = DATA_WIDTH/8;
     localparam ADDRESS_WIDTH = BANK_BITS+SDRAM_ADDRESS_WIDTH+SDRAM_COLUMN_ADDRESS_WIDTH;
-    localparam REFRESH_COUNTER_BITS = $clog2(CLK_FREQUENCY / 65536);
+    localparam REFRESH_COUNTER_BITS = $clog2(CLK_FREQUENCY / 65536) - 1;
 
     localparam STATE_MODE_REGISTER_SET = 1;
     localparam STATE_IDLE              = 2;
@@ -52,6 +52,7 @@ CLK_FREQUENCY = 25000000
 
     reg [REFRESH_COUNTER_BITS-1:0] refresh_counter;
     reg [2:0] autorefresh_counter;
+    reg refresh;
 
     assign sdram_clk = !clk;
     assign sdram_data_out = cpu_data_in;
@@ -77,11 +78,14 @@ CLK_FREQUENCY = 25000000
             sdram_nwe <= 1;
             cpu_ack <= 0;
             state <= STATE_MODE_REGISTER_SET;
-            refresh_counter <= 1;
+            refresh_counter <= 0;
         end
         else begin
-            if (refresh_counter != 0)
-                refresh_counter <= refresh_counter + 1;
+            if (refresh_counter == 0)
+                refresh <= 1;
+            else if (state == STATE_REFRESH)
+                refresh <= 0;
+            refresh_counter <= refresh_counter + 1;
             case (state)
                 STATE_MODE_REGISTER_SET: begin
                     sdram_ncs <= 0;
@@ -99,15 +103,7 @@ CLK_FREQUENCY = 25000000
                     // bank activate
                     sdram_address <= cpu_address[ADDRESS_WIDTH-BANK_BITS-1:SDRAM_COLUMN_ADDRESS_WIDTH];
                     sdram_ba <= cpu_address[ADDRESS_WIDTH-1:ADDRESS_WIDTH-BANK_BITS];
-                    if (refresh_counter == 0) begin
-                        refresh_counter <= 1;
-                        state <= STATE_REFRESH;
-                        autorefresh_counter <= 0;
-                    end
-                    else if (req)
-                        state <= STATE_NOP1;
-                    else begin
-                    end
+                    state <= refresh ? STATE_REFRESH : (req ? STATE_NOP1 : STATE_IDLE);
                     if (!cpu_req)
                         cpu_ack <= 0;
                 end
@@ -139,6 +135,7 @@ CLK_FREQUENCY = 25000000
                     sdram_ncs <= 0;
                     sdram_ras <= 0;
                     sdram_cas <= 0;
+                    autorefresh_counter <= 0;
                     state <= STATE_WAIT;
                 end
                 STATE_WAIT: begin

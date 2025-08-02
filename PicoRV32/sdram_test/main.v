@@ -10,7 +10,10 @@ ROM_BITS = 13,
 SDRAM_ADDRESS_WIDTH = 11,
 SDRAM_COLUMN_ADDRESS_WIDTH = 8,
 SDRAM_BANK_BITS = 2,
-CLK_FREQUENCY = 25000000
+CLK_FREQUENCY = 25000000,
+SDRAM_MODE_REGISTER_VALUE = 'h20,
+SDRAM_AUTOREFRESH_LATENCY = 3,
+UART_BAUD = 115200
 )
 (
     input wire clk,
@@ -34,8 +37,8 @@ CLK_FREQUENCY = 25000000
     localparam RAM_START = 32'h20000000;
     localparam RAM_END = RAM_START + (4<<RAM_BITS);
     localparam MEMORY_SELECTOR_START_BIT = 28;
-    localparam UART_CLOCK_COUNTER_BITS = $clog2(CLK_FREQUENCY / 115200);
-    localparam UART_CLOCK_DIV1 = CLK_FREQUENCY / 115200;
+    localparam UART_CLOCK_COUNTER_BITS = $clog2(CLK_FREQUENCY / UART_BAUD);
+    localparam UART_CLOCK_DIV1 = CLK_FREQUENCY / UART_BAUD;
     localparam UART_CLOCK_DIV = UART_CLOCK_DIV1[UART_CLOCK_COUNTER_BITS-1:0];
 
     reg nreset = 0;
@@ -168,7 +171,8 @@ CLK_FREQUENCY = 25000000
                 .full(uart_tx_fifo_full), .empty(uart_rx_fifo_empty), .ack(uart_ack));
 
     sdram_controller #(.SDRAM_ADDRESS_WIDTH(SDRAM_ADDRESS_WIDTH), .SDRAM_COLUMN_ADDRESS_WIDTH(SDRAM_COLUMN_ADDRESS_WIDTH),
-                        .BANK_BITS(SDRAM_BANK_BITS))
+                        .BANK_BITS(SDRAM_BANK_BITS), .CLK_FREQUENCY(CLK_FREQUENCY), .MODE_REGISTER_VALUE(SDRAM_MODE_REGISTER_VALUE),
+                        .AUTOREFRESH_LATENCY(SDRAM_AUTOREFRESH_LATENCY))
                     sdram_c(.clk(clk_sdram), .nreset(nreset), .cpu_address(mem_la_addr[20:0]), .cpu_data_in(mem_wdata), .cpu_data_out(sdram_rdata),
                                 .cpu_req(sdram_req), .cpu_ack(sdram_ack), .cpu_nwr(sdram_nwr), .sdram_ncs(sdram_ncs), .sdram_ras(sdram_ras),
                                 .sdram_cas(sdram_cas), .sdram_clk(sdram_clk), .sdram_address(sdram_address), .sdram_ba(sdram_ba),
