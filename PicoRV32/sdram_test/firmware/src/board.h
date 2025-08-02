@@ -8,7 +8,7 @@
 #endif
 
 #define SDRAM_ADDRESS ((volatile unsigned int*)0x60000000)
-#define SDRAM_SIZE (1<<21)
+#define SDRAM_SIZE (8 * 1024 * 1024)
 #define LED1 1
 #define LED2 2
 
