@@ -7,6 +7,9 @@ BANK_BITS = 2,
 // burst length 1, cas latency 2
 MODE_REGISTER_VALUE = 'h20,
 AUTOREFRESH_LATENCY = 3,
+CAS_LATENCY = 2,
+BANK_ACTIVATE_LATENCY = 2,
+PRECHARGE_LATENCY = 2,
 CLK_FREQUENCY = 25000000
 )
 (
@@ -37,21 +40,17 @@ CLK_FREQUENCY = 25000000
 
     localparam STATE_MODE_REGISTER_SET = 1;
     localparam STATE_IDLE              = 2;
-    localparam STATE_NOP1              = 4;
-    localparam STATE_NOP2              = 8;
-    localparam STATE_CAS               = 16;
-    localparam STATE_NOP3              = 32;
-    localparam STATE_NOP4              = 64;
-    localparam STATE_READ              = 128;
-    localparam STATE_REFRESH           = 256;
-    localparam STATE_WAIT              = 512;
+    localparam STATE_NOP               = 4;
+    localparam STATE_CAS               = 8;
+    localparam STATE_READ              = 16;
 
-    reg [9:0] state;
+    reg [4:0] state, next_state;
     wire is_read;
     wire req;
 
+    reg [2:0] nop_counter;
+
     reg [REFRESH_COUNTER_BITS-1:0] refresh_counter;
-    reg [2:0] autorefresh_counter;
     reg refresh;
 
     assign sdram_clk = !clk;
@@ -78,12 +77,13 @@ CLK_FREQUENCY = 25000000
             sdram_nwe <= 1;
             cpu_ack <= 0;
             state <= STATE_MODE_REGISTER_SET;
-            refresh_counter <= 0;
+            refresh_counter <= 1;
+            refresh <= 0;
         end
         else begin
             if (refresh_counter == 0)
                 refresh <= 1;
-            else if (state == STATE_REFRESH)
+            else if (!sdram_ras & !sdram_cas) // auto-refresh
                 refresh <= 0;
             refresh_counter <= refresh_counter + 1;
             case (state)
@@ -96,22 +96,29 @@ CLK_FREQUENCY = 25000000
                     state <= STATE_IDLE;
                 end
                 STATE_IDLE: begin
-                    sdram_ncs <= !req;
-                    sdram_ras <= !req;
-                    sdram_cas <= 1;
+                    // bank activate or auto-refresh
+                    sdram_ncs <= !req & !refresh;
+                    sdram_ras <= !req & !refresh;
+                    sdram_cas <= !refresh;
                     sdram_nwe <= 1;
-                    // bank activate
                     sdram_address <= cpu_address[ADDRESS_WIDTH-BANK_BITS-1:SDRAM_COLUMN_ADDRESS_WIDTH];
                     sdram_ba <= cpu_address[ADDRESS_WIDTH-1:ADDRESS_WIDTH-BANK_BITS];
-                    state <= refresh ? STATE_REFRESH : (req ? STATE_NOP1 : STATE_IDLE);
+                    if (refresh | req)
+                        state <= STATE_NOP;
+                    nop_counter <= refresh ? AUTOREFRESH_LATENCY - 1 : BANK_ACTIVATE_LATENCY - 1;
+                    next_state <= refresh ? STATE_IDLE : STATE_CAS;
                     if (!cpu_req)
                         cpu_ack <= 0;
                 end
-                STATE_NOP1: begin
-                    state <= STATE_NOP2;
+                STATE_NOP: begin
                     sdram_ras <= 1;
+                    sdram_cas <= 1;
+                    sdram_nwe <= 1;
+                    if (nop_counter == 0)
+                        state <= next_state;
+                    else
+                        nop_counter <= nop_counter - 1;
                 end
-                STATE_NOP2: state <= STATE_CAS;
                 STATE_CAS: begin
                     sdram_ras <= 1;
                     sdram_cas <= 0;
@@ -119,32 +126,16 @@ CLK_FREQUENCY = 25000000
                     // read/write with precharge
                     sdram_address <= {1'b1, cpu_address[SDRAM_ADDRESS_WIDTH-2:0]};
                     cpu_ack <= !is_read;
-                    state <= is_read ? STATE_NOP3 : STATE_IDLE;
+                    state <= STATE_NOP;
+                    nop_counter <= is_read ? CAS_LATENCY - 1 : PRECHARGE_LATENCY - 1;
+                    next_state <= is_read ? STATE_READ : STATE_IDLE;
                 end
-                STATE_NOP3: begin
-                    state <= STATE_NOP4;
-                    sdram_cas <= 1;
-                end
-                STATE_NOP4: state <= STATE_READ;
                 STATE_READ: begin
-                    state <= STATE_IDLE;
+                    state <= STATE_NOP;
                     cpu_ack <= 1;
                     cpu_data_out <= sdram_data_in;
-                end
-                STATE_REFRESH: begin
-                    sdram_ncs <= 0;
-                    sdram_ras <= 0;
-                    sdram_cas <= 0;
-                    autorefresh_counter <= 0;
-                    state <= STATE_WAIT;
-                end
-                STATE_WAIT: begin
-                    sdram_ras <= 1;
-                    sdram_cas <= 1;
-                    if (autorefresh_counter == AUTOREFRESH_LATENCY)
-                        state <= STATE_IDLE;
-                    else
-                        autorefresh_counter <= autorefresh_counter + 1;
+                    nop_counter <= PRECHARGE_LATENCY - 1;
+                    next_state <= STATE_IDLE;
                 end
             endcase
         end
