@@ -1,7 +1,7 @@
-#include "../../custom_ops.S"
+#include "custom_ops.S"
 
 .section .reset_vec
-.globl _start, wfi, getq, timer
+.globl _start, wfi, getq, timer, get_cycles, get_time, get_instret
 _start:
 	picorv32_maskirq_insn(zero, zero)
 	j start
@@ -19,6 +19,18 @@ getq:
 
 timer:
 	picorv32_timer_insn(a0, a0)
+	ret
+
+get_cycles:
+	rdcycle a0
+	ret
+
+get_time:
+	rdtime a0
+	ret
+
+get_instret:
+	rdinstret a0
 	ret
 
 start:

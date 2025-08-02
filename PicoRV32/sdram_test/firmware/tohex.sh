@@ -1,10 +1,12 @@
 #! /bin/sh
 
+rm ../asm/*data*.hex
+
+cp cmake-build-release-riscv-xpack-14/PicoRV32_sdram_test.elf ../asm/out.elf
+
 cd ../asm
 
-rm *data*.hex
+/opt2/xpack-riscv-none-elf-gcc-14.2.0-3/bin/riscv-none-elf-objdump -d out.elf > out.asmdump
+/opt2/xpack-riscv-none-elf-gcc-14.2.0-3/bin/riscv-none-elf-objdump -s out.elf > out.datadump
 
-/opt2/xpack-riscv-none-elf-gcc-14.2.0-3/bin/riscv-none-elf-objdump -d $1 > $1.asmdump
-/opt2/xpack-riscv-none-elf-gcc-14.2.0-3/bin/riscv-none-elf-objdump -s $1 > $1.datadump
-
-DumpToHex 2 $1.asmdump $1.datadump
+DumpToHex 2 out.asmdump out.datadump

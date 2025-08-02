@@ -136,7 +136,7 @@ UART_BAUD = 115200
                .PROGADDR_RESET(32'h1000_0000),
                .BARREL_SHIFTER(1),
                .ENABLE_IRQ_TIMER(1),
-               .ENABLE_COUNTERS(0),
+               .ENABLE_COUNTERS(1),
                .ENABLE_COUNTERS64(0),
                .LATCHED_IRQ(0)
         )
