@@ -13,6 +13,9 @@ SDRAM_BANK_BITS = 2,
 CLK_FREQUENCY = 25000000,
 SDRAM_MODE_REGISTER_VALUE = 'h20,
 SDRAM_AUTOREFRESH_LATENCY = 3,
+SDRAM_CAS_LATENCY = 2,
+SDRAM_BANK_ACTIVATE_LATENCY = 2,
+SDRAM_PRECHARGE_LATENCY = 2,
 UART_BAUD = 115200
 )
 (
@@ -172,7 +175,8 @@ UART_BAUD = 115200
 
     sdram_controller #(.SDRAM_ADDRESS_WIDTH(SDRAM_ADDRESS_WIDTH), .SDRAM_COLUMN_ADDRESS_WIDTH(SDRAM_COLUMN_ADDRESS_WIDTH),
                         .BANK_BITS(SDRAM_BANK_BITS), .CLK_FREQUENCY(CLK_FREQUENCY), .MODE_REGISTER_VALUE(SDRAM_MODE_REGISTER_VALUE),
-                        .AUTOREFRESH_LATENCY(SDRAM_AUTOREFRESH_LATENCY))
+                        .AUTOREFRESH_LATENCY(SDRAM_AUTOREFRESH_LATENCY), .CAS_LATENCY(SDRAM_CAS_LATENCY), .PRECHARGE_LATENCY(SDRAM_PRECHARGE_LATENCY),
+                        .BANK_ACTIVATE_LATENCY(SDRAM_BANK_ACTIVATE_LATENCY))
                     sdram_c(.clk(clk_sdram), .nreset(nreset), .cpu_address(mem_la_addr[20:0]), .cpu_data_in(mem_wdata), .cpu_data_out(sdram_rdata),
                                 .cpu_req(sdram_req), .cpu_ack(sdram_ack), .cpu_nwr(sdram_nwr), .sdram_ncs(sdram_ncs), .sdram_ras(sdram_ras),
                                 .sdram_cas(sdram_cas), .sdram_clk(sdram_clk), .sdram_address(sdram_address), .sdram_ba(sdram_ba),
