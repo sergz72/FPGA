@@ -1,14 +1,14 @@
 `timescale 1 ns / 1 ps
 
-module main
+module main16
 #(parameter
 RESET_BIT = 19,
 // 4k 32 bit words RAM
 RAM_BITS = 12,
 // 8k 32 bit words ROM
 ROM_BITS = 13,
-SDRAM_ADDRESS_WIDTH = 11,
-SDRAM_COLUMN_ADDRESS_WIDTH = 8,
+SDRAM_ADDRESS_WIDTH = 13,
+SDRAM_COLUMN_ADDRESS_WIDTH = 9,
 SDRAM_BANK_BITS = 2,
 CLK_FREQUENCY = 25000000,
 SDRAM_MODE_REGISTER_VALUE = 'h20,
@@ -27,15 +27,15 @@ UART_BAUD = 115200
     output wire tx,
     input wire rx,
     output wire sdram_clk,
-    output wire [10:0] sdram_address,
+    output wire [12:0] sdram_address,
     output wire [1:0] sdram_ba,
     output wire sdram_ncs,
     output wire sdram_ras,
     output wire sdram_cas,
     output wire sdram_nwe,
-    input wire [31:0] sdram_data_in,
-    output wire [31:0] sdram_data_out,
-    output wire [3:0] sdram_dqm
+    input wire [15:0] sdram_data_in,
+    output wire [15:0] sdram_data_out,
+    output wire [1:0] sdram_dqm
 );
     localparam RAM_START = 32'h20000000;
     localparam RAM_END = RAM_START + (4<<RAM_BITS);
@@ -173,11 +173,11 @@ UART_BAUD = 115200
         ufifo(.clk(clk), .tx(tx), .rx(rx), .data_in(mem_wdata[7:0]), .data_out(uart_data_out), .nwr(!mem_wstrb[0]), .req(uart_req), .nreset(nreset),
                 .full(uart_tx_fifo_full), .empty(uart_rx_fifo_empty), .ack(uart_ack));
 
-    sdram_controller #(.SDRAM_ADDRESS_WIDTH(SDRAM_ADDRESS_WIDTH), .SDRAM_COLUMN_ADDRESS_WIDTH(SDRAM_COLUMN_ADDRESS_WIDTH),
+    sdram_controller_16_to_32 #(.SDRAM_ADDRESS_WIDTH(SDRAM_ADDRESS_WIDTH), .SDRAM_COLUMN_ADDRESS_WIDTH(SDRAM_COLUMN_ADDRESS_WIDTH),
                         .BANK_BITS(SDRAM_BANK_BITS), .CLK_FREQUENCY(CLK_FREQUENCY), .MODE_REGISTER_VALUE(SDRAM_MODE_REGISTER_VALUE),
                         .AUTOREFRESH_LATENCY(SDRAM_AUTOREFRESH_LATENCY), .CAS_LATENCY(SDRAM_CAS_LATENCY), .PRECHARGE_LATENCY(SDRAM_PRECHARGE_LATENCY),
                         .BANK_ACTIVATE_LATENCY(SDRAM_BANK_ACTIVATE_LATENCY))
-                    sdram_c(.clk(clk_sdram), .nreset(nreset), .cpu_address(mem_la_addr[22:2]), .cpu_data_in(mem_wdata), .cpu_data_out(sdram_rdata),
+                    sdram_c(.clk(clk_sdram), .nreset(nreset), .cpu_address(mem_la_addr[24:2]), .cpu_data_in(mem_wdata), .cpu_data_out(sdram_rdata),
                                 .cpu_req(sdram_req), .cpu_ack(sdram_ack), .cpu_nwr(sdram_nwr), .sdram_ncs(sdram_ncs), .sdram_ras(sdram_ras),
                                 .sdram_cas(sdram_cas), .sdram_clk(sdram_clk), .sdram_address(sdram_address), .sdram_ba(sdram_ba),
                                 .sdram_nwe(sdram_nwe), .sdram_data_in(sdram_data_in), .sdram_data_out(sdram_data_out), .sdram_dqm(sdram_dqm));

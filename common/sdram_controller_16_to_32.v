@@ -45,7 +45,7 @@ CLK_FREQUENCY = 25000000
     localparam STATE_READ              = 16;
     localparam STATE_READ2             = 32;
 
-    reg [15:0] cpu_data_out1, cpu_data_out2,
+    reg [15:0] cpu_data_out1, cpu_data_out2;
 
     reg [5:0] state, next_state;
     wire is_read;
@@ -64,7 +64,7 @@ CLK_FREQUENCY = 25000000
     assign sdram_dqm[0] = low_byte? cpu_nwr[0] : cpu_nwr[2];
     assign sdram_dqm[1] = low_byte? cpu_nwr[1] : cpu_nwr[3];
 
-    assign is_read = cpu_nwr == 2'b11;
+    assign is_read = cpu_nwr == 4'b1111;
     
     assign req = cpu_req & !cpu_ack;
 
@@ -102,8 +102,8 @@ CLK_FREQUENCY = 25000000
                     sdram_ras <= !req & !refresh;
                     sdram_cas <= !refresh;
                     sdram_nwe <= 1;
-                    sdram_address <= cpu_address[ADDRESS_WIDTH-BANK_BITS-1:SDRAM_COLUMN_ADDRESS_WIDTH];
-                    sdram_ba <= cpu_address[ADDRESS_WIDTH-1:ADDRESS_WIDTH-BANK_BITS];
+                    sdram_address <= cpu_address[ADDRESS_WIDTH-BANK_BITS-2:SDRAM_COLUMN_ADDRESS_WIDTH-1];
+                    sdram_ba <= cpu_address[ADDRESS_WIDTH-2:ADDRESS_WIDTH-BANK_BITS-1];
                     if (refresh | req)
                         state <= STATE_NOP;
                     nop_counter <= refresh ? AUTOREFRESH_LATENCY - 1 : BANK_ACTIVATE_LATENCY - 1;

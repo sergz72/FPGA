@@ -1,6 +1,5 @@
 module sdram_emulator
 #(parameter
-DATA_WIDTH = 32,
 ADDRESS_WIDTH = 11,
 COLUMN_ADDRESS_WIDTH = 8,
 BANK_BITS = 2,
@@ -16,16 +15,29 @@ BURST_SIZE = 1
     input wire ras,
     input wire cas,
     input wire nwe,
-    inout wire [DATA_WIDTH-1:0] data,
-    input wire [DATA_WIDTH/8-1:0] dqm
+`ifndef GEN16
+    inout wire [31:0] data,
+    input wire [3:0] dqm
+`else
+    inout wire [15:0] data,
+    input wire [1:0] dqm
+`endif
 );
+`ifndef GEN16
+    localparam DATA_WIDTH = 32;
+`else
+    localparam DATA_WIDTH = 16;
+`endif
     localparam COMMAND_NONE          = 0;
     localparam COMMAND_BANK_ACTIVATE = 1;
 
     reg [7:0] memory1 [0:(1<<BANK_BITS)-1] [0:(1 << (ADDRESS_WIDTH+COLUMN_ADDRESS_WIDTH)) - 1];
     reg [7:0] memory2 [0:(1<<BANK_BITS)-1] [0:(1 << (ADDRESS_WIDTH+COLUMN_ADDRESS_WIDTH)) - 1];
+`ifndef GEN16
     reg [7:0] memory3 [0:(1<<BANK_BITS)-1] [0:(1 << (ADDRESS_WIDTH+COLUMN_ADDRESS_WIDTH)) - 1];
     reg [7:0] memory4 [0:(1<<BANK_BITS)-1] [0:(1 << (ADDRESS_WIDTH+COLUMN_ADDRESS_WIDTH)) - 1];
+`endif
+
     reg [ADDRESS_WIDTH-1:0] row_address;
     reg [COLUMN_ADDRESS_WIDTH-1:0] column_address;
     wire [ADDRESS_WIDTH+COLUMN_ADDRESS_WIDTH-1:0] memory_address;
@@ -67,10 +79,12 @@ BURST_SIZE = 1
                             memory1[ba][{row_address, address[COLUMN_ADDRESS_WIDTH-1:0]}] <= data[7:0];
                         if (!dqm[1])
                             memory2[ba][{row_address, address[COLUMN_ADDRESS_WIDTH-1:0]}] <= data[15:8];
+`ifndef GEN16
                         if (!dqm[2])
                             memory3[ba][{row_address, address[COLUMN_ADDRESS_WIDTH-1:0]}] <= data[23:16];
                         if (!dqm[3])
                             memory4[ba][{row_address, address[COLUMN_ADDRESS_WIDTH-1:0]}] <= data[31:24];
+`endif
                         cas_enable <= 0;
                         write_burst_size <= BURST_SIZE - 1;
                     end
@@ -81,15 +95,21 @@ BURST_SIZE = 1
                             memory1[ba][memory_address] <= data[7:0];
                         if (!dqm[1])
                             memory2[ba][memory_address] <= data[15:8];
+`ifndef GEN16
                         if (!dqm[2])
                             memory3[ba][memory_address] <= data[23:16];
                         if (!dqm[3])
                             memory4[ba][memory_address] <= data[31:24];
+`endif
                         write_burst_size <= write_burst_size - 1;
                         column_address <= column_address + 1;
                     end
                     else if (read_burst_size != 0 && nop_counter >= CAS_LATENCY - 1) begin // Read
+`ifndef GEN16
                         data_out <= {memory4[ba][memory_address], memory3[ba][memory_address], memory2[ba][memory_address], memory1[ba][memory_address]};
+`else
+                        data_out <= {memory2[ba][memory_address], memory1[ba][memory_address]};
+`endif
                         read_burst_size <= read_burst_size - 1;
                         column_address <= column_address + 1;
                     end

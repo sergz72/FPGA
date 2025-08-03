@@ -1,6 +1,6 @@
 `timescale 1 ns / 1 ps
 
-module test;
+module test32;
     reg clk;
     wire ntrap;
     wire led1, led2;
@@ -24,7 +24,7 @@ module test;
 
     assign sdram_data = sdram_nwe ? 32'hz : sdram_data_out;
 
-    main #(.RESET_BIT(3), .CLK_FREQUENCY(115200*10), .UART_BAUD(115200))
+    main32 #(.RESET_BIT(3), .CLK_FREQUENCY(115200*10), .UART_BAUD(115200))
          m(.clk(clk), .clk_sdram(clk), .ntrap(ntrap), .led1(led1), .led2(led2), .tx(tx), .rx(rx), .sdram_clk(sdram_clk),
             .sdram_address(sdram_address), .sdram_ba(sdram_ba),
             .sdram_ncs(sdram_ncs), .sdram_ras(sdram_ras), .sdram_cas(sdram_cas), .sdram_nwe(sdram_nwe), .sdram_data_in(sdram_data),
