@@ -21,8 +21,8 @@ SDRAM_PRECHARGE_LATENCY = 2
 (
     input wire clk,
     output wire ntrap,
-    output reg led1,
-    output reg led2,
+    output wire led1,
+    output wire led2,
     output wire tx,
     input wire rx,
     output wire sdram_clk,
