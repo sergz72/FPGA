@@ -46,10 +46,14 @@ BURST_SIZE = 1
     reg cas_enable;
     reg [DATA_WIDTH-1:0] data_out;
     reg [1:0] read_burst_size, write_burst_size;
+    wire woe;
+    reg oe = 0;
 
-    assign data = nwe ? data_out : {DATA_WIDTH{1'bz}};
+    assign data = oe ? data_out : {DATA_WIDTH{1'bz}};
 
     assign memory_address = {row_address, column_address};
+
+    assign woe = read_burst_size != 0 && nop_counter >= CAS_LATENCY - 1;
 
     always @(posedge clk) begin
         if (cke & !ncs) begin
@@ -104,7 +108,8 @@ BURST_SIZE = 1
                         write_burst_size <= write_burst_size - 1;
                         column_address <= column_address + 1;
                     end
-                    else if (read_burst_size != 0 && nop_counter >= CAS_LATENCY - 1) begin // Read
+                    else if (woe) begin // Read
+                        oe <= 1;
 `ifndef GEN16
                         data_out <= {memory4[ba][memory_address], memory3[ba][memory_address], memory2[ba][memory_address], memory1[ba][memory_address]};
 `else
@@ -113,6 +118,8 @@ BURST_SIZE = 1
                         read_burst_size <= read_burst_size - 1;
                         column_address <= column_address + 1;
                     end
+                    else
+                        oe <= 0;
                     if (nop_counter == 1 && command == COMMAND_BANK_ACTIVATE) // BankActivate
                         cas_enable <= 1;
                     nop_counter <= nop_counter + 1;
