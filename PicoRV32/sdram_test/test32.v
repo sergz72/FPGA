@@ -21,6 +21,7 @@ module test32;
     wire [31:0] sdram_data_out;
     wire [3:0] sdram_dqm;
     wire [31:0] sdram_data;
+    wire sdram_cke;
 
     assign sdram_data = sdram_nwe ? 32'hz : sdram_data_out;
 
@@ -28,11 +29,11 @@ module test32;
          m(.clk(clk), .clk_sdram(clk), .ntrap(ntrap), .led1(led1), .led2(led2), .tx(tx), .rx(rx), .sdram_clk(sdram_clk),
             .sdram_address(sdram_address), .sdram_ba(sdram_ba),
             .sdram_ncs(sdram_ncs), .sdram_ras(sdram_ras), .sdram_cas(sdram_cas), .sdram_nwe(sdram_nwe), .sdram_data_in(sdram_data),
-            .sdram_data_out(sdram_data_out), .sdram_dqm(sdram_dqm));
+            .sdram_data_out(sdram_data_out), .sdram_dqm(sdram_dqm), .sdram_cke(sdram_cke));
 
     uart1tx #(.CLOCK_DIV(10), .CLOCK_COUNTER_BITS(4)) utx(.clk(clk), .tx(rx), .data(data_in), .send(send), .busy(busy), .nreset(nreset));
 
-    sdram_emulator sdram_e(.clk(sdram_clk), .cke(1'b1), .address(sdram_address), .ba(sdram_ba),
+    sdram_emulator sdram_e(.clk(sdram_clk), .cke(sdram_cke), .address(sdram_address), .ba(sdram_ba),
                             .ncs(sdram_ncs), .ras(sdram_ras), .cas(sdram_cas), .nwe(sdram_nwe), .data(sdram_data),
                             .dqm(sdram_dqm));
                             

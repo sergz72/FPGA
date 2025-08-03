@@ -27,6 +27,7 @@ SDRAM_PRECHARGE_LATENCY = 2
     output wire tx,
     input wire rx,
     output wire sdram_clk,
+    output wire sdram_cke,
     output wire [10:0] sdram_address,
     output wire [1:0] sdram_ba,
     output wire sdram_ncs,
@@ -48,6 +49,6 @@ SDRAM_PRECHARGE_LATENCY = 2
          m(.clk(clk), .clk_sdram(clk_sdram), .ntrap(ntrap), .led1(led1), .led2(led2), .tx(tx), .rx(rx), .sdram_clk(sdram_clk),
             .sdram_address(sdram_address), .sdram_ba(sdram_ba),
             .sdram_ncs(sdram_ncs), .sdram_ras(sdram_ras), .sdram_cas(sdram_cas), .sdram_nwe(sdram_nwe), .sdram_data_in(sdram_data),
-            .sdram_data_out(sdram_data_out), .sdram_dqm(sdram_dqm));
+            .sdram_data_out(sdram_data_out), .sdram_dqm(sdram_dqm), .sdram_cke(sdram_cke));
     
 endmodule

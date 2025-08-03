@@ -24,6 +24,7 @@ CLK_FREQUENCY = 25000000
     output reg cpu_ack,
     //sdram io
     output wire sdram_clk,
+    output wire sdram_cke,
     output reg [SDRAM_ADDRESS_WIDTH-1:0] sdram_address,
     output reg [BANK_BITS-1:0] sdram_ba,
     output reg sdram_ncs,
@@ -58,6 +59,8 @@ CLK_FREQUENCY = 25000000
     reg [1:0] init_counter;
     wire init_3_or_0;
 
+    assign sdram_cke = 1'b1;
+    
     assign sdram_clk = !clk;
     assign sdram_data_out = cpu_data_in;
 
