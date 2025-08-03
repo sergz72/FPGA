@@ -1,4 +1,4 @@
 #! /bin/sh
 
-./build_gcc.sh src/main.c
+./build_gcc.sh $* src/main.c
 ./tohex.sh a.out

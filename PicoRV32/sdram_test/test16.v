@@ -18,15 +18,16 @@ module test16;
     wire sdram_ras;
     wire sdram_cas;
     wire sdram_nwe;
+    wire sdram_data_noe;
     wire [15:0] sdram_data_out;
     wire [1:0] sdram_dqm;
     wire [15:0] sdram_data;
 
-    assign sdram_data = sdram_nwe ? 16'hz : sdram_data_out;
+    assign sdram_data = sdram_data_noe ? 16'hz : sdram_data_out;
 
     main16 #(.RESET_BIT(3), .CLK_FREQUENCY(115200*10), .UART_BAUD(115200))
          m(.clk(clk), .clk_sdram(clk), .ntrap(ntrap), .led1(led1), .led2(led2), .tx(tx), .rx(rx), .sdram_clk(sdram_clk),
-            .sdram_address(sdram_address), .sdram_ba(sdram_ba),
+            .sdram_address(sdram_address), .sdram_ba(sdram_ba), .sdram_data_noe(sdram_data_noe),
             .sdram_ncs(sdram_ncs), .sdram_ras(sdram_ras), .sdram_cas(sdram_cas), .sdram_nwe(sdram_nwe), .sdram_data_in(sdram_data),
             .sdram_data_out(sdram_data_out), .sdram_dqm(sdram_dqm));
 

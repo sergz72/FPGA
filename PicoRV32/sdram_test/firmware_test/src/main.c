@@ -71,7 +71,7 @@ static void sdram_test(void)
     if (*p32 != 0xAAAAAAAA)
       stop();
 
-/*
+#ifndef ONLY32
     // 16 bit access;
     volatile unsigned short *p16 = (volatile unsigned short*)p;
     *p16++ = 0x5555;
@@ -150,7 +150,8 @@ static void sdram_test(void)
     if (*p8++ != 0xAA)
       stop();
     if (*p8 != 0xAA)
-      stop();*/
+      stop();
+#endif
 
     p += 4;
   }

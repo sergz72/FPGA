@@ -11,7 +11,7 @@ SDRAM_ADDRESS_WIDTH = 13,
 SDRAM_COLUMN_ADDRESS_WIDTH = 9,
 SDRAM_BANK_BITS = 2,
 CLK_FREQUENCY = 25000000,
-SDRAM_MODE_REGISTER_VALUE = 'h20,
+SDRAM_MODE_REGISTER_VALUE = 'h21,
 SDRAM_AUTOREFRESH_LATENCY = 3,
 SDRAM_CAS_LATENCY = 2,
 SDRAM_BANK_ACTIVATE_LATENCY = 2,
@@ -33,6 +33,7 @@ UART_BAUD = 115200
     output wire sdram_ras,
     output wire sdram_cas,
     output wire sdram_nwe,
+    output wire sdram_data_noe,
     input wire [15:0] sdram_data_in,
     output wire [15:0] sdram_data_out,
     output wire [1:0] sdram_dqm
@@ -179,7 +180,7 @@ UART_BAUD = 115200
                         .BANK_ACTIVATE_LATENCY(SDRAM_BANK_ACTIVATE_LATENCY))
                     sdram_c(.clk(clk_sdram), .nreset(nreset), .cpu_address(mem_la_addr[24:2]), .cpu_data_in(mem_wdata), .cpu_data_out(sdram_rdata),
                                 .cpu_req(sdram_req), .cpu_ack(sdram_ack), .cpu_nwr(sdram_nwr), .sdram_ncs(sdram_ncs), .sdram_ras(sdram_ras),
-                                .sdram_cas(sdram_cas), .sdram_clk(sdram_clk), .sdram_address(sdram_address), .sdram_ba(sdram_ba),
+                                .sdram_cas(sdram_cas), .sdram_clk(sdram_clk), .sdram_address(sdram_address), .sdram_ba(sdram_ba), .sdram_data_noe(sdram_data_noe),
                                 .sdram_nwe(sdram_nwe), .sdram_data_in(sdram_data_in), .sdram_data_out(sdram_data_out), .sdram_dqm(sdram_dqm));
 
     always @(posedge clk) begin

@@ -37,12 +37,14 @@ CLK_FREQUENCY = 25000000
     localparam NUM_BYTES = DATA_WIDTH/8;
     localparam ADDRESS_WIDTH = BANK_BITS+SDRAM_ADDRESS_WIDTH+SDRAM_COLUMN_ADDRESS_WIDTH;
     localparam REFRESH_COUNTER_BITS = $clog2(CLK_FREQUENCY / 65536) - 1;
+    localparam ADDRESS_TO_TEN = SDRAM_ADDRESS_WIDTH - 10;
+    localparam [ADDRESS_TO_TEN-1:0] ADDRESS_ADD = 'h1;
 
-    localparam STATE_MODE_REGISTER_SET = 1;
-    localparam STATE_IDLE              = 2;
-    localparam STATE_NOP               = 4;
-    localparam STATE_CAS               = 8;
-    localparam STATE_READ              = 16;
+    localparam STATE_INIT = 1;
+    localparam STATE_IDLE = 2;
+    localparam STATE_NOP  = 4;
+    localparam STATE_CAS  = 8;
+    localparam STATE_READ = 16;
 
     reg [4:0] state, next_state;
     wire is_read;
@@ -53,6 +55,9 @@ CLK_FREQUENCY = 25000000
     reg [REFRESH_COUNTER_BITS-1:0] refresh_counter;
     reg refresh;
 
+    reg [1:0] init_counter;
+    wire init_3_or_0;
+
     assign sdram_clk = !clk;
     assign sdram_data_out = cpu_data_in;
 
@@ -61,6 +66,8 @@ CLK_FREQUENCY = 25000000
     assign is_read = cpu_nwr == {NUM_BYTES{1'b1}};
     
     assign req = cpu_req & !cpu_ack;
+
+    assign init_3_or_0 = init_counter[1] ^ init_counter[0];
 
     genvar i;
     generate
@@ -76,9 +83,10 @@ CLK_FREQUENCY = 25000000
             sdram_ras <= 1;
             sdram_nwe <= 1;
             cpu_ack <= 0;
-            state <= STATE_MODE_REGISTER_SET;
+            state <= STATE_INIT;
             refresh_counter <= 1;
             refresh <= 0;
+            init_counter <= 3;
         end
         else begin
             if (refresh_counter == 0)
@@ -87,13 +95,16 @@ CLK_FREQUENCY = 25000000
                 refresh <= 0;
             refresh_counter <= refresh_counter + 1;
             case (state)
-                STATE_MODE_REGISTER_SET: begin
+                STATE_INIT: begin
                     sdram_ncs <= 0;
-                    sdram_cas <= 0;
+                    sdram_cas <= init_counter == 3;
                     sdram_ras <= 0;
-                    sdram_nwe <= 0;
-                    sdram_address <= MODE_REGISTER_VALUE;
-                    state <= STATE_IDLE;
+                    sdram_nwe <= init_3_or_0;
+                    sdram_address <= init_counter == 0 ? MODE_REGISTER_VALUE : {ADDRESS_ADD, 10'h0};
+                    state <= STATE_NOP;
+                    nop_counter <= AUTOREFRESH_LATENCY - 1;
+                    next_state <= init_counter != 0 ? STATE_INIT : STATE_IDLE;
+                    init_counter <= init_counter - 1;
                 end
                 STATE_IDLE: begin
                     // bank activate or auto-refresh
@@ -124,7 +135,7 @@ CLK_FREQUENCY = 25000000
                     sdram_cas <= 0;
                     sdram_nwe <= is_read;
                     // read/write with precharge
-                    sdram_address <= {1'b1, cpu_address[SDRAM_ADDRESS_WIDTH-2:0]};
+                    sdram_address <= {ADDRESS_ADD, cpu_address[9:0]};
                     cpu_ack <= !is_read;
                     state <= STATE_NOP;
                     nop_counter <= is_read ? CAS_LATENCY - 1 : PRECHARGE_LATENCY - 1;
