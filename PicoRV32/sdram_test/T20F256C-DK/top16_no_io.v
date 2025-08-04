@@ -35,12 +35,27 @@ SDRAM_PRECHARGE_LATENCY = 2
     output wire sdram_nwe,
     input wire [15:0] sdram_data_in,
     output wire [15:0] sdram_data_out,
-    output wire sdram_data_oe,
+    output wire sdram_data_oe[15:0],
     output wire [1:0] sdram_dqm
 );
     wire sdram_data_noe;
 
-    assign sdram_data_oe = !sdram_data_noe;
+    assign sdram_data_oe[0] = !sdram_data_noe;
+    assign sdram_data_oe[1] = !sdram_data_noe;
+    assign sdram_data_oe[2] = !sdram_data_noe;
+    assign sdram_data_oe[3] = !sdram_data_noe;
+    assign sdram_data_oe[4] = !sdram_data_noe;
+    assign sdram_data_oe[5] = !sdram_data_noe;
+    assign sdram_data_oe[6] = !sdram_data_noe;
+    assign sdram_data_oe[7] = !sdram_data_noe;
+    assign sdram_data_oe[8] = !sdram_data_noe;
+    assign sdram_data_oe[9] = !sdram_data_noe;
+    assign sdram_data_oe[10] = !sdram_data_noe;
+    assign sdram_data_oe[11] = !sdram_data_noe;
+    assign sdram_data_oe[12] = !sdram_data_noe;
+    assign sdram_data_oe[13] = !sdram_data_noe;
+    assign sdram_data_oe[14] = !sdram_data_noe;
+    assign sdram_data_oe[15] = !sdram_data_noe;
 
     main16 #(.RESET_BIT(RESET_BIT), .CLK_FREQUENCY(CLK_FREQUENCY), .UART_BAUD(UART_BAUD), .RAM_BITS(RAM_BITS),
             .ROM_BITS(ROM_BITS), .SDRAM_ADDRESS_WIDTH(SDRAM_ADDRESS_WIDTH), .SDRAM_BANK_BITS(SDRAM_BANK_BITS),
