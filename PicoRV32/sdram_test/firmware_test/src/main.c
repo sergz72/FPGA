@@ -6,7 +6,6 @@
 #define UART_TX_FIFO_FULL 1
 #define UART_RX_FIFO_EMPTY 2
 #define LED1 1
-#define LED2 2
 
 int wfi(void);
 int getq(void);
@@ -44,10 +43,15 @@ static void uart_handler(void)
 
 static void stop(void)
 {
-  state |= LED2;
-  *PORT_ADDRESS = state;
+  *PORT_ADDRESS = state | 0x80;
   while (1)
     ;
+}
+
+static void next_state(void)
+{
+  state++;
+  *PORT_ADDRESS = state;
 }
 
 static void sdram_test(void)
@@ -64,12 +68,16 @@ static void sdram_test(void)
     p32 = p;
     if (*p32++ != 0x11223344)
       stop();
+    next_state(); // 1
     if (*p32++ != 0xFFEEDDCC)
       stop();
+    next_state(); // 2
     if (*p32++ != 0x55555555)
       stop();
+    next_state(); // 3
     if (*p32 != 0xAAAAAAAA)
       stop();
+    next_state(); // 4
 
 #ifndef ONLY32
     // 16 bit access;
@@ -85,20 +93,28 @@ static void sdram_test(void)
     p16 = (unsigned short*)p;
     if (*p16++ != 0x5555)
       stop();
+    next_state(); // 5
     if (*p16++ != 0x5555)
       stop();
+    next_state(); // 6
     if (*p16++ != 0xAAAA)
       stop();
+    next_state(); // 7
     if (*p16++ != 0xAAAA)
       stop();
+    next_state(); // 8
     if (*p16++ != 0x1122)
       stop();
+    next_state(); // 9
     if (*p16++ != 0x3344)
       stop();
+    next_state(); // 10
     if (*p16++ != 0xFFEE)
       stop();
+    next_state(); // 11
     if (*p16 != 0xDDCC)
       stop();
+    next_state(); // 12
 
     // 8 bit access;
     volatile unsigned char *p8 = (volatile unsigned char*)p;
@@ -121,36 +137,52 @@ static void sdram_test(void)
     p8 = (unsigned char*)p;
     if (*p8++ != 0x11)
       stop();
+    next_state(); // 13
     if (*p8++ != 0x22)
       stop();
+    next_state(); // 14
     if (*p8++ != 0x33)
       stop();
+    next_state(); // 15
     if (*p8++ != 0x44)
       stop();
+    next_state(); // 16
     if (*p8++ != 0xFF)
       stop();
+    next_state(); // 17
     if (*p8++ != 0xEE)
       stop();
+    next_state(); // 18
     if (*p8++ != 0xDD)
       stop();
+    next_state(); // 19
     if (*p8++ != 0xCC)
       stop();
+    next_state(); // 20
     if (*p8++ != 0x55)
       stop();
+    next_state(); // 21
     if (*p8++ != 0x55)
       stop();
+    next_state(); // 22
     if (*p8++ != 0x55)
       stop();
+    next_state(); // 23
     if (*p8++ != 0x55)
       stop();
+    next_state(); // 24
     if (*p8++ != 0xAA)
       stop();
+    next_state(); // 25
     if (*p8++ != 0xAA)
       stop();
+    next_state(); // 26
     if (*p8++ != 0xAA)
       stop();
+    next_state(); // 27
     if (*p8 != 0xAA)
       stop();
+    next_state(); // 28
 #endif
 
     p += 4;
@@ -161,7 +193,8 @@ __attribute__((naked)) int main(void)
 {
   int counter = 0;
 
-  state = LED1;
+  state = 0;
+  *PORT_ADDRESS = state;
 
   sdram_test();
   while (1)

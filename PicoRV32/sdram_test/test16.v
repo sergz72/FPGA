@@ -23,6 +23,7 @@ module test16;
     wire [1:0] sdram_dqm;
     wire [15:0] sdram_data;
     wire sdram_cke;
+    wire sdram_sel;
 
     assign sdram_data = sdram_data_noe ? 16'hz : sdram_data_out;
 
@@ -30,7 +31,7 @@ module test16;
          m(.clk(clk), .clk_sdram(clk), .ntrap(ntrap), .led1(led1), .led2(led2), .tx(tx), .rx(rx), .sdram_clk(sdram_clk),
             .sdram_address(sdram_address), .sdram_ba(sdram_ba), .sdram_data_noe(sdram_data_noe),
             .sdram_ncs(sdram_ncs), .sdram_ras(sdram_ras), .sdram_cas(sdram_cas), .sdram_nwe(sdram_nwe), .sdram_data_in(sdram_data),
-            .sdram_data_out(sdram_data_out), .sdram_dqm(sdram_dqm), .sdram_cke(sdram_cke));
+            .sdram_data_out(sdram_data_out), .sdram_dqm(sdram_dqm), .sdram_cke(sdram_cke), .sdram_sel(sdram_sel));
 
     uart1tx #(.CLOCK_DIV(100), .CLOCK_COUNTER_BITS(7)) utx(.clk(clk), .tx(rx), .data(data_in), .send(send), .busy(busy), .nreset(nreset));
 

@@ -22,14 +22,13 @@ UART_BAUD = 115200
     input wire clk,
     input wire clk_sdram,
     output wire ntrap,
-    output reg led1,
-    output reg led2,
+    output reg [7:0] leds,
     output wire tx,
     input wire rx,
     output wire sdram_clk,
     output wire sdram_cke,
-    output wire [12:0] sdram_address,
-    output wire [1:0] sdram_ba,
+    output wire [SDRAM_ADDRESS_WIDTH-1:0] sdram_address,
+    output wire [SDRAM_BANK_BITS-1:0] sdram_ba,
     output wire sdram_ncs,
     output wire sdram_ras,
     output wire sdram_cas,
@@ -40,7 +39,7 @@ UART_BAUD = 115200
     output wire [1:0] sdram_dqm,
     output wire sdram_sel
 );
-    localparam SDRAM_CPU_ADDRESS_WIDTH = SDRAM_ADDRESS_WIDTH + SDRAM_COLUMN_ADDRESS_WIDTH;
+    localparam SDRAM_CPU_ADDRESS_WIDTH = SDRAM_ADDRESS_WIDTH + SDRAM_COLUMN_ADDRESS_WIDTH + SDRAM_BANK_BITS - 2;
     localparam RAM_START = 32'h20000000;
     localparam RAM_END = RAM_START + (4<<RAM_BITS);
     localparam MEMORY_SELECTOR_START_BIT = 28;
@@ -216,7 +215,7 @@ UART_BAUD = 115200
 
     always @(posedge clk) begin
         if (mem_valid & port_selected) begin
-            if (mem_wstrb[0]) {led2, led1} <= mem_la_wdata[1:0];
+            if (mem_wstrb[0]) leds <= mem_la_wdata[7:0];
         end
     end
 
