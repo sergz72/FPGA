@@ -3,7 +3,7 @@
 module test16;
     reg clk;
     wire ntrap;
-    wire led1, led2;
+    wire [7:0] leds;
     wire tx, rx;
     reg [7:0] data_in;
     wire interrupt;
@@ -28,7 +28,7 @@ module test16;
     assign sdram_data = sdram_data_noe ? 16'hz : sdram_data_out;
 
     main16 #(.RESET_BIT(3), .CLK_FREQUENCY(115200*100), .UART_BAUD(115200))
-         m(.clk(clk), .clk_sdram(clk), .ntrap(ntrap), .led1(led1), .led2(led2), .tx(tx), .rx(rx), .sdram_clk(sdram_clk),
+         m(.clk(clk), .clk_sdram(clk), .ntrap(ntrap), .leds(leds), .tx(tx), .rx(rx), .sdram_clk(sdram_clk),
             .sdram_address(sdram_address), .sdram_ba(sdram_ba), .sdram_data_noe(sdram_data_noe),
             .sdram_ncs(sdram_ncs), .sdram_ras(sdram_ras), .sdram_cas(sdram_cas), .sdram_nwe(sdram_nwe), .sdram_data_in(sdram_data),
             .sdram_data_out(sdram_data_out), .sdram_dqm(sdram_dqm), .sdram_cke(sdram_cke), .sdram_sel(sdram_sel));
@@ -45,7 +45,7 @@ module test16;
     initial begin
         $dumpfile("main_tb.vcd");
         $dumpvars(0, test);
-        $monitor("time=%t led1=%d led2=%d rx=%d tx=%d", $time, led1, led2, rx, tx);
+        $monitor("time=%t leds=0x%02x rx=%d tx=%d", $time, leds, rx, tx);
         clk = 0;
         data_in = 8'h5A;
         send = 0;

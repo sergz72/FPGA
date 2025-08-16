@@ -39,7 +39,7 @@ UART_BAUD = 115200
     output wire [1:0] sdram_dqm,
     output wire sdram_sel
 );
-    localparam SDRAM_CPU_ADDRESS_WIDTH = SDRAM_ADDRESS_WIDTH + SDRAM_COLUMN_ADDRESS_WIDTH + SDRAM_BANK_BITS - 2;
+    localparam SDRAM_CPU_ADDRESS_WIDTH = SDRAM_ADDRESS_WIDTH + SDRAM_COLUMN_ADDRESS_WIDTH + SDRAM_BANK_BITS - 1;
     localparam RAM_START = 32'h20000000;
     localparam RAM_END = RAM_START + (4<<RAM_BITS);
     localparam MEMORY_SELECTOR_START_BIT = 28;
@@ -123,8 +123,6 @@ UART_BAUD = 115200
     assign sdram_nwr[2] = !mem_wstrb[2];
     assign sdram_nwr[3] = !mem_wstrb[3];
 
-    assign sdram_sel = mem_la_addr[SDRAM_CPU_ADDRESS_WIDTH + 3];
-
     initial begin
         $readmemh("asm/code.hex", rom);
         $readmemh("asm/data1.hex", ram1);
@@ -186,7 +184,7 @@ UART_BAUD = 115200
                                 .cpu_req(sdram_req), .cpu_ack(sdram_ack), .cpu_nwr(sdram_nwr), .sdram_ncs(sdram_ncs), .sdram_ras(sdram_ras),
                                 .sdram_cas(sdram_cas), .sdram_clk(sdram_clk), .sdram_address(sdram_address), .sdram_ba(sdram_ba), .sdram_data_noe(sdram_data_noe),
                                 .sdram_nwe(sdram_nwe), .sdram_data_in(sdram_data_in), .sdram_data_out(sdram_data_out), .sdram_dqm(sdram_dqm),
-                                .sdram_cke(sdram_cke));
+                                .sdram_cke(sdram_cke), .sdram_sel(sdram_sel));
 
     always @(posedge clk) begin
         if (timer[RESET_BIT])

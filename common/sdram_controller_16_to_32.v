@@ -16,7 +16,7 @@ CLK_FREQUENCY = 25000000
     input wire clk,
     input wire nreset,
     //cpu io
-    input wire [BANK_BITS+SDRAM_ADDRESS_WIDTH+SDRAM_COLUMN_ADDRESS_WIDTH-2:0] cpu_address,
+    input wire [BANK_BITS+SDRAM_ADDRESS_WIDTH+SDRAM_COLUMN_ADDRESS_WIDTH-1:0] cpu_address,
     input wire [31:0] cpu_data_in,
     output wire [31:0] cpu_data_out,
     input wire cpu_req,
@@ -34,7 +34,8 @@ CLK_FREQUENCY = 25000000
     output reg sdram_data_noe,
     input wire [15:0] sdram_data_in,
     output wire [15:0] sdram_data_out,
-    output wire [1:0] sdram_dqm
+    output wire [1:0] sdram_dqm,
+    output reg sdram_sel
 );
     localparam ADDRESS_WIDTH = BANK_BITS+SDRAM_ADDRESS_WIDTH+SDRAM_COLUMN_ADDRESS_WIDTH;
     localparam REFRESH_COUNTER_BITS = $clog2(CLK_FREQUENCY / 65536 / 2) - 1;
@@ -58,6 +59,7 @@ CLK_FREQUENCY = 25000000
 
     reg [REFRESH_COUNTER_BITS-1:0] refresh_counter;
     reg refresh;
+    reg refresh_sel;
 
     reg low_byte;
 
@@ -94,8 +96,10 @@ CLK_FREQUENCY = 25000000
             init_counter <= 3;
         end
         else begin
-            if (refresh_counter == 0)
+            if (refresh_counter == 0) begin
                 refresh <= 1;
+                refresh_sel <= !refresh_sel;
+            end
             else if (!sdram_ras & !sdram_cas) // auto-refresh
                 refresh <= 0;
             refresh_counter <= refresh_counter + 1;
@@ -119,6 +123,7 @@ CLK_FREQUENCY = 25000000
                     sdram_nwe <= 1;
                     sdram_address <= cpu_address[ADDRESS_WIDTH-BANK_BITS-2:SDRAM_COLUMN_ADDRESS_WIDTH-1];
                     sdram_ba <= cpu_address[ADDRESS_WIDTH-2:ADDRESS_WIDTH-BANK_BITS-1];
+                    sdram_sel <= refresh ? refresh_sel : cpu_address[ADDRESS_WIDTH-1];
                     if (refresh | req)
                         state <= STATE_NOP;
                     nop_counter <= refresh ? AUTOREFRESH_LATENCY - 1 : BANK_ACTIVATE_LATENCY - 1;
