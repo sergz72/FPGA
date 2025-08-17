@@ -21,8 +21,7 @@ SDRAM_PRECHARGE_LATENCY = 2
 (
     input wire clk,
     output wire ntrap,
-    output wire led1,
-    output wire led2,
+    output wire [6:0] leds,
     output wire tx,
     input wire rx,
     output wire sdram_clk,
@@ -39,7 +38,11 @@ SDRAM_PRECHARGE_LATENCY = 2
     output wire [1:0] sdram_dqm
 );
     wire sdram_data_noe;
+    wire sdram_sel;
+    wire [7:0] main_leds;
 
+    assign leds = ~main_leds[6:0];
+    
     assign sdram_data_oe[0] = !sdram_data_noe;
     assign sdram_data_oe[1] = !sdram_data_noe;
     assign sdram_data_oe[2] = !sdram_data_noe;
@@ -62,9 +65,9 @@ SDRAM_PRECHARGE_LATENCY = 2
             .SDRAM_COLUMN_ADDRESS_WIDTH(SDRAM_COLUMN_ADDRESS_WIDTH),
             .SDRAM_MODE_REGISTER_VALUE(SDRAM_MODE_REGISTER_VALUE), .SDRAM_AUTOREFRESH_LATENCY(SDRAM_AUTOREFRESH_LATENCY),
             .SDRAM_CAS_LATENCY(SDRAM_CAS_LATENCY), .SDRAM_BANK_ACTIVATE_LATENCY(SDRAM_BANK_ACTIVATE_LATENCY), .SDRAM_PRECHARGE_LATENCY(SDRAM_PRECHARGE_LATENCY))
-         m(.clk(clk), .clk_sdram(clk), .ntrap(ntrap), .led1(led1), .led2(led2), .tx(tx), .rx(rx), .sdram_clk(sdram_clk),
+         m(.clk(clk), .clk_sdram(clk), .ntrap(ntrap), .leds(main_leds), .tx(tx), .rx(rx), .sdram_clk(sdram_clk),
             .sdram_address(sdram_address), .sdram_ba(sdram_ba), .sdram_data_noe(sdram_data_noe),
             .sdram_ncs(sdram_ncs), .sdram_ras(sdram_ras), .sdram_cas(sdram_cas), .sdram_nwe(sdram_nwe), .sdram_data_in(sdram_data_in),
-            .sdram_data_out(sdram_data_out), .sdram_dqm(sdram_dqm), .sdram_cke(sdram_cke));
+            .sdram_data_out(sdram_data_out), .sdram_dqm(sdram_dqm), .sdram_cke(sdram_cke), .sdram_sel(sdram_sel));
     
 endmodule

@@ -42,16 +42,16 @@ SDRAM_PRECHARGE_LATENCY = 2
 	 wire [4:0] leds37;
 	 wire [2:0] leds02;
 	 wire clk_main;
-	 //reg [1:0] counter;
+	 reg [1:0] counter;
 
     assign sdram_data = sdram_data_noe ? 16'hz : sdram_data_out;
 	 
-	 assign clk_sdram = clk;//counter[0];
-	 assign clk_main = clk;//counter[0];
+	 assign clk_sdram = counter[0];
+	 assign clk_main = counter[0];
 	 
 	 assign leds = ~leds02;
 
-    main16 #(.RESET_BIT(RESET_BIT), .CLK_FREQUENCY(CLK_FREQUENCY), .UART_BAUD(UART_BAUD), .RAM_BITS(RAM_BITS),
+    main16 #(.RESET_BIT(RESET_BIT), .CLK_FREQUENCY(CLK_FREQUENCY / 2), .UART_BAUD(UART_BAUD), .RAM_BITS(RAM_BITS),
             .ROM_BITS(ROM_BITS), .SDRAM_ADDRESS_WIDTH(SDRAM_ADDRESS_WIDTH), .SDRAM_BANK_BITS(SDRAM_BANK_BITS),
             .SDRAM_COLUMN_ADDRESS_WIDTH(SDRAM_COLUMN_ADDRESS_WIDTH),
             .SDRAM_MODE_REGISTER_VALUE(SDRAM_MODE_REGISTER_VALUE), .SDRAM_AUTOREFRESH_LATENCY(SDRAM_AUTOREFRESH_LATENCY),
@@ -61,7 +61,7 @@ SDRAM_PRECHARGE_LATENCY = 2
             .sdram_ncs(sdram_ncs), .sdram_ras(sdram_ras), .sdram_cas(sdram_cas), .sdram_nwe(sdram_nwe), .sdram_data_in(sdram_data),
             .sdram_data_out(sdram_data_out), .sdram_dqm(sdram_dqm), .sdram_cke(sdram_cke), .sdram_sel(sdram_sel));
 
-//    always @(posedge clk)
-//	     counter <= counter + 1;
+    always @(posedge clk)
+	     counter <= counter + 1;
 
 endmodule

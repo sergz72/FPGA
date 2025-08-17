@@ -73,8 +73,8 @@ REFRESH_CYCLES_PER_64MS = 8192
     assign sdram_clk = !clk;
     assign sdram_data_out = low_byte ? cpu_data_in[15:0] : cpu_data_in[31:16];
 
-    assign sdram_dqm[0] = low_byte? cpu_nwr[0] : cpu_nwr[2];
-    assign sdram_dqm[1] = low_byte? cpu_nwr[1] : cpu_nwr[3];
+    assign sdram_dqm[0] = is_read ? 1'b0 : (low_byte ? cpu_nwr[0] : cpu_nwr[2]);
+    assign sdram_dqm[1] = is_read ? 1'b0 : (low_byte ? cpu_nwr[1] : cpu_nwr[3]);
 
     assign is_read = cpu_nwr == 4'b1111;
     
@@ -152,7 +152,7 @@ REFRESH_CYCLES_PER_64MS = 8192
                     sdram_address <= {ADDRESS_ADD, cpu_address[8:0], 1'b0};
                     low_byte <= 1;
                     state <= is_read ? STATE_NOP : STATE_READ2;
-                    nop_counter <= CAS_LATENCY - 1;
+                    nop_counter <= CAS_LATENCY - 2;
                     next_state <= STATE_READ;
                 end
                 STATE_READ: begin
