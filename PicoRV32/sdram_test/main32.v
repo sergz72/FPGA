@@ -66,8 +66,6 @@ UART_BAUD = 115200
 	wire trace_valid;
 	wire [35:0] trace_data;
     wire rom_selected, ram_selected, port_selected, uart_data_selected, uart_control_selected, sdram_selected;
-    reg wr = 0;
-    reg rd = 0;
     wire [RAM_BITS - 1:0] ram_address;
     wire [31-MEMORY_SELECTOR_START_BIT:0] memory_selector;
 

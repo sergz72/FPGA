@@ -1,0 +1,179 @@
+# -------------------------------------------------------------------------- #
+#
+# Copyright (C) 2025  Altera Corporation. All rights reserved.
+# Your use of Altera Corporation's design tools, logic functions 
+# and other software and tools, and any partner logic 
+# functions, and any output files from any of the foregoing 
+# (including device programming or simulation files), and any 
+# associated documentation or information are expressly subject 
+# to the terms and conditions of the Altera Program License 
+# Subscription Agreement, the Altera Quartus Prime License Agreement,
+# the Altera IP License Agreement, or other applicable license
+# agreement, including, without limitation, that your use is for
+# the sole purpose of programming logic devices manufactured by
+# Altera and sold by Altera or its authorized distributors.  Please
+# refer to the Altera Software License Subscription Agreements 
+# on the Quartus Prime software download page.
+#
+# -------------------------------------------------------------------------- #
+#
+# Quartus Prime
+# Version 24.1std.0 Build 1077 03/04/2025 SC Lite Edition
+# Date created = 22:15:56  August 16, 2025
+#
+# -------------------------------------------------------------------------- #
+#
+# Notes:
+#
+# 1) The default values for assignments are stored in the file:
+#		top_assignment_defaults.qdf
+#    If this file doesn't exist, see file:
+#		assignment_defaults.qdf
+#
+# 2) Intel recommends that you do not modify this file. This
+#    file is updated automatically by the Quartus Prime software
+#    and any changes you make may be lost or overwritten.
+#
+# -------------------------------------------------------------------------- #
+
+
+set_global_assignment -name FAMILY "Cyclone IV E"
+set_global_assignment -name DEVICE EP4CE6E22C8
+set_global_assignment -name TOP_LEVEL_ENTITY top
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 24.1STD.0
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "22:15:56  AUGUST 16, 2025"
+set_global_assignment -name LAST_QUARTUS_VERSION "24.1std.0 Lite Edition"
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 1
+set_global_assignment -name NOMINAL_CORE_SUPPLY_VOLTAGE 1.2V
+set_global_assignment -name EDA_SIMULATION_TOOL "Questa Intel FPGA (Verilog)"
+set_global_assignment -name EDA_TIME_SCALE "1 ps" -section_id eda_simulation
+set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VERILOG HDL" -section_id eda_simulation
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_timing
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_symbol
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_signal_integrity
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST OFF -section_id eda_board_design_boundary_scan
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_global_assignment -name VERILOG_FILE src/uart_fifo.v
+set_global_assignment -name VERILOG_FILE src/uart1.v
+set_global_assignment -name VERILOG_FILE src/top.v
+set_global_assignment -name VERILOG_FILE src/sdram_controller_16_to_32.v
+set_global_assignment -name VERILOG_FILE src/picorv32.v
+set_global_assignment -name VERILOG_FILE src/main16.v
+set_global_assignment -name VERILOG_FILE src/fifo.v
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -entity main -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -entity main -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -entity main -section_id Top
+set_location_assignment PIN_91 -to clk
+set_location_assignment PIN_124 -to sdram_data[1]
+set_location_assignment PIN_125 -to sdram_data[0]
+set_location_assignment PIN_126 -to sdram_data[3]
+set_location_assignment PIN_127 -to sdram_data[2]
+set_location_assignment PIN_128 -to sdram_data[5]
+set_location_assignment PIN_129 -to sdram_data[4]
+set_location_assignment PIN_132 -to sdram_data[7]
+set_location_assignment PIN_133 -to sdram_data[6]
+set_location_assignment PIN_135 -to sdram_nwe
+set_location_assignment PIN_136 -to sdram_dqm[0]
+set_location_assignment PIN_137 -to sdram_ras
+set_location_assignment PIN_138 -to sdram_cas
+set_location_assignment PIN_141 -to sdram_ba[0]
+set_location_assignment PIN_142 -to sdram_ncs
+set_location_assignment PIN_143 -to sdram_address[10]
+set_location_assignment PIN_144 -to sdram_ba[1]
+set_location_assignment PIN_1 -to sdram_address[1]
+set_location_assignment PIN_2 -to sdram_address[0]
+set_location_assignment PIN_3 -to sdram_address[3]
+set_location_assignment PIN_7 -to sdram_address[2]
+set_location_assignment PIN_59 -to sdram_data[15]
+set_location_assignment PIN_55 -to sdram_data[13]
+set_location_assignment PIN_58 -to sdram_data[14]
+set_location_assignment PIN_53 -to sdram_data[11]
+set_location_assignment PIN_54 -to sdram_data[12]
+set_location_assignment PIN_51 -to sdram_data[9]
+set_location_assignment PIN_52 -to sdram_data[10]
+set_location_assignment PIN_49 -to sdram_dqm[1]
+set_location_assignment PIN_50 -to sdram_data[8]
+set_location_assignment PIN_44 -to sdram_cke
+set_location_assignment PIN_46 -to sdram_clk
+set_location_assignment PIN_42 -to sdram_address[11]
+set_location_assignment PIN_43 -to sdram_address[12]
+set_location_assignment PIN_38 -to sdram_address[8]
+set_location_assignment PIN_39 -to sdram_address[9]
+set_location_assignment PIN_33 -to sdram_address[6]
+set_location_assignment PIN_34 -to sdram_address[7]
+set_location_assignment PIN_31 -to sdram_address[4]
+set_location_assignment PIN_32 -to sdram_address[5]
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -entity main -section_id Top
+set_location_assignment PIN_99 -to leds[0]
+set_location_assignment PIN_100 -to leds[1]
+set_location_assignment PIN_101 -to leds[2]
+set_location_assignment PIN_98 -to ntrap
+set_location_assignment PIN_11 -to tx
+set_location_assignment PIN_10 -to rx
+set_global_assignment -name ENABLE_OCT_DONE OFF
+set_global_assignment -name USE_CONFIGURATION_DEVICE OFF
+set_global_assignment -name CRC_ERROR_OPEN_DRAIN OFF
+set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -fall
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -fall
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to clk
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to leds
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to ntrap
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to rx
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_address[12]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_address[11]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_address[10]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_address[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_address[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_address[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_address[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_address[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_address[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_address[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_address[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_address[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_address[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_address
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_ba[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_ba[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_ba
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_cas
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_cke
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_clk
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_data[15]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_data[14]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_data[13]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_data[12]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_data[11]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_data[10]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_data[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_data[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_data[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_data[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_data[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_data[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_data[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_data[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_data[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_data[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_data
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_dqm[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_dqm[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_dqm
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_ncs
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_nwe
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to sdram_ras
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to tx
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

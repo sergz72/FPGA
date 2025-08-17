@@ -1,0 +1,67 @@
+`timescale 1 ns / 1 ps
+
+module top
+#(parameter
+UART_BAUD = 115200,
+RESET_BIT = 19,
+// 2k 32 bit words RAM
+RAM_BITS = 11,
+// 4k 32 bit words ROM
+ROM_BITS = 12,
+SDRAM_ADDRESS_WIDTH = 13,
+SDRAM_COLUMN_ADDRESS_WIDTH = 9,
+SDRAM_BANK_BITS = 2,
+CLK_FREQUENCY = 50000000,
+SDRAM_MODE_REGISTER_VALUE = 'h21,
+SDRAM_AUTOREFRESH_LATENCY = 3,
+SDRAM_CAS_LATENCY = 2,
+SDRAM_BANK_ACTIVATE_LATENCY = 2,
+SDRAM_PRECHARGE_LATENCY = 2
+)
+(
+    input wire clk,
+    output wire ntrap,
+    output wire [2:0] leds,
+    output wire tx,
+    input wire rx,
+    output wire sdram_clk,
+    output wire sdram_cke,
+    output wire [12:0] sdram_address,
+    output wire [1:0] sdram_ba,
+    output wire sdram_ncs,
+    output wire sdram_ras,
+    output wire sdram_cas,
+    output wire sdram_nwe,
+    inout wire [15:0] sdram_data,
+    output wire [1:0] sdram_dqm
+);
+    wire [15:0] sdram_data_out;
+    wire sdram_data_noe;
+	 wire sdram_sel;
+	 wire clk_sdram;
+	 wire [4:0] leds37;
+	 wire [2:0] leds02;
+	 wire clk_main;
+	 //reg [1:0] counter;
+
+    assign sdram_data = sdram_data_noe ? 16'hz : sdram_data_out;
+	 
+	 assign clk_sdram = clk;//counter[0];
+	 assign clk_main = clk;//counter[0];
+	 
+	 assign leds = ~leds02;
+
+    main16 #(.RESET_BIT(RESET_BIT), .CLK_FREQUENCY(CLK_FREQUENCY), .UART_BAUD(UART_BAUD), .RAM_BITS(RAM_BITS),
+            .ROM_BITS(ROM_BITS), .SDRAM_ADDRESS_WIDTH(SDRAM_ADDRESS_WIDTH), .SDRAM_BANK_BITS(SDRAM_BANK_BITS),
+            .SDRAM_COLUMN_ADDRESS_WIDTH(SDRAM_COLUMN_ADDRESS_WIDTH),
+            .SDRAM_MODE_REGISTER_VALUE(SDRAM_MODE_REGISTER_VALUE), .SDRAM_AUTOREFRESH_LATENCY(SDRAM_AUTOREFRESH_LATENCY),
+            .SDRAM_CAS_LATENCY(SDRAM_CAS_LATENCY), .SDRAM_BANK_ACTIVATE_LATENCY(SDRAM_BANK_ACTIVATE_LATENCY), .SDRAM_PRECHARGE_LATENCY(SDRAM_PRECHARGE_LATENCY))
+         m(.clk(clk_main), .clk_sdram(clk_sdram), .ntrap(ntrap), .leds({leds37, leds02}), .tx(tx), .rx(rx), .sdram_clk(sdram_clk),
+            .sdram_address(sdram_address), .sdram_ba(sdram_ba), .sdram_data_noe(sdram_data_noe),
+            .sdram_ncs(sdram_ncs), .sdram_ras(sdram_ras), .sdram_cas(sdram_cas), .sdram_nwe(sdram_nwe), .sdram_data_in(sdram_data),
+            .sdram_data_out(sdram_data_out), .sdram_dqm(sdram_dqm), .sdram_cke(sdram_cke), .sdram_sel(sdram_sel));
+
+//    always @(posedge clk)
+//	     counter <= counter + 1;
+
+endmodule

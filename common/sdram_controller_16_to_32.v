@@ -10,7 +10,8 @@ AUTOREFRESH_LATENCY = 3,
 CAS_LATENCY = 2,
 BANK_ACTIVATE_LATENCY = 2,
 PRECHARGE_LATENCY = 2,
-CLK_FREQUENCY = 25000000
+CLK_FREQUENCY = 25000000,
+REFRESH_CYCLES_PER_64MS = 8192
 )
 (
     input wire clk,
@@ -37,8 +38,9 @@ CLK_FREQUENCY = 25000000
     output wire [1:0] sdram_dqm,
     output reg sdram_sel
 );
-    localparam ADDRESS_WIDTH = BANK_BITS+SDRAM_ADDRESS_WIDTH+SDRAM_COLUMN_ADDRESS_WIDTH;
-    localparam REFRESH_COUNTER_BITS = $clog2(CLK_FREQUENCY / 65536 / 2) - 1;
+    localparam REFRESH_CYCLES_PER_SECOND = REFRESH_CYCLES_PER_64MS * 16;
+    localparam ADDRESS_WIDTH = BANK_BITS+SDRAM_ADDRESS_WIDTH+SDRAM_COLUMN_ADDRESS_WIDTH-1;
+    localparam REFRESH_COUNTER_BITS = $clog2(CLK_FREQUENCY / REFRESH_CYCLES_PER_SECOND) - 1;
     localparam ADDRESS_TO_TEN = SDRAM_ADDRESS_WIDTH - 10;
     localparam [ADDRESS_TO_TEN-1:0] ADDRESS_ADD = 'h1;
 
@@ -121,9 +123,9 @@ CLK_FREQUENCY = 25000000
                     sdram_ras <= !req & !refresh;
                     sdram_cas <= !refresh;
                     sdram_nwe <= 1;
-                    sdram_address <= cpu_address[ADDRESS_WIDTH-BANK_BITS-2:SDRAM_COLUMN_ADDRESS_WIDTH-1];
-                    sdram_ba <= cpu_address[ADDRESS_WIDTH-2:ADDRESS_WIDTH-BANK_BITS-1];
-                    sdram_sel <= refresh ? refresh_sel : cpu_address[ADDRESS_WIDTH-1];
+                    sdram_address <= cpu_address[SDRAM_COLUMN_ADDRESS_WIDTH+SDRAM_ADDRESS_WIDTH-2:SDRAM_COLUMN_ADDRESS_WIDTH-1];
+                    sdram_ba <= cpu_address[ADDRESS_WIDTH-1:ADDRESS_WIDTH-BANK_BITS];
+                    sdram_sel <= refresh ? refresh_sel : cpu_address[ADDRESS_WIDTH];
                     if (refresh | req)
                         state <= STATE_NOP;
                     nop_counter <= refresh ? AUTOREFRESH_LATENCY - 1 : BANK_ACTIVATE_LATENCY - 1;
