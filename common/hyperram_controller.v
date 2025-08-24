@@ -1,6 +1,5 @@
 module hyperram_controller
 #(parameter
-LATENCY2X = 1,
 LATENCY = 6,
 MEMORY_BITS = 21 // 2Mx32
 )
@@ -20,6 +19,7 @@ MEMORY_BITS = 21 // 2Mx32
     output reg hyperram_ncs,
     input wire hyperram_rwds_in,
     output reg hyperram_rwds_out,
+    output reg hyperram_rwds_noe,
     output reg hyperram_data_noe,
     input wire [7:0] hyperram_data_in,
     output reg [7:0] hyperram_data_out
@@ -69,6 +69,7 @@ MEMORY_BITS = 21 // 2Mx32
         if (!nreset) begin
             hyperram_ncs <= 1;
             hyperram_data_noe <= 1;
+            hyperram_rwds_noe <= 1;
             cpu_ack <= 0;
             state <= STATE_IDLE;
         end
@@ -76,8 +77,8 @@ MEMORY_BITS = 21 // 2Mx32
             case (state)
                 STATE_IDLE: begin
                     hyperram_ncs <= !req;
+                    hyperram_rwds_noe <= 1;
                     hyperram_data_noe <= !req;
-                    hyperram_rwds_out <= LATENCY2X;
                     hyperram_data_out <= {is_read, 1'b0 /*memory space*/, 1'b1 /*linear burst*/, 1'b0, address[29:26]};
                     if (req)
                         state <= STATE_A39;
@@ -103,11 +104,10 @@ MEMORY_BITS = 21 // 2Mx32
                 STATE_A7: begin
                     hyperram_data_out <= {5'h0, address[1:0], 1'b0};
                     state <= STATE_NOP;
-                    nop_counter <= LATENCY * 2 * (LATENCY2X + 1) - 2;
+                    nop_counter <= hyperram_rwds_in ? LATENCY * 4 - 2 : LATENCY * 2 - 2;
                 end
                 STATE_NOP: begin
                     hyperram_data_noe <= is_read;
-                    hyperram_rwds_out <= 0;
                     if (nop_counter == 0)
                         state <= STATE_READWRITE;
                     else
@@ -115,6 +115,7 @@ MEMORY_BITS = 21 // 2Mx32
                     byte_counter <= 0;
                 end
                 STATE_READWRITE: begin
+                    hyperram_rwds_noe <= is_read;
                     hyperram_rwds_out <= cpu_nwr[byte_counter];
                     hyperram_data_out <= cpu_data_in_bytes[byte_counter];
                     if (!is_read || hyperram_rwds_in || byte_counter != 0) begin

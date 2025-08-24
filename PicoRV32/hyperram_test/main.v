@@ -10,12 +10,11 @@ ROM_BITS = 13,
 CLK_FREQUENCY = 25000000,
 UART_BAUD = 115200,
 HYPERRAM_LATENCY = 6,
-HYPERRAM_LATENCY2X = 1,
 HYPERRAM_MEMORY_BITS = 21
 )
 (
     input wire clk,
-    input wire clk_sdram,
+    input wire clk_hyperram,
     output wire ntrap,
     output reg [7:0] leds,
     output wire tx,
@@ -25,6 +24,7 @@ HYPERRAM_MEMORY_BITS = 21
     output wire hyperram_clk,
     input wire hyperram_rwds_in,
     output wire hyperram_rwds_out,
+    output wire hyperram_rwds_noe,
     output wire hyperram_data_noe,
     input wire [7:0] hyperram_data_in,
     output wire [7:0] hyperram_data_out
@@ -56,7 +56,7 @@ HYPERRAM_MEMORY_BITS = 21
 	wire [31:0] pcpi_rs2;
 	wire trace_valid;
 	wire [35:0] trace_data;
-    wire rom_selected, ram_selected, port_selected, uart_data_selected, uart_control_selected, sdram_selected;
+    wire rom_selected, ram_selected, port_selected, uart_data_selected, uart_control_selected, hyperram_selected;
     wire [RAM_BITS - 1:0] ram_address;
     wire [31-MEMORY_SELECTOR_START_BIT:0] memory_selector;
 
@@ -73,9 +73,9 @@ HYPERRAM_MEMORY_BITS = 21
     wire uart_ack;
     wire [7:0] uart_data_out;
 
-    wire [31:0] sdram_rdata;
-    wire sdram_req, sdram_ack;
-    wire [3:0] sdram_nwr;
+    wire [31:0] hyperram_rdata;
+    wire hyperram_req, hyperram_ack;
+    wire [3:0] hyperram_nwr;
 
     assign ntrap = ~trap;
 
@@ -88,7 +88,7 @@ HYPERRAM_MEMORY_BITS = 21
     assign port_selected = memory_selector == 3;
     assign uart_data_selected = memory_selector == 4;
     assign uart_control_selected = memory_selector == 5;
-    assign sdram_selected = memory_selector == 6;
+    assign hyperram_selected = memory_selector == 6;
 
     assign mem_rdata = rom_selected
         ? rom_rdata
@@ -96,19 +96,19 @@ HYPERRAM_MEMORY_BITS = 21
             ram_rdata
             : (uart_data_selected
                 ? {24'h0, uart_data_out}
-                : (sdram_selected
-                    ? sdram_rdata
+                : (hyperram_selected
+                    ? hyperram_rdata
                     : {30'h0, uart_rx_fifo_empty, uart_tx_fifo_full})));
     
     assign ram_address = mem_la_addr[RAM_BITS + 1:2];
 
     assign uart_req = uart_data_selected & mem_valid;
-    assign sdram_req = sdram_selected & mem_valid;
+    assign hyperram_req = hyperram_selected & mem_valid;
 
-    assign sdram_nwr[0] = !mem_wstrb[0];
-    assign sdram_nwr[1] = !mem_wstrb[1];
-    assign sdram_nwr[2] = !mem_wstrb[2];
-    assign sdram_nwr[3] = !mem_wstrb[3];
+    assign hyperram_nwr[0] = !mem_wstrb[0];
+    assign hyperram_nwr[1] = !mem_wstrb[1];
+    assign hyperram_nwr[2] = !mem_wstrb[2];
+    assign hyperram_nwr[3] = !mem_wstrb[3];
 
     initial begin
         $readmemh("asm/code.hex", rom);
@@ -164,10 +164,10 @@ HYPERRAM_MEMORY_BITS = 21
                 .full(uart_tx_fifo_full), .empty(uart_rx_fifo_empty), .ack(uart_ack));
 
 
-    hyperram_controller #(.LATENCY(HYPERRAM_LATENCY), .LATENCY2X(HYPERRAM_LATENCY2X), .MEMORY_BITS(HYPERRAM_MEMORY_BITS))
-                        controller(.nreset(nreset), .clk(clk_sdram), .cpu_address(mem_la_addr[HYPERRAM_MEMORY_BITS+1:2]), .cpu_data_in(mem_wdata), .cpu_data_out(sdram_rdata),
-                                    .cpu_req(sdram_req), .cpu_ack(sdram_ack), .cpu_nwr(sdram_nwr), .hyperram_ncs(hyperram_ncs), .hyperram_nreset(hyperram_nreset),
-                                    .hyperram_clk(hyperram_clk), .hyperram_rwds_in(hyperram_rwds_in), .hyperram_rwds_out(hyperram_rwds_out),
+    hyperram_controller #(.LATENCY(HYPERRAM_LATENCY), .MEMORY_BITS(HYPERRAM_MEMORY_BITS))
+                        controller(.nreset(nreset), .clk(clk_hyperram), .cpu_address(mem_la_addr[HYPERRAM_MEMORY_BITS+1:2]), .cpu_data_in(mem_wdata), .cpu_data_out(hyperram_rdata),
+                                    .cpu_req(hyperram_req), .cpu_ack(hyperram_ack), .cpu_nwr(hyperram_nwr), .hyperram_ncs(hyperram_ncs), .hyperram_nreset(hyperram_nreset),
+                                    .hyperram_clk(hyperram_clk), .hyperram_rwds_in(hyperram_rwds_in), .hyperram_rwds_out(hyperram_rwds_out), .hyperram_rwds_noe(hyperram_rwds_noe),
                                     .hyperram_data_in(hyperram_data_in), .hyperram_data_out(hyperram_data_out), .hyperram_data_noe(hyperram_data_noe));
 
     always @(posedge clk) begin
@@ -177,7 +177,7 @@ HYPERRAM_MEMORY_BITS = 21
     end
 
     always @(posedge clk) begin
-        mem_ready <= mem_valid & (rom_selected | ram_selected | port_selected | uart_control_selected | uart_ack | sdram_ack);
+        mem_ready <= mem_valid & (rom_selected | ram_selected | port_selected | uart_control_selected | uart_ack | hyperram_ack);
     end
 
     always @(posedge clk) begin

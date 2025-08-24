@@ -1,6 +1,7 @@
 module hyperram_emulator
 #(parameter
 LATENCY = 6,
+LATENCY2X = 1,
 MEMORY_BITS=21 // 2Mx32
 )
 (
@@ -23,7 +24,7 @@ MEMORY_BITS=21 // 2Mx32
     localparam STATE_WRITE     = 256;
 
     reg rwds_out;
-    reg data_noe;
+    reg data_noe, rwds_noe;
     reg [7:0] data_out;
 
     reg [8:0] state;
@@ -42,7 +43,7 @@ MEMORY_BITS=21 // 2Mx32
     assign dobled_clock = clk1 | clk2;
 
     assign data = data_noe ? 8'hz : data_out;
-    assign rwds = data_noe ? 1'bz : rwds_out;
+    assign rwds = ncs | rwds_noe ? 1'bz : rwds_out;
 
     always @(negedge clk) begin
         clk1 <= 1;
@@ -59,6 +60,8 @@ MEMORY_BITS=21 // 2Mx32
     always @(posedge dobled_clock) begin
         if (!nreset | ncs) begin
             data_noe <= 1;
+            rwds_out <= LATENCY2X;
+            rwds_noe <= 0;
             state <= STATE_A47;
         end
         else begin
@@ -67,7 +70,7 @@ MEMORY_BITS=21 // 2Mx32
                     data_noe <= 1;
                     is_read <= data[7];
                     address[31:28] <= data[3:0];
-                    nop_counter <= rwds ? LATENCY * 4 - 2 : LATENCY * 2 - 2;
+                    nop_counter <= data[7] ? LATENCY * (LATENCY2X + 1) * 2 : LATENCY * (LATENCY2X + 1) * 2 - 2;
                     state <= STATE_A39;
                 end
                 STATE_A39: begin
@@ -88,9 +91,11 @@ MEMORY_BITS=21 // 2Mx32
                     state <= STATE_NOP;
                 end
                 STATE_NOP: begin
+                    rwds_out <= 0;
                     if (nop_counter == 0) begin
                         state <= is_read ? STATE_READ : STATE_WRITE;
                         data_noe <= !is_read;
+                        rwds_noe <= !is_read;
                         rwds_out <= 0;
                     end
                     else
