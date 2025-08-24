@@ -46,6 +46,8 @@ MEMORY_BITS = 21 // 2Mx32
 
     wire [29:0] address;
 
+    reg start;
+
     assign address = {{EXTRA_BITS{1'b0}}, cpu_address};
 
     assign is_read = cpu_nwr == 4'b1111;
@@ -62,11 +64,15 @@ MEMORY_BITS = 21 // 2Mx32
     assign hyperram_nreset = nreset;
 
     always @(negedge clk) begin
-        hyperram_clk <= ~hyperram_clk;
+        if (!nreset | start)
+            hyperram_clk <= ~hyperram_clk;
+        else
+            hyperram_clk <= 0;
     end
 
     always @(posedge clk) begin
         if (!nreset) begin
+            start <= 0;
             hyperram_ncs <= 1;
             hyperram_data_noe <= 1;
             hyperram_rwds_noe <= 1;
@@ -76,6 +82,7 @@ MEMORY_BITS = 21 // 2Mx32
         else begin
             case (state)
                 STATE_IDLE: begin
+                    start <= req;
                     hyperram_ncs <= !req;
                     hyperram_rwds_noe <= 1;
                     hyperram_data_noe <= !req;
@@ -104,7 +111,7 @@ MEMORY_BITS = 21 // 2Mx32
                 STATE_A7: begin
                     hyperram_data_out <= {5'h0, address[1:0], 1'b0};
                     state <= STATE_NOP;
-                    nop_counter <= hyperram_rwds_in ? LATENCY * 4 - 2 : LATENCY * 2 - 2;
+                    nop_counter <= hyperram_rwds_in ? LATENCY * 4 - 3 : LATENCY * 2 - 3;
                 end
                 STATE_NOP: begin
                     hyperram_data_noe <= is_read;
@@ -123,6 +130,7 @@ MEMORY_BITS = 21 // 2Mx32
                         if (byte_counter == 3) begin
                             state <= STATE_IDLE;
                             cpu_ack <= 1;
+                            hyperram_ncs <= is_read;
                         end
                         byte_counter <= byte_counter + 1;
                     end

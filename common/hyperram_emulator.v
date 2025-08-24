@@ -57,7 +57,7 @@ MEMORY_BITS=21 // 2Mx32
         clk2 <= 0;
     end
 
-    always @(posedge dobled_clock) begin
+    always @(posedge dobled_clock or posedge ncs) begin
         if (!nreset | ncs) begin
             data_noe <= 1;
             rwds_out <= LATENCY2X;
@@ -70,7 +70,7 @@ MEMORY_BITS=21 // 2Mx32
                     data_noe <= 1;
                     is_read <= data[7];
                     address[31:28] <= data[3:0];
-                    nop_counter <= data[7] ? LATENCY * (LATENCY2X + 1) * 2 : LATENCY * (LATENCY2X + 1) * 2 - 2;
+                    nop_counter <= data[7] ? LATENCY * (LATENCY2X + 1) * 2 - 1 : LATENCY * (LATENCY2X + 1) * 2 - 3;
                     state <= STATE_A39;
                 end
                 STATE_A39: begin
