@@ -99,11 +99,13 @@ module qspi_rom_emulator
     end
 
     always @(negedge sck) begin
-        if (ncs)
-            address_rd <= address[MEMORY_BITS-1:0];
-        else if (state == STATE_DATA) begin
-            mem_rdata <= memory[address_rd];
-            address_rd <= address_rd + 1;
-        end
+        case (state)
+            STATE_DUMMY1: address_rd <= {address[MEMORY_BITS-2:0], 1'b0};
+            STATE_DATA: begin
+                mem_rdata <= memory[address_rd];
+                address_rd <= address_rd + 1;
+            end
+            default: begin end
+        endcase
     end
 endmodule

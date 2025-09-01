@@ -1,4 +1,4 @@
-#define LED_ADDRESS ((volatile int*)0xC0000000)
+#define LED_ADDRESS ((volatile int*)0x30000000)
 
 static int state = 1;
 
@@ -11,7 +11,7 @@ __attribute__((naked)) int main(void)
   int counter = 0;
   while (1)
   {
-    timer(270000);
+    timer(270);
     wfi();
     if (counter == 99)
     {

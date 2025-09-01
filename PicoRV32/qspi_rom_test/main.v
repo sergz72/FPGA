@@ -14,9 +14,9 @@ ROM_BITS = 13)
     output wire tx,
     input wire rx
 );
-    localparam RAM_START = 32'h80000000;
+    localparam RAM_START = 32'h20000000;
     localparam RAM_END = RAM_START + (4<<RAM_BITS);
-    localparam MEMORY_SELECTOR_START_BIT = 30;
+    localparam MEMORY_SELECTOR_START_BIT = 28;
 
     reg nreset = 0;
 
@@ -96,8 +96,8 @@ ROM_BITS = 13)
                .ENABLE_FAST_MUL(1),
                .ENABLE_DIV(1),
                .STACKADDR(RAM_END),
-               .PROGADDR_IRQ(32'h4000_0010),
-               .PROGADDR_RESET(32'h4000_0000),
+               .PROGADDR_IRQ(32'h1000_0010),
+               .PROGADDR_RESET(32'h1000_0000),
                .BARREL_SHIFTER(1),
                .ENABLE_IRQ_TIMER(1),
                .ENABLE_COUNTERS(0),
@@ -133,7 +133,7 @@ ROM_BITS = 13)
                 .trace_data(trace_data)
         );
 
-    qspi_rom_controller romc(.clk(clk), .nreset(nreset), .cpu_address(mem_la_addr[25:2]), .cpu_data(rom_rdata), .cpu_req(rom_req),
+    qspi_rom_controller romc(.clk(clk), .nreset(nreset), .cpu_address({mem_la_addr[23:2], 2'b00}), .cpu_data(rom_rdata), .cpu_req(rom_req),
                              .cpu_ack(rom_ack), .rom_sck(rom_sck), .rom_sio_out(rom_sio_out), .rom_sio_in(rom_sio), .rom_sio_oe0(rom_sio_oe0),
                              .rom_sio_oe123(rom_sio_oe123), .rom_ncs(rom_ncs));
     

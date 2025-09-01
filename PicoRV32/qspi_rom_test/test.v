@@ -15,7 +15,7 @@ module test;
         $dumpvars(0, test);
         $monitor("time=%t led=%d", $time, led);
         clk = 0;
-        #150000
+        #1500000
         $finish;
     end
 endmodule
