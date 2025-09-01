@@ -55,7 +55,7 @@ module qspi_rom_controller
 
     reg [SPI_DATA_WIDTH-1:0] data0, data1, data2, data3;
 
-    reg [3:0] nbits;
+    reg [2:0] nbits;
 
     reg next_ncs;
 

@@ -4,15 +4,16 @@ module main
 #(parameter
 RESET_BIT = 19,
 // 4k 32 bit words RAM
-RAM_BITS = 12,
-// 8k 32 bit words ROM
-ROM_BITS = 13)
+RAM_BITS = 12
+)
 (
     input wire clk,
+    input wire clk_rom_controller,
     output wire ntrap,
     output reg led,
-    output wire tx,
-    input wire rx
+    output wire rom_sck,
+    inout wire [3:0] rom_sio,
+    output wire rom_ncs
 );
     localparam RAM_START = 32'h20000000;
     localparam RAM_END = RAM_START + (4<<RAM_BITS);
@@ -54,10 +55,8 @@ ROM_BITS = 13)
 
     wire rom_ack, rom_req;
 
-    wire rom_sck;
     wire [3:0] rom_sio_out;
-    wire [3:0] rom_sio;
-    wire rom_sio_oe0, rom_sio_oe123, rom_ncs;
+    wire rom_sio_oe0, rom_sio_oe123;
 
     assign rom_sio[0] = rom_sio_oe0 ? rom_sio_out[0] : 1'bz;
     assign rom_sio[3:1] = rom_sio_oe123 ? rom_sio_out[3:1] : 3'bz;
@@ -133,12 +132,10 @@ ROM_BITS = 13)
                 .trace_data(trace_data)
         );
 
-    qspi_rom_controller romc(.clk(clk), .nreset(nreset), .cpu_address({mem_la_addr[23:2], 2'b00}), .cpu_data(rom_rdata), .cpu_req(rom_req),
+    qspi_rom_controller romc(.clk(clk_rom_controller), .nreset(nreset), .cpu_address({mem_la_addr[23:2], 2'b00}), .cpu_data(rom_rdata), .cpu_req(rom_req),
                              .cpu_ack(rom_ack), .rom_sck(rom_sck), .rom_sio_out(rom_sio_out), .rom_sio_in(rom_sio), .rom_sio_oe0(rom_sio_oe0),
                              .rom_sio_oe123(rom_sio_oe123), .rom_ncs(rom_ncs));
     
-    qspi_rom_emulator #(.MEMORY_BITS(ROM_BITS+3)) rom(.sck(rom_sck), .sio(rom_sio), .ncs(rom_ncs));
-
     always @(posedge clk) begin
         if (timer[RESET_BIT])
             nreset <= 1;
