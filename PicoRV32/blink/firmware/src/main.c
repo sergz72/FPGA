@@ -11,7 +11,7 @@ __attribute__((naked)) int main(void)
   int counter = 0;
   while (1)
   {
-    timer(270);
+    timer(270000);
     wfi();
     if (counter == 99)
     {

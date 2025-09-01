@@ -10,13 +10,11 @@ ROM_BITS = 13)
 (
     input wire clk,
     output wire ntrap,
-    output reg led,
-    output wire tx,
-    input wire rx
+    output reg led
 );
-    localparam RAM_START = 32'h80000000;
+    localparam RAM_START = 32'h20000000;
     localparam RAM_END = RAM_START + (4<<RAM_BITS);
-    localparam MEMORY_SELECTOR_START_BIT = 30;
+    localparam MEMORY_SELECTOR_START_BIT = 28;
 
     reg nreset = 0;
 
@@ -85,8 +83,8 @@ ROM_BITS = 13)
                .ENABLE_FAST_MUL(1),
                .ENABLE_DIV(1),
                .STACKADDR(RAM_END),
-               .PROGADDR_IRQ(32'h4000_0010),
-               .PROGADDR_RESET(32'h4000_0000),
+               .PROGADDR_IRQ(32'h1000_0010),
+               .PROGADDR_RESET(32'h1000_0000),
                .BARREL_SHIFTER(1),
                .ENABLE_IRQ_TIMER(1),
                .ENABLE_COUNTERS(0),
