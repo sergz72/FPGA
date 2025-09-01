@@ -2,15 +2,19 @@
 
 const string contentsLineStart = "Contents of section ";
 const string codeFileName = "code.hex";
+const string flashHexFileName = "flash.hex";
+const string flashBinFileName = "flash.bin";
 const string dataFileNamePrefix = "data";
 const string dataFileNameSuffix = ".hex";
 
 string? prevCode = null;
 string? prevLine = null;
 
-if (args.Length != 3)
+var generateFlash = args.Length == 4 && args[3] == "generate_flash";
+
+if (args.Length != 3 && (args.Length != 4 || !generateFlash))
 {
-    Console.WriteLine("Usage: DumpToHex data_split_size asm_dump_file data_dump_file");
+    Console.WriteLine("Usage: DumpToHex data_split_size asm_dump_file data_dump_file [generate_flash]");
     return;
 }
 
@@ -30,6 +34,9 @@ var codeLines = codeFileLines
     .Select(s => s!)
     .ToList();
 
+if (prevCode != null)
+    codeLines.Add(BuildCodeLine("last_line: 0000 last line")!);
+
 start = false;
 
 var roDataLines = dataFileLines
@@ -38,6 +45,11 @@ var roDataLines = dataFileLines
 
 codeLines.AddRange(roDataLines);
 File.WriteAllLines(codeFileName, codeLines);
+if (generateFlash)
+{
+    File.WriteAllLines(flashHexFileName, BuildFlashHexFile());
+    File.WriteAllBytes(flashBinFileName, BuildFlashBinFile());
+}
 
 start = false;
 
@@ -142,4 +154,42 @@ string? BuildCodeLine(string line)
         prevLine = line;
     }
     return (prevLine == null ? "" : "// " + prevLine + "\n") + code + " // " + parts[0].PadLeft(8) + " " + parts[2];
+}
+
+List<string> BuildFlashLines(string code)
+{
+    var chars = code.ToCharArray();
+    var list = new List<string>();
+    for (var i = chars.Length - 2; i >= 0; i -= 2)
+    {
+        list.Add(chars[i].ToString());
+        list.Add(chars[i+1].ToString());
+    }
+    return list;
+}
+
+List<byte> BuildFlashBytes(string code)
+{
+    var list = new List<byte>();
+    for (var i = code.Length - 2; i >= 0; i -= 2)
+        list.Add(Convert.ToByte(code.Substring(i, 2), 16));
+    return list;
+}
+
+IEnumerable<string> BuildFlashHexFile()
+{
+    var lines = codeLines
+        .Select(line => line.Split("//", 2))
+        .Where(parts => parts.Length != 0 && parts[0].Trim().Length != 0)
+        .SelectMany(parts => BuildFlashLines(parts[0].Trim()));
+    return lines;
+}
+
+byte[] BuildFlashBinFile()
+{
+    var bytes = codeLines
+        .Select(line => line.Split("//", 2))
+        .Where(parts => parts.Length != 0 && parts[0].Trim().Length != 0)
+        .SelectMany(parts => BuildFlashBytes(parts[0].Trim()));
+    return bytes.ToArray();
 }

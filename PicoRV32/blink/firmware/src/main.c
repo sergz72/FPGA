@@ -1,4 +1,4 @@
-#define LED_ADDRESS ((volatile int*)0xC0000000)
+#define LED_ADDRESS ((volatile int*)0x30000000)
 
 static int state = 1;
 

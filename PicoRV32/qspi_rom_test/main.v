@@ -4,13 +4,16 @@ module main
 #(parameter
 RESET_BIT = 19,
 // 4k 32 bit words RAM
-RAM_BITS = 12,
-// 8k 32 bit words ROM
-ROM_BITS = 13)
+RAM_BITS = 12
+)
 (
     input wire clk,
+    input wire clk_rom_controller,
     output wire ntrap,
-    output reg led
+    output reg led,
+    output wire rom_sck,
+    inout wire [3:0] rom_sio,
+    output wire rom_ncs
 );
     localparam RAM_START = 32'h20000000;
     localparam RAM_END = RAM_START + (4<<RAM_BITS);
@@ -22,7 +25,8 @@ ROM_BITS = 13)
 
     wire [31:0] irq, eoi;
     wire [31:0] mem_rdata;
-    reg [31:0] rom_rdata, ram_rdata;
+    reg [31:0] ram_rdata;
+    wire [31:0] rom_rdata;
     wire mem_valid, mem_instr;
 	wire mem_la_read;
 	wire mem_la_write;
@@ -44,11 +48,18 @@ ROM_BITS = 13)
 
     reg[RESET_BIT:0] timer = 0;
 
-    reg [31:0] rom [0:(1<<ROM_BITS)-1];
     reg [7:0] ram1 [0:(1<<RAM_BITS)-1];
     reg [7:0] ram2 [0:(1<<RAM_BITS)-1];
     reg [7:0] ram3 [0:(1<<RAM_BITS)-1];
     reg [7:0] ram4 [0:(1<<RAM_BITS)-1];
+
+    wire rom_ack, rom_req;
+
+    wire [3:0] rom_sio_out;
+    wire rom_sio_oe0, rom_sio_oe123;
+
+    assign rom_sio[0] = rom_sio_oe0 ? rom_sio_out[0] : 1'bz;
+    assign rom_sio[3:1] = rom_sio_oe123 ? rom_sio_out[3:1] : 3'bz;
 
     assign ntrap = ~trap;
 
@@ -64,6 +75,8 @@ ROM_BITS = 13)
     
     assign ram_address = mem_la_addr[RAM_BITS + 1:2];
 
+    assign rom_req = rom_selected & mem_valid;
+
     function [31:0] mem_rdata_f(input [31-MEMORY_SELECTOR_START_BIT:0] source);
         case (source)
             1: mem_rdata_f = rom_rdata;
@@ -72,7 +85,6 @@ ROM_BITS = 13)
     endfunction
 
     initial begin
-        $readmemh("asm/code.hex", rom);
         $readmemh("asm/data1.hex", ram1);
         $readmemh("asm/data2.hex", ram2);
         $readmemh("asm/data3.hex", ram3);
@@ -120,6 +132,10 @@ ROM_BITS = 13)
                 .trace_data(trace_data)
         );
 
+    qspi_rom_controller romc(.clk(clk_rom_controller), .nreset(nreset), .cpu_address({mem_la_addr[23:2], 2'b00}), .cpu_data(rom_rdata), .cpu_req(rom_req),
+                             .cpu_ack(rom_ack), .rom_sck(rom_sck), .rom_sio_out(rom_sio_out), .rom_sio_in(rom_sio), .rom_sio_oe0(rom_sio_oe0),
+                             .rom_sio_oe123(rom_sio_oe123), .rom_ncs(rom_ncs));
+    
     always @(posedge clk) begin
         if (timer[RESET_BIT])
             nreset <= 1;
@@ -127,12 +143,7 @@ ROM_BITS = 13)
     end
 
     always @(posedge clk) begin
-        mem_ready <= mem_valid & (rom_selected | ram_selected | port_selected);
-    end
-
-    always @(posedge clk) begin
-        if (mem_valid & rom_selected)
-            rom_rdata <= rom[mem_la_addr[ROM_BITS + 1:2]];
+        mem_ready <= mem_valid & (rom_ack | ram_selected | port_selected);
     end
 
     always @(posedge clk) begin
