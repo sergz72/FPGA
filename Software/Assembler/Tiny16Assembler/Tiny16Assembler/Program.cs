@@ -67,6 +67,7 @@ else
         "v2" => new Tiny16V2Compiler(sources, outputFormat, noDiv32, noRem32, noMul, noDiv16, noRem16),
         "v3" => new Tiny16V3Compiler(sources, outputFormat),
         "v6" => new Tiny16V6Compiler(sources, outputFormat),
+        "v7" => new Tiny16V7Compiler(sources, outputFormat),
         _ => throw new Exception($"Unknown architecture {arch}")
     };
     try

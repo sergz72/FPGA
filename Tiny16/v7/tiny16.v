@@ -12,7 +12,7 @@ module tiny16
     output wire [15:0] address,
     input wire [15:0] data_in,
     output wire [15:0] data_out,
-    output reg mem_valid,
+    output wire mem_valid,
     output wire nwr,
     input wire mem_ready,
     input wire interrupt,
@@ -25,28 +25,28 @@ module tiny16
 
     localparam STAGE_WIDTH = 3;
 
-    localparam ALU_OP_ADC  = 1;
-    localparam ALU_OP_ADD  = 2;
-    localparam ALU_OP_SBC  = 3;
-    localparam ALU_OP_SUB  = 4;
-    localparam ALU_OP_CMP  = 5;
-    localparam ALU_OP_AND  = 6;
-    localparam ALU_OP_TEST = 7;
-    localparam ALU_OP_OR   = 8;
-    localparam ALU_OP_XOR  = 9;
-    localparam ALU_OP_SHL  = 10;
-    localparam ALU_OP_SHR  = 11;
-    localparam ALU_OP_ROL  = 12;
-    localparam ALU_OP_ROR  = 13;
-    localparam ALU_OP_MOV  = 14;
-    localparam ALU_OP_CLR  = 15;
-    localparam ALU_OP_SET  = 16;
-    localparam ALU_OP_INC  = 17;
-    localparam ALU_OP_DEC  = 18;
-    localparam ALU_OP_NOT  = 19;
-    localparam ALU_OP_NEG  = 20;
+    localparam ALU_OP_CLR  = 0;
+    localparam ALU_OP_SET  = 1;
+    localparam ALU_OP_INC  = 2;
+    localparam ALU_OP_DEC  = 3;
+    localparam ALU_OP_NOT  = 4;
+    localparam ALU_OP_NEG  = 5;
+    localparam ALU_OP_SHL  = 6;
+    localparam ALU_OP_SHR  = 7;
+    localparam ALU_OP_ROL  = 8;
+    localparam ALU_OP_ROR  = 9;
 
-    localparam NOP = 0;
+    localparam ALU_OP_MOV  = 16;
+    localparam ALU_OP_ADC  = 17;
+    localparam ALU_OP_ADD  = 18;
+    localparam ALU_OP_SBC  = 19;
+    localparam ALU_OP_SUB  = 20;
+    localparam ALU_OP_AND  = 21;
+    localparam ALU_OP_OR   = 22;
+    localparam ALU_OP_XOR  = 23;
+
+    localparam ALU_OP_CMP  = 30;
+    localparam ALU_OP_TEST = 31;
 
     localparam SRC_ADDR_SOURCE_NEXT = 1;
     localparam SRC_ADDR_SOURCE_SAVED = 2;
@@ -95,9 +95,11 @@ module tiny16
 
     wire stage_reset_, hlt_, wfi_, registers_wr, error_;
     wire [1:0] src_addr_source, pc_source, registers_wr_source;
-    wire [4:0] alu_op;
 
-    wire mem_valid_, imm8, imm16;
+    wire [4:0] alu_op;
+    wire imm8, imm16, is_alu_op;
+
+    wire mem_valid_;
 
     initial begin
         $readmemh("microcode.hex", microcode);
@@ -119,19 +121,22 @@ module tiny16
 
     assign op12 = {op1, op2};
 
+    assign alu_op = current_instruction[4:0];
+    assign imm8 = current_instruction[5];
+    assign imm16 = current_instruction[6];
+    assign is_alu_op = current_instruction[7];
+
     assign stage_reset_ = current_microcode[0];
     assign error_ = current_microcode[1];
     assign hlt_ = current_microcode[2];
     assign wfi_ = current_microcode[3];
     assign src_addr_source = current_microcode[5:4];
     assign pc_source = current_microcode[7:6];
-    assign alu_op = current_microcode[12:8];
-    assign registers_wr = current_microcode[13];
-    assign registers_wr_source = current_microcode[15:14];
-    assign ram_wr = current_microcode[16];
-    assign mem_valid_ = current_microcode[17];
-    assign imm8 = current_microcode[18];
-    assign imm16 = current_microcode[19];
+    assign registers_wr = current_microcode[8];
+    assign registers_wr_source = current_microcode[10:9];
+    assign ram_wr = current_microcode[11];
+    assign mem_valid = current_microcode[12];
+    assign nwr = current_microcode[13];
 
     assign alu_src = imm8 ? {{8{op1[7]}}, op1} : imm16 ? op12 : registers_data2;
 
@@ -141,7 +146,7 @@ module tiny16
             start <= 0;
             interrupt_request <= 0;
         end
-        else begin
+        else if (!mem_valid | mem_ready) begin
             stage <= stage_reset | stage_reset_ ? 0 : stage + 1;
             if (stage == 7)
                 start <= 1;
@@ -178,14 +183,13 @@ module tiny16
             error <= 0;
             hlt <= 0;
             stage_reset <= 0;
-            mem_valid <= 0;
             pc <= 0;
             src_addr <= 0;
-            current_instruction <= NOP;
+            current_instruction <= 0;
         end
         else if (go) begin
             if (stage == 0) begin
-                stage_reset <= (mem_valid & !mem_ready) | (wfi & !interrupt_request) | interrupt_enter;
+                stage_reset <= (wfi & !interrupt_request) | interrupt_enter;
                 if (interrupt_request)
                     wfi <= 0;
                 if (interrupt_enter) begin
@@ -198,7 +202,6 @@ module tiny16
                 if (mem_ready)
                     mem_valid <= 0;
             end
-            mem_valid <= mem_valid_;
             hlt <= hlt_;
             wfi <= wfi_;
             error <= error_;
@@ -219,16 +222,28 @@ module tiny16
                 REGISTERS_WR_SOURCE_SRC: registers_wr_addr <= src[6:0];
                 default: registers_wr_addr <= 0;
             endcase
-            case (alu_op)
-                ALU_OP_MOV: acc <= alu_src;
-                ALU_OP_CLR: acc <= 0;
-                ALU_OP_SET: acc <= 16'hFFFF;
-                ALU_OP_INC: acc <= registers_data + 1;
-                ALU_OP_DEC: acc <= registers_data - 1;
-                ALU_OP_NOT: acc <= ~registers_data;
-                ALU_OP_NEG: acc <= -registers_data;
-                default: begin end
-            endcase
+            if (is_alu_op) begin
+                case (alu_op)
+                    ALU_OP_MOV: acc <= alu_src;
+                    ALU_OP_ADD, ALU_OP_ADC: {acc, c} <= registers_data + alu_src + (alu_op == ALU_OP_ADD ? adc ? c : 0);
+                    ALU_OP_SUB, ALU_OP_SBC, ALU_OP_CMP: {acc, c} <= registers_data - alu_src - (alu_op == ALU_OP_SBC ? c : 0);
+                    ALU_OP_AND, ALU_OP_TEST: acc <= registers_data & alu_src;
+                    ALU_OP_OR: acc <= registers_data | alu_src;
+                    ALU_OP_XOR: acc <= registers_data ^ alu_src;
+
+                    ALU_OP_CLR: acc <= 0;
+                    ALU_OP_SET: acc <= 16'hFFFF;
+                    ALU_OP_INC: acc <= registers_data + 1;
+                    ALU_OP_DEC: acc <= registers_data - 1;
+                    ALU_OP_NOT: acc <= ~registers_data;
+                    ALU_OP_NEG: acc <= -registers_data;
+                    ALU_OP_SHL: {c, acc} <= registers_data << 1;
+                    ALU_OP_SHR: {acc, c} <= registers_data >> 1;
+                    ALU_OP_ROL: {c, acc} <= {registers_data, c} << 1;
+                    ALU_OP_ROR: {acc, c} <= {c, registers_data} >> 1;
+                    default: begin end
+                endcase
+            end
         end
     end
 

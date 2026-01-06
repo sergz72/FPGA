@@ -8,9 +8,9 @@ public abstract class Instruction(string line, string file, int lineNo)
     public readonly string File = file;
     public readonly int LineNo = lineNo;
     
-    public string? RequiredLabel { get; init; }
+    public string? RequiredLabel { get; protected init; }
 
-    public uint Size { get; set; } = 1;
+    public uint Size { get; protected set; } = 1;
     
     public virtual void UpdateSize(uint labelAddress, uint pc) {}
     
