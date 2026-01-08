@@ -6,7 +6,7 @@ namespace Tiny16Assembler;
 internal sealed class Tiny16V7Compiler : GenericCompiler
 {
     internal Tiny16V7Compiler(List<string> sources, OutputFormat outputFormat) :
-        base(sources, outputFormat, Creators, new GenericParser(), 1, 2, 2)
+        base(sources, outputFormat, Creators, new GenericParser(), 2, 4, 4)
     {
         InstructionCreator.MaxRegNo = 127;
     }
@@ -34,6 +34,8 @@ internal sealed class Tiny16V7Compiler : GenericCompiler
         {"ser", new OneRegisterInstructionCreator(InstructionCodes.Set|InstructionCodes.AluOp)},
         {"inc", new OneRegisterInstructionCreator(InstructionCodes.Inc|InstructionCodes.AluOp)},
         {"dec", new OneRegisterInstructionCreator(InstructionCodes.Dec|InstructionCodes.AluOp)},
+        {"not", new OneRegisterInstructionCreator(InstructionCodes.Not|InstructionCodes.AluOp)},
+        {"neg", new OneRegisterInstructionCreator(InstructionCodes.Neg|InstructionCodes.AluOp)},
         {"shr", new OneRegisterInstructionCreator(InstructionCodes.Shr|InstructionCodes.AluOp)},
         {"shl", new OneRegisterInstructionCreator(InstructionCodes.Shl|InstructionCodes.AluOp)},
         {"ror", new OneRegisterInstructionCreator(InstructionCodes.Ror|InstructionCodes.AluOp)},
@@ -61,5 +63,10 @@ internal sealed class Tiny16V7Compiler : GenericCompiler
 
         {"in", new InInstructionCreator()},
         {"out", new OutInstructionCreator()},
+        
+        {"sb", new StoreInstructionCreator(InstructionCodes.Sb)},
+        {"sw", new StoreInstructionCreator(InstructionCodes.Sw)},
+        {"lb", new LoadInstructionCreator(InstructionCodes.Lb)},
+        {"lw", new LoadInstructionCreator(InstructionCodes.Lw)},
     };
 }
