@@ -18,12 +18,14 @@ SRC_ADDR_SOURCE = allocate_bit(3)
 SRC_ADDR_SOURCE_NEXT = SRC_ADDR_SOURCE
 SRC_ADDR_SOURCE_SAVED = 2 * SRC_ADDR_SOURCE
 SRC_ADDR_SOURCE_IMMEDIATE = 3 * SRC_ADDR_SOURCE
-SRC_ADDR_SOURCE_REGISTER = 4 * SRC_ADDR_SOURCE
+SRC_ADDR_SOURCE_BR = 4 * SRC_ADDR_SOURCE
+SRC_ADDR_SOURCE_REGISTER = 5 * SRC_ADDR_SOURCE
 
 PC_ADDR_SOURCE = allocate_bit(3)
 PC_SOURCE_NEXT = PC_ADDR_SOURCE
 PC_SOURCE_SAVED = 2 * PC_ADDR_SOURCE
 PC_SOURCE_IMMEDIATE = 3 * PC_ADDR_SOURCE
+PC_SOURCE_BR = 4 * PC_ADDR_SOURCE
 
 REGISTERS_WR = allocate_bit(1)
 REGISTERS_WR_SOURCE = allocate_bit(2)
@@ -98,7 +100,8 @@ def generate_br(opcode):
     start = opcode * OPCODE_SIZE
     for i in range(0, 4):
         microcode[start] = 0
-        microcode[start+1] = ERROR
+        microcode[start+1] = NEXT
+        microcode[start+2] = PC_SOURCE_BR | SRC_ADDR_SOURCE_BR | STAGE_RESET
         start += 8
 
 def generate_call(opcode):
@@ -171,7 +174,7 @@ def generate_reti(opcode):
 
 def print_microcode():
     for i in range(0, MICROCODE_SIZE):
-        print("%07X" % microcode[i])
+        print("%07X // %03X.%d" % (microcode[i], i >> 3, i % 8))
 
 # one byte instructions
 generate_halt(0)

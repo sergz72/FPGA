@@ -52,11 +52,13 @@ module tiny16
     localparam SRC_ADDR_SOURCE_NEXT = 1;
     localparam SRC_ADDR_SOURCE_SAVED = 2;
     localparam SRC_ADDR_SOURCE_IMMEDIATE = 3;
-    localparam SRC_ADDR_SOURCE_REGISTER = 4;
+    localparam SRC_ADDR_SOURCE_BR = 4;
+    localparam SRC_ADDR_SOURCE_REGISTER = 5;
 
     localparam PC_SOURCE_NEXT = 1;
     localparam PC_SOURCE_SAVED = 2;
     localparam PC_SOURCE_IMMEDIATE = 3;
+    localparam PC_SOURCE_BR = 4;
 
     localparam REGISTERS_WR_SOURCE_OP1 = 1;
     localparam REGISTERS_WR_SOURCE_SRC = 2;
@@ -80,6 +82,7 @@ module tiny16
     reg [7:0] src, dst;
     reg [RAM_BITS - 1:0] src_addr, dst_addr;
     wire ram_wr;
+    wire [15:0] br_pc;
 
     reg c;
     wire z, n;
@@ -139,6 +142,8 @@ module tiny16
     assign nwr = current_microcode[15];
     assign io = current_microcode[16];
     assign alu_clk = current_microcode[17];
+
+    assign br_pc = condition_pass ? pc + {{8{src[7]}}, src} : pc + 1;
 
     assign alu_src = imm8 ? {{8{op1[7]}}, op1} : imm16 ? op12 : registers_data2;
 
@@ -246,6 +251,7 @@ module tiny16
                 SRC_ADDR_SOURCE_NEXT: src_addr <= src_addr + 1;
                 SRC_ADDR_SOURCE_SAVED: src_addr <= saved_pc[RAM_BITS-1:0];
                 SRC_ADDR_SOURCE_IMMEDIATE: src_addr <= op12[RAM_BITS-1:0];
+                SRC_ADDR_SOURCE_BR: src_addr <= br_pc[RAM_BITS-1:0];
                 SRC_ADDR_SOURCE_REGISTER: src_addr <= registers_data[RAM_BITS-1:0];
                 default: begin end
             endcase
@@ -253,6 +259,7 @@ module tiny16
                 PC_SOURCE_NEXT: pc <= pc + 1;
                 PC_SOURCE_SAVED: pc <= saved_pc;
                 PC_SOURCE_IMMEDIATE: pc <= op12;
+                PC_SOURCE_BR: pc <= br_pc;
                 default: begin end
             endcase
         end
