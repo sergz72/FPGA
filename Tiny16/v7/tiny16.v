@@ -64,7 +64,7 @@ module tiny16
     localparam REGISTERS_WR_SOURCE_SRC = 2;
     
     reg [STAGE_WIDTH - 1:0] stage;
-    reg stage_reset;
+    wire stage_reset;
     reg start;
 
     reg [MICROCODE_LENGTH-1:0] microcode [0:MICROCODE_SIZE-1];
@@ -147,6 +147,8 @@ module tiny16
 
     assign alu_src = imm8 ? {{8{op1[7]}}, op1} : imm16 ? op12 : registers_data2;
 
+    assign stage_reset = (stage == 0) && (wfi & !interrupt_request) || interrupt_enter;
+
     always @(posedge clk) begin
         if (!nreset) begin
             stage <= 0;
@@ -226,14 +228,12 @@ module tiny16
             hlt <= 0;
             wfi <= 0;
             in_interrupt <= 0;
-            stage_reset <= 0;
             pc <= 0;
             src_addr <= 0;
             current_instruction <= 0;
         end
         else if (go) begin
             if (stage == 0) begin
-                stage_reset <= (wfi & !interrupt_request) | interrupt_enter;
                 if (interrupt_request)
                     wfi <= 0;
                 if (interrupt_enter) begin
@@ -244,8 +244,9 @@ module tiny16
                 end
                 current_instruction <= src;
             end
+            else
+                wfi <= wfi_;
             hlt <= hlt_;
-            wfi <= wfi_;
             error <= error_;
             case (src_addr_source)
                 SRC_ADDR_SOURCE_NEXT: src_addr <= src_addr + 1;

@@ -79,9 +79,9 @@ def generate_alu2ri8(opcode):
         microcode[start] = 0
         microcode[start+1] = NEXT
         microcode[start+2] = NEXT
-        microcode[start+4] = NEXT | STAGE_RESET | ALU_CLK
+        microcode[start+3] = NEXT | STAGE_RESET | ALU_CLK
         if (i != 3):
-            microcode[start+4] |= REGISTERS_WR | REGISTERS_WR_SOURCE_SRC
+            microcode[start+3] |= REGISTERS_WR | REGISTERS_WR_SOURCE_SRC
         start += 8
 
 def generate_alu2ri16(opcode):
@@ -120,9 +120,9 @@ def generate_in(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
     microcode[start+1] = NEXT | NWR
-    microcode[start+3] = NEXT | IO | NWR
-    microcode[start+4] = NEXT | MEM_VALID | NWR
-    microcode[start+5] = STAGE_RESET | NWR | REGISTERS_WR | REGISTERS_WR_SOURCE_SRC | ALU_CLK
+    microcode[start+2] = NEXT | IO | NWR
+    microcode[start+3] = NEXT | MEM_VALID | NWR
+    microcode[start+4] = STAGE_RESET | NWR | REGISTERS_WR | REGISTERS_WR_SOURCE_SRC | ALU_CLK
 
 def generate_out(opcode):
     start = opcode * OPCODE_SIZE
@@ -183,34 +183,37 @@ generate_ret(2)
 generate_reti(3)
 
 # load/store instructions - 3 byte
-generate_lb(18)
-generate_lw(19)
-generate_sb(20)
-generate_sw(21)
+generate_lb(0x12)
+generate_lw(0x13)
+generate_sb(0x14)
+generate_sw(0x15)
 
 # in/out instructions - 3 byte
-generate_in(22)
-generate_out(23)
-
+generate_in(0x16)
+generate_out(0x17)
 # rcall/rjmp instructions - 2 byte
-generate_rcall(24)
-generate_rjmp(25)
+generate_rcall(0x18)
+generate_rjmp(0x19)
 
 # call/jmp instructions - 3 byte
-generate_call(26)
-generate_jmp(27)
+generate_call(0x1A)
+generate_jmp(0x1B)
 
 # branch instructions - 2 byte
-generate_br(28)
+generate_br(0x1C)
 
 # alu two byte instructions
-generate_alu1(32)
+# 1000XX
+generate_alu1(0x20)
 
 # alu instructions - 3 byte
-generate_alu2rr(36)
-generate_alu2ri8(44)
+# 1001XX
+generate_alu2rr(0x24)
+# 1011XX
+generate_alu2ri8(0x2C)
 
 # alu instructions - 4 byte
-generate_alu2ri16(52)
+# 1101XX
+generate_alu2ri16(0x34)
 
 print_microcode()
