@@ -170,7 +170,7 @@ def generate_ret(opcode):
 def generate_reti(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
-    microcode[start+1] = ERROR
+    microcode[start+1] = PC_SOURCE_SAVED | SRC_ADDR_SOURCE_SAVED | STAGE_RESET
 
 def print_microcode():
     for i in range(0, MICROCODE_SIZE):

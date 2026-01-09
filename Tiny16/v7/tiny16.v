@@ -95,7 +95,7 @@ module tiny16
 
     reg [15:0] acc;
     reg [7:0] op1, op2;
-    wire [15:0] op12;
+    wire [15:0] op12, srcop1;
     wire [15:0] alu_src;
 
     wire stage_reset_, hlt_, wfi_, registers_wr, error_, io;
@@ -123,6 +123,7 @@ module tiny16
 
     assign go = start & !hlt & !error;
 
+    assign srcop1 = {src, op1};
     assign op12 = {op1, op2};
 
     assign alu_op = current_instruction[4:0];
@@ -147,7 +148,7 @@ module tiny16
 
     assign alu_src = imm8 ? {{8{op1[7]}}, op1} : imm16 ? op12 : registers_data2;
 
-    assign stage_reset = (stage == 0) && (wfi & !interrupt_request) || interrupt_enter;
+    assign stage_reset = ((stage == 0) && ((wfi & !interrupt_request) | interrupt_enter)) || stage_reset_;
 
     always @(posedge clk) begin
         if (!nreset) begin
@@ -156,10 +157,10 @@ module tiny16
             interrupt_request <= 0;
         end
         else if (!mem_valid | mem_ready) begin
-            stage <= stage_reset | stage_reset_ ? 0 : stage + 1;
+            stage <= stage_reset ? 0 : stage + 1;
             if (stage == 7)
                 start <= 1;
-            if (stage_reset || stage_reset_ || stage == 7)
+            if (stage_reset || stage == 7)
                 interrupt_request <= interrupt;
         end
     end
@@ -248,10 +249,12 @@ module tiny16
                 wfi <= wfi_;
             hlt <= hlt_;
             error <= error_;
+            if (pc_source == PC_SOURCE_SAVED)
+                in_interrupt <= 0;
             case (src_addr_source)
                 SRC_ADDR_SOURCE_NEXT: src_addr <= src_addr + 1;
                 SRC_ADDR_SOURCE_SAVED: src_addr <= saved_pc[RAM_BITS-1:0];
-                SRC_ADDR_SOURCE_IMMEDIATE: src_addr <= op12[RAM_BITS-1:0];
+                SRC_ADDR_SOURCE_IMMEDIATE: src_addr <= srcop1[RAM_BITS-1:0];
                 SRC_ADDR_SOURCE_BR: src_addr <= br_pc[RAM_BITS-1:0];
                 SRC_ADDR_SOURCE_REGISTER: src_addr <= registers_data[RAM_BITS-1:0];
                 default: begin end
@@ -259,7 +262,7 @@ module tiny16
             case (pc_source)
                 PC_SOURCE_NEXT: pc <= pc + 1;
                 PC_SOURCE_SAVED: pc <= saved_pc;
-                PC_SOURCE_IMMEDIATE: pc <= op12;
+                PC_SOURCE_IMMEDIATE: pc <= srcop1;
                 PC_SOURCE_BR: pc <= br_pc;
                 default: begin end
             endcase
