@@ -62,6 +62,7 @@ module tiny16
 
     localparam REGISTERS_WR_SOURCE_OP1 = 1;
     localparam REGISTERS_WR_SOURCE_SRC = 2;
+    localparam REGISTERS_WR_SOURCE_OP2 = 3;
     
     reg [STAGE_WIDTH - 1:0] stage;
     wire stage_reset;
@@ -146,7 +147,7 @@ module tiny16
 
     assign br_pc = condition_pass ? pc + {{8{src[7]}}, src} : pc + 1;
 
-    assign alu_src = imm8 ? {{8{op1[7]}}, op1} : imm16 ? op12 : registers_data2;
+    assign alu_src = imm8 ? {{8{op1[7]}}, op1} : imm16 ? srcop1 : registers_data2;
 
     assign stage_reset = ((stage == 0) && ((wfi & !interrupt_request) | interrupt_enter)) || stage_reset_;
 
@@ -196,6 +197,7 @@ module tiny16
         case (registers_wr_source)
             REGISTERS_WR_SOURCE_OP1: registers_wr_addr <= op1[6:0];
             REGISTERS_WR_SOURCE_SRC: registers_wr_addr <= src[6:0];
+            REGISTERS_WR_SOURCE_OP2: registers_wr_addr <= op2[6:0];
             default: registers_wr_addr <= 0;
         endcase
         if (alu_clk) begin

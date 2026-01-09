@@ -31,6 +31,7 @@ REGISTERS_WR = allocate_bit(1)
 REGISTERS_WR_SOURCE = allocate_bit(2)
 REGISTERS_WR_SOURCE_OP1 = REGISTERS_WR_SOURCE
 REGISTERS_WR_SOURCE_SRC = 2 * REGISTERS_WR_SOURCE
+REGISTERS_WR_SOURCE_OP2 = 3 * REGISTERS_WR_SOURCE
 
 RAM_WR = allocate_bit(1)
 MEM_VALID = allocate_bit(1)
@@ -93,7 +94,7 @@ def generate_alu2ri16(opcode):
         microcode[start+3] = NEXT
         microcode[start+4] = NEXT | STAGE_RESET | ALU_CLK
         if (i != 3):
-            microcode[start+4] |= REGISTERS_WR | REGISTERS_WR_SOURCE_SRC
+            microcode[start+4] |= REGISTERS_WR | REGISTERS_WR_SOURCE_OP2
         start += 8
 
 def generate_br(opcode):
@@ -122,7 +123,7 @@ def generate_in(opcode):
     microcode[start+1] = NEXT | NWR
     microcode[start+2] = NEXT | IO | NWR
     microcode[start+3] = NEXT | MEM_VALID | NWR
-    microcode[start+4] = STAGE_RESET | NWR | REGISTERS_WR | REGISTERS_WR_SOURCE_SRC | ALU_CLK
+    microcode[start+4] = STAGE_RESET | NWR | REGISTERS_WR | REGISTERS_WR_SOURCE_OP2 | ALU_CLK
 
 def generate_out(opcode):
     start = opcode * OPCODE_SIZE
@@ -179,8 +180,12 @@ def print_microcode():
 # one byte instructions
 generate_halt(0)
 generate_wait(1)
-generate_ret(2)
-generate_reti(3)
+
+# in instruction - 3 byte
+generate_in(2)
+
+generate_ret(3)
+generate_reti(4)
 
 # load/store instructions - 3 byte
 generate_lb(0x12)
@@ -188,8 +193,7 @@ generate_lw(0x13)
 generate_sb(0x14)
 generate_sw(0x15)
 
-# in/out instructions - 3 byte
-generate_in(0x16)
+# out instruction - 3 byte
 generate_out(0x17)
 # rcall/rjmp instructions - 2 byte
 generate_rcall(0x18)

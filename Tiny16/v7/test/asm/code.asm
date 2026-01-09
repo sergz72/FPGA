@@ -22,5 +22,8 @@ ok4:
 	beq ok5
 	hlt
 ok5:
+	mov r2, $AA55
+	in r1, $55
+	out $77, r2
 	wfi
 	hlt
