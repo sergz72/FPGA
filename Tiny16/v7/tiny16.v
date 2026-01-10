@@ -74,7 +74,7 @@ module tiny16
 
     reg [15:0] registers [0:127];
     reg [15:0] registers_data, registers_data2;
-    reg [RAM_BITS - 1:0] pc, saved_pc;
+    reg [RAM_BITS - 1:0] pc, saved_pc, old_pc;
     reg [6:0] registers_wr_addr;
 
     wire go;
@@ -185,7 +185,7 @@ module tiny16
             REGISTERS_WR_DATA_SOURCE_DATA_IN: registers_wr_data_f = data_in;
             REGISTERS_WR_DATA_SOURCE_SRC8: registers_wr_data_f = src8_to_15;
             REGISTERS_WR_DATA_SOURCE_OP12: registers_wr_data_f = op12;
-            REGISTERS_WR_DATA_SOURCE_PC: registers_wr_data_f = {{16-RAM_BITS{1'b0}}, pc};
+            REGISTERS_WR_DATA_SOURCE_PC: registers_wr_data_f = {{16-RAM_BITS{1'b0}}, old_pc};
         endcase
     endfunction
         
@@ -204,8 +204,8 @@ module tiny16
 
     always @(posedge clk) begin
         if (io) begin
-            address <= op1;
-            data_out <= registers_data2;
+            address <= src;
+            data_out <= registers_data;
         end
         if (registers_wr_source_set)
             registers_wr_addr <= src[6:0];
@@ -277,6 +277,7 @@ module tiny16
                 PC_SOURCE_REGISTER: pc <= registers_data[RAM_BITS - 1:0];
                 default: begin end
             endcase
+            old_pc <= pc + 1;
         end
     end
 

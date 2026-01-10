@@ -114,9 +114,9 @@ def generate_jal(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
     microcode[start+1] = NEXT
-    microcode[start+2] = NEXT
+    microcode[start+2] = NEXT | REGISTERS_WR_SOURCE_SET
     microcode[start+3] = NEXT
-    microcode[start+4] = PC_SOURCE_IMMEDIATE | SRC_ADDR_SOURCE_IMMEDIATE | REGISTERS_WR | REGISTERS_WR_SOURCE_SET | REGISTERS_WR_DATA_SOURCE_PC | STAGE_RESET
+    microcode[start+4] = PC_SOURCE_IMMEDIATE | SRC_ADDR_SOURCE_IMMEDIATE | REGISTERS_WR | REGISTERS_WR_DATA_SOURCE_PC | STAGE_RESET
 
 def generate_jmp(opcode):
     start = opcode * OPCODE_SIZE
@@ -139,10 +139,9 @@ def generate_out(opcode):
     microcode[start] = 0
     microcode[start+1] = NEXT
     microcode[start+2] = NEXT
-    microcode[start+3] = NEXT
-    microcode[start+4] = IO
-    microcode[start+5] = MEM_VALID
-    microcode[start+6] = STAGE_RESET
+    microcode[start+3] = IO | NEXT
+    microcode[start+4] = MEM_VALID
+    microcode[start+5] = STAGE_RESET
 
 def generate_lb(opcode):
     start = opcode * OPCODE_SIZE
@@ -176,7 +175,9 @@ def generate_jalr(opcode):
 def generate_rjmp(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
-    microcode[start+1] = ERROR
+    microcode[start+1] = NEXT
+    microcode[start+2] = 0
+    microcode[start+3] = PC_SOURCE_REGISTER | SRC_ADDR_SOURCE_REGISTER | STAGE_RESET
 
 def generate_ret(opcode):
     start = opcode * OPCODE_SIZE
