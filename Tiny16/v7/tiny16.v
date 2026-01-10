@@ -21,8 +21,6 @@ module tiny16
     localparam MICROCODE_SIZE = 512;
     localparam MICROCODE_LENGTH = 24;
 
-    localparam SP = 127;
-
     localparam STAGE_WIDTH = 3;
 
     localparam ALU_OP_CLR  = 0;
@@ -35,7 +33,6 @@ module tiny16
     localparam ALU_OP_SHR  = 7;
     localparam ALU_OP_ROL  = 8;
     localparam ALU_OP_ROR  = 9;
-    localparam ALU_OP_IN  = 10;
 
     localparam ALU_OP_MOV  = 16;
     localparam ALU_OP_ADC  = 17;
@@ -59,10 +56,13 @@ module tiny16
     localparam PC_SOURCE_SAVED = 2;
     localparam PC_SOURCE_IMMEDIATE = 3;
     localparam PC_SOURCE_BR = 4;
+    localparam PC_SOURCE_REGISTER = 5;
 
-    localparam REGISTERS_WR_SOURCE_OP1 = 1;
-    localparam REGISTERS_WR_SOURCE_SRC = 2;
-    localparam REGISTERS_WR_SOURCE_OP2 = 3;
+    localparam REGISTERS_WR_DATA_SOURCE_ACC = 0;
+    localparam REGISTERS_WR_DATA_SOURCE_DATA_IN = 1;
+    localparam REGISTERS_WR_DATA_SOURCE_SRC8 = 2;
+    localparam REGISTERS_WR_DATA_SOURCE_OP12 = 3;
+    localparam REGISTERS_WR_DATA_SOURCE_PC = 4;
     
     reg [STAGE_WIDTH - 1:0] stage;
     wire stage_reset;
@@ -74,16 +74,17 @@ module tiny16
 
     reg [15:0] registers [0:127];
     reg [15:0] registers_data, registers_data2;
-    reg [15:0] pc, saved_pc, sp;
+    reg [RAM_BITS - 1:0] pc, saved_pc;
     reg [6:0] registers_wr_addr;
 
     wire go;
 
     reg [7:0] ram [0:(1<<RAM_BITS)-1];
     reg [7:0] src, dst;
+    reg[15:0] src8_to_15;
     reg [RAM_BITS - 1:0] src_addr, dst_addr;
     wire ram_wr;
-    wire [15:0] br_pc;
+    wire [RAM_BITS - 1:0] br_pc;
 
     reg c;
     wire z, n;
@@ -100,8 +101,8 @@ module tiny16
     wire [15:0] alu_src;
 
     wire stage_reset_, hlt_, wfi_, registers_wr, error_, io;
-    wire [2:0] src_addr_source, pc_source;
-    wire [1:0] registers_wr_source;
+    wire [2:0] src_addr_source, pc_source, registers_wr_data_source;
+    wire registers_wr_source_set;
 
     wire [4:0] alu_op;
     wire imm8, imm16, alu_clk;
@@ -138,14 +139,17 @@ module tiny16
     assign src_addr_source = current_microcode[6:4];
     assign pc_source = current_microcode[9:7];
     assign registers_wr = current_microcode[10];
-    assign registers_wr_source = current_microcode[12:11];
-    assign ram_wr = current_microcode[13];
-    assign mem_valid = current_microcode[14];
-    assign nwr = current_microcode[15];
-    assign io = current_microcode[16];
-    assign alu_clk = current_microcode[17];
+    assign registers_wr_source_set = current_microcode[11];
+    assign ram_wr = current_microcode[12];
+    assign mem_valid = current_microcode[13];
+    assign nwr = current_microcode[14];
+    assign io = current_microcode[15];
+    assign alu_clk = current_microcode[16];
+    assign registers_wr_data_source = current_microcode[19:17];
 
-    assign br_pc = condition_pass ? pc + {{8{src[7]}}, src} : pc + 1;
+    assign src8_to_15 = {{8{src[7]}}, src};
+
+    assign br_pc = condition_pass ? pc + src8_to_15[RAM_BITS - 1:0] : pc + 1;
 
     assign alu_src = imm8 ? {{8{op1[7]}}, op1} : imm16 ? srcop1 : registers_data2;
 
@@ -175,11 +179,20 @@ module tiny16
             src <= ram[src_addr];
     end
 
+    function [15:0] registers_wr_data_f(input [2:0] source);
+        case (source)
+            REGISTERS_WR_DATA_SOURCE_ACC: registers_wr_data_f = acc;
+            REGISTERS_WR_DATA_SOURCE_DATA_IN: registers_wr_data_f = data_in;
+            REGISTERS_WR_DATA_SOURCE_SRC8: registers_wr_data_f = src8_to_15;
+            REGISTERS_WR_DATA_SOURCE_OP12: registers_wr_data_f = op12;
+            REGISTERS_WR_DATA_SOURCE_PC: registers_wr_data_f = {{16-RAM_BITS{1'b0}}, pc};
+        endcase
+    endfunction
+        
     always @(negedge clk) begin
         if (registers_wr)
-            registers[registers_wr_addr] <= acc;
+            registers[registers_wr_addr] <= registers_wr_data_f(registers_wr_data_source);
         else begin
-            sp <= registers[SP];
             registers_data2 <= registers_data;
             registers_data <= registers[src[6:0]];
         end
@@ -191,15 +204,11 @@ module tiny16
 
     always @(posedge clk) begin
         if (io) begin
-            address <= src;
-            data_out <= registers_data;
+            address <= op1;
+            data_out <= registers_data2;
         end
-        case (registers_wr_source)
-            REGISTERS_WR_SOURCE_OP1: registers_wr_addr <= op1[6:0];
-            REGISTERS_WR_SOURCE_SRC: registers_wr_addr <= src[6:0];
-            REGISTERS_WR_SOURCE_OP2: registers_wr_addr <= op2[6:0];
-            default: registers_wr_addr <= 0;
-        endcase
+        if (registers_wr_source_set)
+            registers_wr_addr <= src[6:0];
         if (alu_clk) begin
             case (alu_op)
                 ALU_OP_MOV: acc <= alu_src;
@@ -219,7 +228,6 @@ module tiny16
                 ALU_OP_SHR: {acc, c} <= {registers_data, 1'b0} >> 1;
                 ALU_OP_ROL: {c, acc} <= {registers_data, c} << 1;
                 ALU_OP_ROR: {acc, c} <= {c, registers_data} >> 1;
-                ALU_OP_IN: acc <= data_in;
                 default: begin end
             endcase
         end
@@ -255,17 +263,18 @@ module tiny16
                 in_interrupt <= 0;
             case (src_addr_source)
                 SRC_ADDR_SOURCE_NEXT: src_addr <= src_addr + 1;
-                SRC_ADDR_SOURCE_SAVED: src_addr <= saved_pc[RAM_BITS-1:0];
-                SRC_ADDR_SOURCE_IMMEDIATE: src_addr <= srcop1[RAM_BITS-1:0];
-                SRC_ADDR_SOURCE_BR: src_addr <= br_pc[RAM_BITS-1:0];
-                SRC_ADDR_SOURCE_REGISTER: src_addr <= registers_data[RAM_BITS-1:0];
+                SRC_ADDR_SOURCE_SAVED: src_addr <= saved_pc;
+                SRC_ADDR_SOURCE_IMMEDIATE: src_addr <= srcop1[RAM_BITS - 1:0];
+                SRC_ADDR_SOURCE_BR: src_addr <= br_pc;
+                SRC_ADDR_SOURCE_REGISTER: src_addr <= registers_data[RAM_BITS - 1:0];
                 default: begin end
             endcase
             case (pc_source)
                 PC_SOURCE_NEXT: pc <= pc + 1;
                 PC_SOURCE_SAVED: pc <= saved_pc;
-                PC_SOURCE_IMMEDIATE: pc <= srcop1;
+                PC_SOURCE_IMMEDIATE: pc <= srcop1[RAM_BITS - 1:0];
                 PC_SOURCE_BR: pc <= br_pc;
+                PC_SOURCE_REGISTER: pc <= registers_data[RAM_BITS - 1:0];
                 default: begin end
             endcase
         end

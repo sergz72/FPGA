@@ -25,5 +25,9 @@ ok5:
 	mov r2, $AA55
 	in r1, $55
 	out $77, r2
+	jal r0, test_f
 	wfi
 	hlt
+
+test_f:
+	rjmp r0

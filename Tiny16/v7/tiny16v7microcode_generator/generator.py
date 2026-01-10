@@ -26,18 +26,23 @@ PC_SOURCE_NEXT = PC_ADDR_SOURCE
 PC_SOURCE_SAVED = 2 * PC_ADDR_SOURCE
 PC_SOURCE_IMMEDIATE = 3 * PC_ADDR_SOURCE
 PC_SOURCE_BR = 4 * PC_ADDR_SOURCE
+PC_SOURCE_REGISTER = 5 * PC_ADDR_SOURCE
 
 REGISTERS_WR = allocate_bit(1)
-REGISTERS_WR_SOURCE = allocate_bit(2)
-REGISTERS_WR_SOURCE_OP1 = REGISTERS_WR_SOURCE
-REGISTERS_WR_SOURCE_SRC = 2 * REGISTERS_WR_SOURCE
-REGISTERS_WR_SOURCE_OP2 = 3 * REGISTERS_WR_SOURCE
+REGISTERS_WR_SOURCE_SET = allocate_bit(1)
 
 RAM_WR = allocate_bit(1)
 MEM_VALID = allocate_bit(1)
 NWR = allocate_bit(1)
 IO = allocate_bit(1)
 ALU_CLK = allocate_bit(1)
+
+REGISTERS_WR_DATA_SOURCE = allocate_bit(3)
+REGISTERS_WR_DATA_SOURCE_ALU = 0
+REGISTERS_WR_DATA_SOURCE_DATA_IN = REGISTERS_WR_DATA_SOURCE
+REGISTERS_WR_DATA_SOURCE_SRC8 = 2 * REGISTERS_WR_DATA_SOURCE
+REGISTERS_WR_DATA_SOURCE_OP12 = 3 * REGISTERS_WR_DATA_SOURCE
+REGISTERS_WR_DATA_SOURCE_PC = 4 * REGISTERS_WR_DATA_SOURCE
 
 NEXT = SRC_ADDR_SOURCE_NEXT | PC_SOURCE_NEXT
 
@@ -58,8 +63,8 @@ def generate_alu1(opcode):
     for i in range(0, 4):
         microcode[start] = 0
         microcode[start+1] = NEXT
-        microcode[start+2] = 0
-        microcode[start+3] = REGISTERS_WR | REGISTERS_WR_SOURCE_OP1 | NEXT | STAGE_RESET | ALU_CLK
+        microcode[start+2] = REGISTERS_WR_SOURCE_SET
+        microcode[start+3] = REGISTERS_WR | NEXT | STAGE_RESET | ALU_CLK
         start += 8
 
 def generate_alu2rr(opcode):
@@ -71,7 +76,7 @@ def generate_alu2rr(opcode):
         microcode[start+3] = NEXT
         microcode[start+4] = NEXT | STAGE_RESET | ALU_CLK
         if (i != 3):
-            microcode[start+4] |= REGISTERS_WR | REGISTERS_WR_SOURCE_SRC
+            microcode[start+4] |= REGISTERS_WR | REGISTERS_WR_SOURCE_SET
         start += 8
 
 def generate_alu2ri8(opcode):
@@ -82,7 +87,7 @@ def generate_alu2ri8(opcode):
         microcode[start+2] = NEXT
         microcode[start+3] = NEXT | STAGE_RESET | ALU_CLK
         if (i != 3):
-            microcode[start+3] |= REGISTERS_WR | REGISTERS_WR_SOURCE_SRC
+            microcode[start+3] |= REGISTERS_WR | REGISTERS_WR_SOURCE_SET
         start += 8
 
 def generate_alu2ri16(opcode):
@@ -90,11 +95,11 @@ def generate_alu2ri16(opcode):
     for i in range(0, 4):
         microcode[start] = 0
         microcode[start+1] = NEXT
-        microcode[start+2] = NEXT
+        microcode[start+2] = NEXT | REGISTERS_WR_SOURCE_SET
         microcode[start+3] = NEXT
         microcode[start+4] = NEXT | STAGE_RESET | ALU_CLK
         if (i != 3):
-            microcode[start+4] |= REGISTERS_WR | REGISTERS_WR_SOURCE_OP2
+            microcode[start+4] |= REGISTERS_WR
         start += 8
 
 def generate_br(opcode):
@@ -105,10 +110,13 @@ def generate_br(opcode):
         microcode[start+2] = PC_SOURCE_BR | SRC_ADDR_SOURCE_BR | STAGE_RESET
         start += 8
 
-def generate_call(opcode):
+def generate_jal(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
-    microcode[start+1] = ERROR
+    microcode[start+1] = NEXT
+    microcode[start+2] = NEXT
+    microcode[start+3] = NEXT
+    microcode[start+4] = PC_SOURCE_IMMEDIATE | SRC_ADDR_SOURCE_IMMEDIATE | REGISTERS_WR | REGISTERS_WR_SOURCE_SET | REGISTERS_WR_DATA_SOURCE_PC | STAGE_RESET
 
 def generate_jmp(opcode):
     start = opcode * OPCODE_SIZE
@@ -121,22 +129,27 @@ def generate_in(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
     microcode[start+1] = NEXT | NWR
-    microcode[start+2] = NEXT | IO | NWR
-    microcode[start+3] = NEXT | MEM_VALID | NWR
-    microcode[start+4] = STAGE_RESET | NWR | REGISTERS_WR | REGISTERS_WR_SOURCE_OP2 | ALU_CLK
+    microcode[start+2] = NEXT | NWR 
+    microcode[start+3] = NEXT | IO | NWR | REGISTERS_WR_SOURCE_SET
+    microcode[start+4] = MEM_VALID | NWR
+    microcode[start+5] = STAGE_RESET | NWR | REGISTERS_WR | REGISTERS_WR_DATA_SOURCE_DATA_IN
 
 def generate_out(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
     microcode[start+1] = NEXT
-    microcode[start+2] = IO
-    microcode[start+3] = NEXT | MEM_VALID
-    microcode[start+4] = STAGE_RESET
+    microcode[start+2] = NEXT
+    microcode[start+3] = NEXT
+    microcode[start+4] = IO
+    microcode[start+5] = MEM_VALID
+    microcode[start+6] = STAGE_RESET
 
 def generate_lb(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
-    microcode[start+1] = ERROR
+    microcode[start+1] = NEXT
+    microcode[start+2] = NEXT | SRC_ADDR_SOURCE_REGISTER | REGISTERS_WR_SOURCE_SET
+    microcode[start+3] = STAGE_RESET | REGISTERS_WR | REGISTERS_WR_DATA_SOURCE_SRC8
 
 def generate_lw(opcode):
     start = opcode * OPCODE_SIZE
@@ -153,10 +166,12 @@ def generate_sw(opcode):
     microcode[start] = 0
     microcode[start+1] = ERROR
 
-def generate_rcall(opcode):
+def generate_jalr(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
-    microcode[start+1] = ERROR
+    microcode[start+1] = NEXT
+    microcode[start+2] = 0
+    microcode[start+3] = PC_SOURCE_REGISTER | SRC_ADDR_SOURCE_REGISTER | STAGE_RESET
 
 def generate_rjmp(opcode):
     start = opcode * OPCODE_SIZE
@@ -180,12 +195,8 @@ def print_microcode():
 # one byte instructions
 generate_halt(0)
 generate_wait(1)
-
-# in instruction - 3 byte
-generate_in(2)
-
-generate_ret(3)
-generate_reti(4)
+generate_ret(2)
+generate_reti(3)
 
 # load/store instructions - 3 byte
 generate_lb(0x12)
@@ -193,14 +204,15 @@ generate_lw(0x13)
 generate_sb(0x14)
 generate_sw(0x15)
 
-# out instruction - 3 byte
+# in/out instructions - 3 byte
+generate_in(0x16)
 generate_out(0x17)
 # rcall/rjmp instructions - 2 byte
-generate_rcall(0x18)
+generate_jalr(0x18)
 generate_rjmp(0x19)
 
 # call/jmp instructions - 3 byte
-generate_call(0x1A)
+generate_jal(0x1A)
 generate_jmp(0x1B)
 
 # branch instructions - 2 byte
