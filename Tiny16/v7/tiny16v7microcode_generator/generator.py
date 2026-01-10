@@ -179,11 +179,6 @@ def generate_rjmp(opcode):
     microcode[start+2] = 0
     microcode[start+3] = PC_SOURCE_REGISTER | SRC_ADDR_SOURCE_REGISTER | STAGE_RESET
 
-def generate_ret(opcode):
-    start = opcode * OPCODE_SIZE
-    microcode[start] = 0
-    microcode[start+1] = ERROR
-
 def generate_reti(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
@@ -196,8 +191,7 @@ def print_microcode():
 # one byte instructions
 generate_halt(0)
 generate_wait(1)
-generate_ret(2)
-generate_reti(3)
+generate_reti(2)
 
 # load/store instructions - 3 byte
 generate_lb(0x12)

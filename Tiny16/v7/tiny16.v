@@ -81,10 +81,10 @@ module tiny16
 
     reg [7:0] ram [0:(1<<RAM_BITS)-1];
     reg [7:0] src, dst;
-    reg[15:0] src8_to_15;
+    wire [15:0] src8_to_15;
     reg [RAM_BITS - 1:0] src_addr, dst_addr;
     wire ram_wr;
-    wire [RAM_BITS - 1:0] br_pc;
+    wire [RAM_BITS - 1:0] br_pc, pcp1;
 
     reg c;
     wire z, n;
@@ -149,7 +149,9 @@ module tiny16
 
     assign src8_to_15 = {{8{src[7]}}, src};
 
-    assign br_pc = condition_pass ? pc + src8_to_15[RAM_BITS - 1:0] : pc + 1;
+    assign pcp1 = pc + 1;
+
+    assign br_pc = condition_pass ? pc + src8_to_15[RAM_BITS - 1:0] : pcp1;
 
     assign alu_src = imm8 ? {{8{op1[7]}}, op1} : imm16 ? srcop1 : registers_data2;
 
@@ -270,14 +272,14 @@ module tiny16
                 default: begin end
             endcase
             case (pc_source)
-                PC_SOURCE_NEXT: pc <= pc + 1;
+                PC_SOURCE_NEXT: pc <= pcp1;
                 PC_SOURCE_SAVED: pc <= saved_pc;
                 PC_SOURCE_IMMEDIATE: pc <= srcop1[RAM_BITS - 1:0];
                 PC_SOURCE_BR: pc <= br_pc;
                 PC_SOURCE_REGISTER: pc <= registers_data[RAM_BITS - 1:0];
                 default: begin end
             endcase
-            old_pc <= pc + 1;
+            old_pc <= pcp1;
         end
     end
 

@@ -17,24 +17,23 @@ internal static class Conditions
 
 internal static class InstructionCodes
 {
-    internal const uint Br = 28 << 2;
-    internal const uint Jmp = 27 << 2;
-    internal const uint Call = 26 << 2;
-    internal const uint RJmp = 25 << 2;
-    internal const uint RCall = 24 << 2;
+    internal const uint Br = 0x1C << 2;
+    internal const uint Jmp = 0x1B << 2;
+    internal const uint Jal = 0x1A << 2;
+    internal const uint RJmp = 0x19 << 2;
+    internal const uint Jalr = 0x18 << 2;
 
-    internal const uint Out = 23 << 2;
-    internal const uint In = 22 << 2;
+    internal const uint Out = 0x17 << 2;
+    internal const uint In = 0x16 << 2;
 
-    internal const uint Sw = 21 << 2;
-    internal const uint Sb = 20 << 2;
-    internal const uint Lw = 19 << 2;
-    internal const uint Lb = 18 << 2;
+    internal const uint Sw = 0x15 << 2;
+    internal const uint Sb = 0x14 << 2;
+    internal const uint Lw = 0x13 << 2;
+    internal const uint Lb = 0x12 << 2;
     
     internal const uint Hlt = 0;
     internal const uint Wfi = 1 << 2;
-    internal const uint Ret = 2 << 2;
-    internal const uint Reti = 3 << 2;
+    internal const uint Reti = 2 << 2;
 
     internal const uint AluOp = 128;
     internal const uint Imm16 = 64;

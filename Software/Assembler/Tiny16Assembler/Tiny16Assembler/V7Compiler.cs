@@ -16,7 +16,6 @@ internal sealed class Tiny16V7Compiler : GenericCompiler
         {"hlt", new OneByteInstructionCreator(InstructionCodes.Hlt)},
         {"wfi", new OneByteInstructionCreator(InstructionCodes.Wfi)},
         {"reti", new OneByteInstructionCreator(InstructionCodes.Reti)},
-        {"ret", new OneByteInstructionCreator(InstructionCodes.Ret)},
         
         {"mov", new AluInstructionCreator(InstructionCodes.Mov)},
         {"cmp", new AluInstructionCreator(InstructionCodes.Cmp)},
@@ -56,9 +55,9 @@ internal sealed class Tiny16V7Compiler : GenericCompiler
         {"bmi", new BrInstructionCreator(Conditions.MI)},
         {"bpl", new BrInstructionCreator(Conditions.PL)},
         
-        {"jmp", new JmpInstructionCreator(InstructionCodes.Jmp)},
-        {"call", new JmpInstructionCreator(InstructionCodes.Call)},
-        {"rcall", new OneRegisterInstructionCreator(InstructionCodes.RCall)},
+        {"jmp", new JmpInstructionCreator()},
+        {"jal", new JalInstructionCreator()},
+        {"jalr", new OneRegisterInstructionCreator(InstructionCodes.Jalr)},
         {"rjmp", new OneRegisterInstructionCreator(InstructionCodes.RJmp)},
 
         {"in", new InInstructionCreator()},
