@@ -14,12 +14,13 @@ ERROR = allocate_bit(1)
 HALT  = allocate_bit(1)
 WAIT  = allocate_bit(1)
 
-SRC_ADDR_SOURCE = allocate_bit(3)
-SRC_ADDR_SOURCE_NEXT = SRC_ADDR_SOURCE
-SRC_ADDR_SOURCE_SAVED = 2 * SRC_ADDR_SOURCE
-SRC_ADDR_SOURCE_IMMEDIATE = 3 * SRC_ADDR_SOURCE
-SRC_ADDR_SOURCE_BR = 4 * SRC_ADDR_SOURCE
-SRC_ADDR_SOURCE_REGISTER = 5 * SRC_ADDR_SOURCE
+RAM_ADDR_SOURCE = allocate_bit(3)
+RAM_ADDR_SOURCE_NEXT = RAM_ADDR_SOURCE
+RAM_ADDR_SOURCE_SAVED = 2 * RAM_ADDR_SOURCE
+RAM_ADDR_SOURCE_IMMEDIATE = 3 * RAM_ADDR_SOURCE
+RAM_ADDR_SOURCE_BR = 4 * RAM_ADDR_SOURCE
+RAM_ADDR_SOURCE_REGISTER = 5 * RAM_ADDR_SOURCE
+RAM_ADDR_SOURCE_PC = 6 * RAM_ADDR_SOURCE
 
 PC_ADDR_SOURCE = allocate_bit(3)
 PC_SOURCE_NEXT = PC_ADDR_SOURCE
@@ -44,7 +45,7 @@ REGISTERS_WR_DATA_SOURCE_SRC8 = 2 * REGISTERS_WR_DATA_SOURCE
 REGISTERS_WR_DATA_SOURCE_OP12 = 3 * REGISTERS_WR_DATA_SOURCE
 REGISTERS_WR_DATA_SOURCE_PC = 4 * REGISTERS_WR_DATA_SOURCE
 
-NEXT = SRC_ADDR_SOURCE_NEXT | PC_SOURCE_NEXT
+NEXT = RAM_ADDR_SOURCE_NEXT | PC_SOURCE_NEXT
 
 microcode = [ERROR] * MICROCODE_SIZE
 
@@ -107,7 +108,7 @@ def generate_br(opcode):
     for i in range(0, 4):
         microcode[start] = 0
         microcode[start+1] = NEXT
-        microcode[start+2] = PC_SOURCE_BR | SRC_ADDR_SOURCE_BR | STAGE_RESET
+        microcode[start+2] = PC_SOURCE_BR | RAM_ADDR_SOURCE_BR | STAGE_RESET
         start += 8
 
 def generate_jal(opcode):
@@ -116,14 +117,14 @@ def generate_jal(opcode):
     microcode[start+1] = NEXT
     microcode[start+2] = NEXT | REGISTERS_WR_SOURCE_SET
     microcode[start+3] = NEXT
-    microcode[start+4] = PC_SOURCE_IMMEDIATE | SRC_ADDR_SOURCE_IMMEDIATE | REGISTERS_WR | REGISTERS_WR_DATA_SOURCE_PC | STAGE_RESET
+    microcode[start+4] = PC_SOURCE_IMMEDIATE | RAM_ADDR_SOURCE_IMMEDIATE | REGISTERS_WR | REGISTERS_WR_DATA_SOURCE_PC | STAGE_RESET
 
 def generate_jmp(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
     microcode[start+1] = NEXT
     microcode[start+2] = NEXT
-    microcode[start+3] = PC_SOURCE_IMMEDIATE | SRC_ADDR_SOURCE_IMMEDIATE | STAGE_RESET
+    microcode[start+3] = PC_SOURCE_IMMEDIATE | RAM_ADDR_SOURCE_IMMEDIATE | STAGE_RESET
 
 def generate_in(opcode):
     start = opcode * OPCODE_SIZE
@@ -147,13 +148,18 @@ def generate_lb(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
     microcode[start+1] = NEXT
-    microcode[start+2] = NEXT | SRC_ADDR_SOURCE_REGISTER | REGISTERS_WR_SOURCE_SET
-    microcode[start+3] = STAGE_RESET | REGISTERS_WR | REGISTERS_WR_DATA_SOURCE_SRC8
+    microcode[start+2] = NEXT
+    microcode[start+3] = PC_SOURCE_NEXT | RAM_ADDR_SOURCE_REGISTER | REGISTERS_WR_SOURCE_SET
+    microcode[start+4] = STAGE_RESET | REGISTERS_WR | REGISTERS_WR_DATA_SOURCE_SRC8 | RAM_ADDR_SOURCE_PC
 
 def generate_lw(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
-    microcode[start+1] = ERROR
+    microcode[start+1] = NEXT
+    microcode[start+2] = NEXT
+    microcode[start+3] = PC_SOURCE_NEXT | RAM_ADDR_SOURCE_REGISTER | REGISTERS_WR_SOURCE_SET
+    microcode[start+4] = RAM_ADDR_SOURCE_NEXT
+    microcode[start+5] = STAGE_RESET | REGISTERS_WR | REGISTERS_WR_DATA_SOURCE_OP12 | RAM_ADDR_SOURCE_PC
 
 def generate_sb(opcode):
     start = opcode * OPCODE_SIZE
@@ -170,19 +176,19 @@ def generate_jalr(opcode):
     microcode[start] = 0
     microcode[start+1] = NEXT
     microcode[start+2] = 0
-    microcode[start+3] = PC_SOURCE_REGISTER | SRC_ADDR_SOURCE_REGISTER | STAGE_RESET
+    microcode[start+3] = PC_SOURCE_REGISTER | RAM_ADDR_SOURCE_REGISTER | STAGE_RESET
 
 def generate_rjmp(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
     microcode[start+1] = NEXT
     microcode[start+2] = 0
-    microcode[start+3] = PC_SOURCE_REGISTER | SRC_ADDR_SOURCE_REGISTER | STAGE_RESET
+    microcode[start+3] = PC_SOURCE_REGISTER | RAM_ADDR_SOURCE_REGISTER | STAGE_RESET
 
 def generate_reti(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
-    microcode[start+1] = PC_SOURCE_SAVED | SRC_ADDR_SOURCE_SAVED | STAGE_RESET
+    microcode[start+1] = PC_SOURCE_SAVED | RAM_ADDR_SOURCE_SAVED | STAGE_RESET
 
 def print_microcode():
     for i in range(0, MICROCODE_SIZE):

@@ -30,4 +30,9 @@ ok5:
 	hlt
 
 test_f:
+	lda r3, test_data
+	lb r1, @r3
 	rjmp r0
+
+.segment bss
+test_data: resb 1

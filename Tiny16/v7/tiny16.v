@@ -46,11 +46,12 @@ module tiny16
     localparam ALU_OP_CMP  = 30;
     localparam ALU_OP_TEST = 31;
 
-    localparam SRC_ADDR_SOURCE_NEXT = 1;
-    localparam SRC_ADDR_SOURCE_SAVED = 2;
-    localparam SRC_ADDR_SOURCE_IMMEDIATE = 3;
-    localparam SRC_ADDR_SOURCE_BR = 4;
-    localparam SRC_ADDR_SOURCE_REGISTER = 5;
+    localparam RAM_ADDR_SOURCE_NEXT = 1;
+    localparam RAM_ADDR_SOURCE_SAVED = 2;
+    localparam RAM_ADDR_SOURCE_IMMEDIATE = 3;
+    localparam RAM_ADDR_SOURCE_BR = 4;
+    localparam RAM_ADDR_SOURCE_REGISTER = 5;
+    localparam RAM_ADDR_SOURCE_PC = 6;
 
     localparam PC_SOURCE_NEXT = 1;
     localparam PC_SOURCE_SAVED = 2;
@@ -82,7 +83,7 @@ module tiny16
     reg [7:0] ram [0:(1<<RAM_BITS)-1];
     reg [7:0] src, dst;
     wire [15:0] src8_to_15;
-    reg [RAM_BITS - 1:0] src_addr, dst_addr;
+    reg [RAM_BITS - 1:0] ram_addr;
     wire ram_wr;
     wire [RAM_BITS - 1:0] br_pc, pcp1;
 
@@ -101,7 +102,7 @@ module tiny16
     wire [15:0] alu_src;
 
     wire stage_reset_, hlt_, wfi_, registers_wr, error_, io;
-    wire [2:0] src_addr_source, pc_source, registers_wr_data_source;
+    wire [2:0] ram_addr_source, pc_source, registers_wr_data_source;
     wire registers_wr_source_set;
 
     wire [4:0] alu_op;
@@ -136,7 +137,7 @@ module tiny16
     assign error_ = current_microcode[1];
     assign hlt_ = current_microcode[2];
     assign wfi_ = current_microcode[3];
-    assign src_addr_source = current_microcode[6:4];
+    assign ram_addr_source = current_microcode[6:4];
     assign pc_source = current_microcode[9:7];
     assign registers_wr = current_microcode[10];
     assign registers_wr_source_set = current_microcode[11];
@@ -176,18 +177,18 @@ module tiny16
         op2 <= op1;
         op1 <= src;
         if (ram_wr)
-            ram[dst_addr] <= dst;
+            ram[ram_addr] <= dst;
         else
-            src <= ram[src_addr];
+            src <= ram[ram_addr];
     end
 
     function [15:0] registers_wr_data_f(input [2:0] source);
         case (source)
-            REGISTERS_WR_DATA_SOURCE_ACC: registers_wr_data_f = acc;
             REGISTERS_WR_DATA_SOURCE_DATA_IN: registers_wr_data_f = data_in;
             REGISTERS_WR_DATA_SOURCE_SRC8: registers_wr_data_f = src8_to_15;
             REGISTERS_WR_DATA_SOURCE_OP12: registers_wr_data_f = op12;
             REGISTERS_WR_DATA_SOURCE_PC: registers_wr_data_f = {{16-RAM_BITS{1'b0}}, old_pc};
+            default: registers_wr_data_f = acc;
         endcase
     endfunction
         
@@ -242,7 +243,7 @@ module tiny16
             wfi <= 0;
             in_interrupt <= 0;
             pc <= 0;
-            src_addr <= 0;
+            ram_addr <= 0;
             current_instruction <= 0;
         end
         else if (go) begin
@@ -250,7 +251,7 @@ module tiny16
                 if (interrupt_request)
                     wfi <= 0;
                 if (interrupt_enter) begin
-                    src_addr <= 3;
+                    ram_addr <= 3;
                     pc <= 3;
                     saved_pc <= pc;
                     in_interrupt <= 1;
@@ -263,12 +264,13 @@ module tiny16
             error <= error_;
             if (pc_source == PC_SOURCE_SAVED)
                 in_interrupt <= 0;
-            case (src_addr_source)
-                SRC_ADDR_SOURCE_NEXT: src_addr <= src_addr + 1;
-                SRC_ADDR_SOURCE_SAVED: src_addr <= saved_pc;
-                SRC_ADDR_SOURCE_IMMEDIATE: src_addr <= srcop1[RAM_BITS - 1:0];
-                SRC_ADDR_SOURCE_BR: src_addr <= br_pc;
-                SRC_ADDR_SOURCE_REGISTER: src_addr <= registers_data[RAM_BITS - 1:0];
+            case (ram_addr_source)
+                RAM_ADDR_SOURCE_NEXT: ram_addr <= ram_addr + 1;
+                RAM_ADDR_SOURCE_SAVED: ram_addr <= saved_pc;
+                RAM_ADDR_SOURCE_IMMEDIATE: ram_addr <= srcop1[RAM_BITS - 1:0];
+                RAM_ADDR_SOURCE_BR: ram_addr <= br_pc;
+                RAM_ADDR_SOURCE_REGISTER: ram_addr <= registers_data[RAM_BITS - 1:0];
+                RAM_ADDR_SOURCE_PC: ram_addr <= pc;
                 default: begin end
             endcase
             case (pc_source)
