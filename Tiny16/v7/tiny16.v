@@ -72,10 +72,10 @@ module tiny16
     reg [MICROCODE_LENGTH-1:0] current_microcode;
     reg [7:0] current_instruction;
 
-    reg [15:0] registers [0:127];
+    reg [15:0] registers [0:255];
     reg [15:0] registers_data, registers_data2;
     reg [RAM_BITS - 1:0] pc, saved_pc, old_pc;
-    reg [6:0] registers_wr_addr;
+    reg [7:0] registers_wr_addr;
 
     wire go;
 
@@ -196,7 +196,7 @@ module tiny16
             registers[registers_wr_addr] <= registers_wr_data_f(registers_wr_data_source);
         else begin
             registers_data2 <= registers_data;
-            registers_data <= registers[src[6:0]];
+            registers_data <= registers[src];
         end
     end
 
@@ -210,7 +210,7 @@ module tiny16
             data_out <= registers_data;
         end
         if (registers_wr_source_set)
-            registers_wr_addr <= src[6:0];
+            registers_wr_addr <= src;
         if (alu_clk) begin
             case (alu_op)
                 ALU_OP_MOV: acc <= alu_src;

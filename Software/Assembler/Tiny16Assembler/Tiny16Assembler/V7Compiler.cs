@@ -8,7 +8,7 @@ internal sealed class Tiny16V7Compiler : GenericCompiler
     internal Tiny16V7Compiler(List<string> sources, OutputFormat outputFormat) :
         base(sources, outputFormat, Creators, new GenericParser(), 2, 4, 4)
     {
-        InstructionCreator.MaxRegNo = 127;
+        InstructionCreator.MaxRegNo = 255;
     }
     
     private static readonly Dictionary<string, InstructionCreator> Creators = new()
