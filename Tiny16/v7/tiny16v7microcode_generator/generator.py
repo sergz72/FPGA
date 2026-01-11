@@ -42,8 +42,12 @@ REGISTERS_WR_DATA_SOURCE = allocate_bit(3)
 REGISTERS_WR_DATA_SOURCE_ALU = 0
 REGISTERS_WR_DATA_SOURCE_DATA_IN = REGISTERS_WR_DATA_SOURCE
 REGISTERS_WR_DATA_SOURCE_SRC8 = 2 * REGISTERS_WR_DATA_SOURCE
-REGISTERS_WR_DATA_SOURCE_OP12 = 3 * REGISTERS_WR_DATA_SOURCE
+REGISTERS_WR_DATA_SOURCE_SRCOP1 = 3 * REGISTERS_WR_DATA_SOURCE
 REGISTERS_WR_DATA_SOURCE_PC = 4 * REGISTERS_WR_DATA_SOURCE
+
+DST = allocate_bit(1)
+DST_REGISTER_DATA_LO = 0
+DST_REGISTER_DATA_HI = DST
 
 NEXT = RAM_ADDR_SOURCE_NEXT | PC_SOURCE_NEXT
 
@@ -58,6 +62,11 @@ def generate_wait(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
     microcode[start+1] = WAIT|NEXT|STAGE_RESET
+
+def generate_clcstc(opcode):
+    start = opcode * OPCODE_SIZE
+    microcode[start] = 0
+    microcode[start+1] = NEXT|STAGE_RESET|ALU_CLK
 
 def generate_alu1(opcode):
     start = opcode * OPCODE_SIZE
@@ -85,10 +94,10 @@ def generate_alu2ri8(opcode):
     for i in range(0, 4):
         microcode[start] = 0
         microcode[start+1] = NEXT
-        microcode[start+2] = NEXT
+        microcode[start+2] = NEXT | REGISTERS_WR_SOURCE_SET
         microcode[start+3] = NEXT | STAGE_RESET | ALU_CLK
         if (i != 3):
-            microcode[start+3] |= REGISTERS_WR | REGISTERS_WR_SOURCE_SET
+            microcode[start+3] |= REGISTERS_WR 
         start += 8
 
 def generate_alu2ri16(opcode):
@@ -159,17 +168,26 @@ def generate_lw(opcode):
     microcode[start+2] = NEXT
     microcode[start+3] = PC_SOURCE_NEXT | RAM_ADDR_SOURCE_REGISTER | REGISTERS_WR_SOURCE_SET
     microcode[start+4] = RAM_ADDR_SOURCE_NEXT
-    microcode[start+5] = STAGE_RESET | REGISTERS_WR | REGISTERS_WR_DATA_SOURCE_OP12 | RAM_ADDR_SOURCE_PC
+    microcode[start+5] = STAGE_RESET | REGISTERS_WR | REGISTERS_WR_DATA_SOURCE_SRCOP1 | RAM_ADDR_SOURCE_PC
 
 def generate_sb(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
-    microcode[start+1] = ERROR
+    microcode[start+1] = NEXT
+    microcode[start+2] = NEXT
+    microcode[start+3] = NEXT
+    microcode[start+4] = RAM_ADDR_SOURCE_REGISTER | RAM_WR | DST_REGISTER_DATA_LO
+    microcode[start+5] = STAGE_RESET | RAM_ADDR_SOURCE_PC
 
 def generate_sw(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
-    microcode[start+1] = ERROR
+    microcode[start+1] = NEXT
+    microcode[start+2] = NEXT
+    microcode[start+3] = NEXT
+    microcode[start+4] = RAM_ADDR_SOURCE_REGISTER | RAM_WR | DST_REGISTER_DATA_LO
+    microcode[start+5] = RAM_ADDR_SOURCE_NEXT | RAM_WR | DST_REGISTER_DATA_HI
+    microcode[start+6] = STAGE_RESET | RAM_ADDR_SOURCE_PC
 
 def generate_jalr(opcode):
     start = opcode * OPCODE_SIZE
@@ -192,12 +210,13 @@ def generate_reti(opcode):
 
 def print_microcode():
     for i in range(0, MICROCODE_SIZE):
-        print("%07X // %03X.%d" % (microcode[i], i >> 3, i % 8))
+        print("%06X // %03X.%d" % (microcode[i], i >> 3, i % 8))
 
 # one byte instructions
 generate_halt(0)
 generate_wait(1)
-generate_reti(2)
+generate_clcstc(2)
+generate_reti(3)
 
 # load/store instructions - 3 byte
 generate_lb(0x12)

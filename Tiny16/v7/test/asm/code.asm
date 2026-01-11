@@ -30,8 +30,14 @@ ok5:
 	hlt
 
 test_f:
+	clc
+	stc
 	lda r3, test_data
+	sb @r3, r2
 	lb r1, @r3
+	add r3, 2
+	sw @r3, r2
+	lw r4, @r3
 	rjmp r0
 
 .segment bss
