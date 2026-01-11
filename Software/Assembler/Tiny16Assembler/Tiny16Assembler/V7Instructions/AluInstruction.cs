@@ -6,7 +6,7 @@ internal sealed class AluInstructionCreator(uint opCode) : InstructionCreator
 {
     public override Instruction Create(ICompiler compiler, string line, string file, int lineNo, List<Token> parameters)
     {
-        if (parameters.Count != 3)
+        if (parameters.Count < 3)
             throw new InstructionException("incorrect ALU instruction");
         if (!parameters[1].IsChar(','))
             throw new InstructionException(", expected");
@@ -18,7 +18,7 @@ internal sealed class AluInstructionCreator(uint opCode) : InstructionCreator
             return new ThreeBytesInstruction(line, file, lineNo, InstructionCodes.AluOp|opCode, registerNumber2, registerNumber);
         var start = 2;
         var immediate = compiler.CalculateExpression(parameters, ref start);
-        if (immediate is >= -128 and <= 255)
+        if (immediate is >= -128 and <= 127)
             return new ThreeBytesInstruction(line, file, lineNo, InstructionCodes.AluOp|opCode|InstructionCodes.Imm8, 
                 registerNumber, (uint)immediate);
         if (immediate is < -32768 or > 65535)

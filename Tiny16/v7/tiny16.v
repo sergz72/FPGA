@@ -102,7 +102,7 @@ module tiny16
     reg [15:0] acc;
     reg [7:0] op1;
     wire [15:0] srcop1;
-    wire [15:0] alu_src;
+    wire [15:0] alu_src1, alu_src2;
 
     wire stage_reset_, hlt_, wfi_, registers_wr, error_, io;
     wire [2:0] ram_addr_source, pc_source, registers_wr_data_source;
@@ -157,7 +157,8 @@ module tiny16
 
     assign br_pc = condition_pass ? pc + src8_to_15[RAM_BITS - 1:0] : pcp1;
 
-    assign alu_src = imm8 ? src8_to_15 : imm16 ? srcop1 : registers_data2;
+    assign alu_src2 = imm8 ? src8_to_15 : imm16 ? srcop1 : registers_data2;
+    assign alu_src1 = imm16 ? registers_data2 : registers_data;
 
     assign stage_reset = ((stage == 0) && ((wfi & !interrupt_request) | interrupt_enter)) || stage_reset_;
 
@@ -217,12 +218,12 @@ module tiny16
             registers_wr_addr <= src;
         if (alu_clk) begin
             case (alu_op)
-                ALU_OP_MOV: acc <= alu_src;
-                ALU_OP_ADD, ALU_OP_ADC: {c, acc} <= registers_data + alu_src + {16'h0, alu_op == ALU_OP_ADC ? c : 1'b0};
-                ALU_OP_SUB, ALU_OP_SBC, ALU_OP_CMP: {c, acc} <= registers_data - alu_src - {16'h0, alu_op == ALU_OP_SBC ? c : 1'b0};
-                ALU_OP_AND, ALU_OP_TEST: acc <= registers_data & alu_src;
-                ALU_OP_OR: acc <= registers_data | alu_src;
-                ALU_OP_XOR: acc <= registers_data ^ alu_src;
+                ALU_OP_MOV: acc <= alu_src2;
+                ALU_OP_ADD, ALU_OP_ADC: {c, acc} <= alu_src1 + alu_src2 + {16'h0, alu_op == ALU_OP_ADC ? c : 1'b0};
+                ALU_OP_SUB, ALU_OP_SBC, ALU_OP_CMP: {c, acc} <= alu_src1 - alu_src2 - {16'h0, alu_op == ALU_OP_SBC ? c : 1'b0};
+                ALU_OP_AND, ALU_OP_TEST: acc <= alu_src1 & alu_src2;
+                ALU_OP_OR: acc <= alu_src1 | alu_src2;
+                ALU_OP_XOR: acc <= alu_src1 ^ alu_src2;
 
                 ALU_OP_CLR: acc <= 0;
                 ALU_OP_SET: acc <= 16'hFFFF;
@@ -230,10 +231,8 @@ module tiny16
                 ALU_OP_DEC: acc <= registers_data - 1;
                 ALU_OP_NOT: acc <= ~registers_data;
                 ALU_OP_NEG: acc <= -registers_data;
-                ALU_OP_SHL: {c, acc} <= registers_data << 1;
-                ALU_OP_SHR: {acc, c} <= {registers_data, 1'b0} >> 1;
-                ALU_OP_ROL: {c, acc} <= {registers_data, c} << 1;
-                ALU_OP_ROR: {acc, c} <= {c, registers_data} >> 1;
+                ALU_OP_SHL,ALU_OP_ROL: {c, acc} <= {registers_data, alu_op == ALU_OP_ROL ? c : 1'b0};
+                ALU_OP_SHR,ALU_OP_ROR: {acc, c} <= {alu_op == ALU_OP_ROR ? c : 1'b0, registers_data};
                 ALU_OP_CLC: c <= 0;
                 ALU_OP_STC: c <= 1;
                 

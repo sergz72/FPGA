@@ -82,11 +82,11 @@ def generate_alu2rr(opcode):
     for i in range(0, 4):
         microcode[start] = 0
         microcode[start+1] = NEXT
-        microcode[start+2] = 0
-        microcode[start+3] = NEXT
-        microcode[start+4] = NEXT | STAGE_RESET | ALU_CLK
+        microcode[start+2] = NEXT
+        microcode[start+3] = NEXT | REGISTERS_WR_SOURCE_SET
+        microcode[start+4] = STAGE_RESET | ALU_CLK
         if (i != 3):
-            microcode[start+4] |= REGISTERS_WR | REGISTERS_WR_SOURCE_SET
+            microcode[start+4] |= REGISTERS_WR
         start += 8
 
 def generate_alu2ri8(opcode):

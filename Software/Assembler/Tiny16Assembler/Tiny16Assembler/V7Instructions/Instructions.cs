@@ -33,7 +33,9 @@ internal static class InstructionCodes
     
     internal const uint Hlt = 0;
     internal const uint Wfi = 1 << 2;
-    internal const uint Reti = 2 << 2;
+    internal const uint Clc = 0x0A;
+    internal const uint Stc = 0x0B;
+    internal const uint Reti = 3 << 2;
 
     internal const uint AluOp = 128;
     internal const uint Imm16 = 64;
@@ -51,6 +53,8 @@ internal static class InstructionCodes
     internal const uint Shr = 7;
     internal const uint Rol = 8;
     internal const uint Ror = 9;
+    internal const uint ClcOp = 10;
+    internal const uint StcOp = 11;
 
     // double operands
     internal const uint Mov = 16;

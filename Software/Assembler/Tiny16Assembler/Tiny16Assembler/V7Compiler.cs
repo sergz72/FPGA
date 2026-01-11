@@ -26,8 +26,10 @@ internal sealed class Tiny16V7Compiler : GenericCompiler
         {"and", new AluInstructionCreator(InstructionCodes.And)},
         {"or", new AluInstructionCreator(InstructionCodes.Or)},
         {"xor", new AluInstructionCreator(InstructionCodes.Xor)},
+        {"test", new AluInstructionCreator(InstructionCodes.Test)},
 
-        {"lda", new LoadAddressInstructionCreator()},
+        {"lda", new LoadAddressInstructionCreator(InstructionCodes.Mov)},
+        {"adda", new LoadAddressInstructionCreator(InstructionCodes.Add)},
         
         {"clr", new OneRegisterInstructionCreator(InstructionCodes.Clr|InstructionCodes.AluOp)},
         {"ser", new OneRegisterInstructionCreator(InstructionCodes.Set|InstructionCodes.AluOp)},
@@ -39,16 +41,16 @@ internal sealed class Tiny16V7Compiler : GenericCompiler
         {"shl", new OneRegisterInstructionCreator(InstructionCodes.Shl|InstructionCodes.AluOp)},
         {"ror", new OneRegisterInstructionCreator(InstructionCodes.Ror|InstructionCodes.AluOp)},
         {"rol", new OneRegisterInstructionCreator(InstructionCodes.Rol|InstructionCodes.AluOp)},
-        {"test", new OneRegisterInstructionCreator(InstructionCodes.Test|InstructionCodes.AluOp)},
+
+        {"clc", new OneByteInstructionCreator(InstructionCodes.Clc)},
+        {"stc", new OneByteInstructionCreator(InstructionCodes.Stc)},
         
         {"br", new BrInstructionCreator(Conditions.None)},
-        {"bc", new BrInstructionCreator(Conditions.C)},
+        {"bcs", new BrInstructionCreator(Conditions.C)},
         {"blt", new BrInstructionCreator(Conditions.C)},
-        {"bz", new BrInstructionCreator(Conditions.Z)},
         {"beq", new BrInstructionCreator(Conditions.Z)},
-        {"bnc", new BrInstructionCreator(Conditions.NC)},
+        {"bcc", new BrInstructionCreator(Conditions.NC)},
         {"bge", new BrInstructionCreator(Conditions.NC)},
-        {"bnz", new BrInstructionCreator(Conditions.NZ)},
         {"bne", new BrInstructionCreator(Conditions.NZ)},
         {"bgt", new BrInstructionCreator(Conditions.GT)},
         {"ble", new BrInstructionCreator(Conditions.LE)},
