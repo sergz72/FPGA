@@ -53,21 +53,25 @@ NEXT = RAM_ADDR_SOURCE_NEXT | PC_SOURCE_NEXT
 
 microcode = [ERROR] * MICROCODE_SIZE
 
+# halt cpu
 def generate_halt(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
     microcode[start+1] = HALT|NEXT
 
+# wait for interrupt
 def generate_wait(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
     microcode[start+1] = WAIT|NEXT|STAGE_RESET
 
+# clear carry or set carry
 def generate_clcstc(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
     microcode[start+1] = NEXT|STAGE_RESET|ALU_CLK
 
+# alu single operand instructions
 def generate_alu1(opcode):
     start = opcode * OPCODE_SIZE
     for i in range(0, 4):
@@ -77,6 +81,7 @@ def generate_alu1(opcode):
         microcode[start+3] = REGISTERS_WR | NEXT | STAGE_RESET | ALU_CLK
         start += 8
 
+# alu two register instructions
 def generate_alu2rr(opcode):
     start = opcode * OPCODE_SIZE
     for i in range(0, 4):
@@ -89,6 +94,7 @@ def generate_alu2rr(opcode):
             microcode[start+4] |= REGISTERS_WR
         start += 8
 
+# alu register-immediate 8 bit instructions
 def generate_alu2ri8(opcode):
     start = opcode * OPCODE_SIZE
     for i in range(0, 4):
@@ -100,6 +106,7 @@ def generate_alu2ri8(opcode):
             microcode[start+3] |= REGISTERS_WR 
         start += 8
 
+# alu register-immediate 16 bit instructions
 def generate_alu2ri16(opcode):
     start = opcode * OPCODE_SIZE
     for i in range(0, 4):
@@ -112,6 +119,7 @@ def generate_alu2ri16(opcode):
             microcode[start+4] |= REGISTERS_WR
         start += 8
 
+# branch instructions
 def generate_br(opcode):
     start = opcode * OPCODE_SIZE
     for i in range(0, 4):
@@ -120,6 +128,7 @@ def generate_br(opcode):
         microcode[start+2] = PC_SOURCE_BR | RAM_ADDR_SOURCE_BR | STAGE_RESET
         start += 8
 
+# jal instruction: rx<=PC, PC<=imm16
 def generate_jal(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
@@ -128,6 +137,7 @@ def generate_jal(opcode):
     microcode[start+3] = NEXT
     microcode[start+4] = PC_SOURCE_IMMEDIATE | RAM_ADDR_SOURCE_IMMEDIATE | REGISTERS_WR | REGISTERS_WR_DATA_SOURCE_PC | STAGE_RESET
 
+# jmp instruction: PC<=imm16
 def generate_jmp(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
@@ -135,6 +145,7 @@ def generate_jmp(opcode):
     microcode[start+2] = NEXT
     microcode[start+3] = PC_SOURCE_IMMEDIATE | RAM_ADDR_SOURCE_IMMEDIATE | STAGE_RESET
 
+# port input instruction rx<=data_in(8 bit address)
 def generate_in(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
@@ -144,6 +155,7 @@ def generate_in(opcode):
     microcode[start+4] = MEM_VALID | NWR
     microcode[start+5] = STAGE_RESET | NWR | REGISTERS_WR | REGISTERS_WR_DATA_SOURCE_DATA_IN
 
+# port output instruction data_out(8 bit address)<=rx
 def generate_out(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
@@ -153,6 +165,7 @@ def generate_out(opcode):
     microcode[start+4] = MEM_VALID
     microcode[start+5] = STAGE_RESET
 
+# load byte instruction rx<=mem[addr in ry]
 def generate_lb(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
@@ -161,6 +174,7 @@ def generate_lb(opcode):
     microcode[start+3] = PC_SOURCE_NEXT | RAM_ADDR_SOURCE_REGISTER | REGISTERS_WR_SOURCE_SET
     microcode[start+4] = STAGE_RESET | REGISTERS_WR | REGISTERS_WR_DATA_SOURCE_SRC8 | RAM_ADDR_SOURCE_PC
 
+# load word instruction rx<=mem[addr in ry]
 def generate_lw(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
@@ -170,6 +184,7 @@ def generate_lw(opcode):
     microcode[start+4] = RAM_ADDR_SOURCE_NEXT
     microcode[start+5] = STAGE_RESET | REGISTERS_WR | REGISTERS_WR_DATA_SOURCE_SRCOP1 | RAM_ADDR_SOURCE_PC
 
+# store byte instruction mem[addr in ry]<=rx
 def generate_sb(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
@@ -179,6 +194,7 @@ def generate_sb(opcode):
     microcode[start+4] = RAM_ADDR_SOURCE_REGISTER | RAM_WR | DST_REGISTER_DATA_LO
     microcode[start+5] = STAGE_RESET | RAM_ADDR_SOURCE_PC
 
+# store word instruction mem[addr in ry]<=rx
 def generate_sw(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
@@ -189,6 +205,7 @@ def generate_sw(opcode):
     microcode[start+5] = RAM_ADDR_SOURCE_NEXT | RAM_WR | DST_REGISTER_DATA_HI
     microcode[start+6] = STAGE_RESET | RAM_ADDR_SOURCE_PC
 
+# jalr instruction: rx<=PC, PC<=ry
 def generate_jalr(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
@@ -196,6 +213,7 @@ def generate_jalr(opcode):
     microcode[start+2] = 0
     microcode[start+3] = PC_SOURCE_REGISTER | RAM_ADDR_SOURCE_REGISTER | STAGE_RESET
 
+# rjmp instruction: PC<=rx
 def generate_rjmp(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
@@ -203,6 +221,7 @@ def generate_rjmp(opcode):
     microcode[start+2] = 0
     microcode[start+3] = PC_SOURCE_REGISTER | RAM_ADDR_SOURCE_REGISTER | STAGE_RESET
 
+# return from interrupt
 def generate_reti(opcode):
     start = opcode * OPCODE_SIZE
     microcode[start] = 0
