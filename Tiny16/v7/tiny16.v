@@ -35,6 +35,7 @@ module tiny16
     localparam ALU_OP_ROR  = 9;
     localparam ALU_OP_CLC  = 10;
     localparam ALU_OP_STC  = 11;
+    localparam ALU_OP_SWAB = 12;
 
     localparam ALU_OP_MOV  = 16;
     localparam ALU_OP_ADC  = 17;
@@ -185,6 +186,15 @@ module tiny16
             src <= ram[ram_addr];
     end
 
+    assign ram_addr_source = current_microcode[6:4];
+    assign pc_source = current_microcode[9:7];
+    assign registers_wr = current_microcode[10];
+    assign registers_wr_source_set = current_microcode[11];
+    assign ram_wr = current_microcode[12];
+    assign mem_valid = current_microcode[13];
+    assign nwr = current_microcode[14];
+    assign io = current_microcode[15];
+    assign alu_clk = current_microcode[16];
     function [15:0] registers_wr_data_f(input [2:0] source);
         case (source)
             REGISTERS_WR_DATA_SOURCE_DATA_IN: registers_wr_data_f = data_in;
@@ -235,7 +245,8 @@ module tiny16
                 ALU_OP_SHR,ALU_OP_ROR: {acc, c} <= {alu_op == ALU_OP_ROR ? c : 1'b0, registers_data};
                 ALU_OP_CLC: c <= 0;
                 ALU_OP_STC: c <= 1;
-                
+                ALU_OP_SWAB: acc <= {registers_data[7:0], registers_data[15:8]};
+
                 default: begin end
             endcase
         end

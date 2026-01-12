@@ -55,6 +55,7 @@ internal static class InstructionCodes
     internal const uint Ror = 9;
     internal const uint ClcOp = 10;
     internal const uint StcOp = 11;
+    internal const uint Swab = 12;
 
     // double operands
     internal const uint Mov = 16;

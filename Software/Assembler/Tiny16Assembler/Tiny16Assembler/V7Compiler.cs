@@ -41,6 +41,7 @@ internal sealed class Tiny16V7Compiler : GenericCompiler
         {"shl", new OneRegisterInstructionCreator(InstructionCodes.Shl|InstructionCodes.AluOp)},
         {"ror", new OneRegisterInstructionCreator(InstructionCodes.Ror|InstructionCodes.AluOp)},
         {"rol", new OneRegisterInstructionCreator(InstructionCodes.Rol|InstructionCodes.AluOp)},
+        {"swab", new OneRegisterInstructionCreator(InstructionCodes.Swab|InstructionCodes.AluOp)},
 
         {"clc", new OneByteInstructionCreator(InstructionCodes.Clc)},
         {"stc", new OneByteInstructionCreator(InstructionCodes.Stc)},
