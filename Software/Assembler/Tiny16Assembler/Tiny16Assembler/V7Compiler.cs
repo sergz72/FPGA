@@ -69,6 +69,7 @@ internal sealed class Tiny16V7Compiler : GenericCompiler
         {"sb", new StoreInstructionCreator(InstructionCodes.Sb)},
         {"sw", new StoreInstructionCreator(InstructionCodes.Sw)},
         {"lb", new LoadInstructionCreator(InstructionCodes.Lb)},
+        {"lbu", new LoadInstructionCreator(InstructionCodes.Lbu)},
         {"lw", new LoadInstructionCreator(InstructionCodes.Lw)},
     };
 }

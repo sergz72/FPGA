@@ -30,6 +30,7 @@ internal static class InstructionCodes
     internal const uint Sb = 0x14 << 2;
     internal const uint Lw = 0x13 << 2;
     internal const uint Lb = 0x12 << 2;
+    internal const uint Lbu = 0x11 << 2;
     
     internal const uint Hlt = 0;
     internal const uint Wfi = 1 << 2;

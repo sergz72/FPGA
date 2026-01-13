@@ -117,6 +117,10 @@ ok2:
 	bne hlt2
 
 	mov r2, $AA55
+	swab r2
+	cmp r2, $55AA
+	bne hlt2
+; io
 	in r1, $55
 	out $77, r2
 	jal r0, test_f
@@ -129,10 +133,19 @@ test_f:
 	lda r3, test_data
 	sb @r3, r2
 	lb r1, @r3
+	cmp r1, $FFAA
+	bne hlt3
+	lbu r1, @r3
+	cmp r1, $AA
+	bne hlt3
 	add r3, 2
 	sw @r3, r2
 	lw r4, @r3
+	cmp r4, r2
+	bne hlt3
 	rjmp r0
+hlt3:	
+	hlt
 
 .segment bss
 test_data: resb 1

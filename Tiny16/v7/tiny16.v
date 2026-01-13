@@ -65,8 +65,9 @@ module tiny16
     localparam REGISTERS_WR_DATA_SOURCE_ACC = 0;
     localparam REGISTERS_WR_DATA_SOURCE_DATA_IN = 1;
     localparam REGISTERS_WR_DATA_SOURCE_SRC8 = 2;
-    localparam REGISTERS_WR_DATA_SOURCE_SRCOP1 = 3;
-    localparam REGISTERS_WR_DATA_SOURCE_PC = 4;
+    localparam REGISTERS_WR_DATA_SOURCE_SRC8U = 3;
+    localparam REGISTERS_WR_DATA_SOURCE_SRCOP1 = 4;
+    localparam REGISTERS_WR_DATA_SOURCE_PC = 5;
     
     reg [STAGE_WIDTH - 1:0] stage;
     wire stage_reset;
@@ -199,6 +200,7 @@ module tiny16
         case (source)
             REGISTERS_WR_DATA_SOURCE_DATA_IN: registers_wr_data_f = data_in;
             REGISTERS_WR_DATA_SOURCE_SRC8: registers_wr_data_f = src8_to_15;
+            REGISTERS_WR_DATA_SOURCE_SRC8U: registers_wr_data_f = {8'h0, src};
             REGISTERS_WR_DATA_SOURCE_SRCOP1: registers_wr_data_f = srcop1;
             REGISTERS_WR_DATA_SOURCE_PC: registers_wr_data_f = {{16-RAM_BITS{1'b0}}, old_pc};
             default: registers_wr_data_f = acc;

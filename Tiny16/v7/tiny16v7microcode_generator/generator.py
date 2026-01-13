@@ -42,8 +42,9 @@ REGISTERS_WR_DATA_SOURCE = allocate_bit(3)
 REGISTERS_WR_DATA_SOURCE_ALU = 0
 REGISTERS_WR_DATA_SOURCE_DATA_IN = REGISTERS_WR_DATA_SOURCE
 REGISTERS_WR_DATA_SOURCE_SRC8 = 2 * REGISTERS_WR_DATA_SOURCE
-REGISTERS_WR_DATA_SOURCE_SRCOP1 = 3 * REGISTERS_WR_DATA_SOURCE
-REGISTERS_WR_DATA_SOURCE_PC = 4 * REGISTERS_WR_DATA_SOURCE
+REGISTERS_WR_DATA_SOURCE_SRC8U = 3 * REGISTERS_WR_DATA_SOURCE
+REGISTERS_WR_DATA_SOURCE_SRCOP1 = 4 * REGISTERS_WR_DATA_SOURCE
+REGISTERS_WR_DATA_SOURCE_PC = 5 * REGISTERS_WR_DATA_SOURCE
 
 DST = allocate_bit(1)
 DST_REGISTER_DATA_LO = 0
@@ -174,6 +175,15 @@ def generate_lb(opcode):
     microcode[start+3] = PC_SOURCE_NEXT | RAM_ADDR_SOURCE_REGISTER | REGISTERS_WR_SOURCE_SET
     microcode[start+4] = STAGE_RESET | REGISTERS_WR | REGISTERS_WR_DATA_SOURCE_SRC8 | RAM_ADDR_SOURCE_PC
 
+# load unsigned byte instruction rx<=mem[addr in ry]
+def generate_lbu(opcode):
+    start = opcode * OPCODE_SIZE
+    microcode[start] = 0
+    microcode[start+1] = NEXT
+    microcode[start+2] = NEXT
+    microcode[start+3] = PC_SOURCE_NEXT | RAM_ADDR_SOURCE_REGISTER | REGISTERS_WR_SOURCE_SET
+    microcode[start+4] = STAGE_RESET | REGISTERS_WR | REGISTERS_WR_DATA_SOURCE_SRC8U | RAM_ADDR_SOURCE_PC
+
 # load word instruction rx<=mem[addr in ry]
 def generate_lw(opcode):
     start = opcode * OPCODE_SIZE
@@ -238,6 +248,7 @@ generate_clcstc(2)
 generate_reti(3)
 
 # load/store instructions - 3 byte
+generate_lbu(0x11)
 generate_lb(0x12)
 generate_lw(0x13)
 generate_sb(0x14)
