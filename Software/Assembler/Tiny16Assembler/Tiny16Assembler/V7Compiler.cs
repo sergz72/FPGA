@@ -58,7 +58,7 @@ internal sealed class Tiny16V7Compiler : GenericCompiler
         {"bmi", new BrInstructionCreator(Conditions.MI)},
         {"bpl", new BrInstructionCreator(Conditions.PL)},
         
-        {"jmp", new JmpInstructionCreator()},
+        {"jmp", new JmpInstructionCreator(InstructionCodes.Jmp)},
         {"jal", new JalInstructionCreator()},
         {"jalr", new OneRegisterInstructionCreator(InstructionCodes.Jalr)},
         {"rjmp", new OneRegisterInstructionCreator(InstructionCodes.RJmp)},

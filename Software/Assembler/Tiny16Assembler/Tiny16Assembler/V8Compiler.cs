@@ -1,5 +1,5 @@
 using GenericAssembler;
-using Tiny16Assembler.V8Instructions;
+using Tiny16Assembler.V7Instructions;
 
 namespace Tiny16Assembler;
 
@@ -16,7 +16,7 @@ internal sealed class Tiny16V8Compiler : GenericCompiler
         {"hlt", new OneByteInstructionCreator(InstructionCodes.Hlt)},
         {"wfi", new OneByteInstructionCreator(InstructionCodes.Wfi)},
         {"reti", new OneByteInstructionCreator(InstructionCodes.Reti)},
-        {"ret", new OneByteInstructionCreator(InstructionCodes.Ret)},
+        {"ret", new OneByteInstructionCreator(V8Instructions.InstructionCodes.Ret)},
         
         {"mov", new AluInstructionCreator(InstructionCodes.Mov)},
         {"cmp", new AluInstructionCreator(InstructionCodes.Cmp)},
@@ -60,8 +60,8 @@ internal sealed class Tiny16V8Compiler : GenericCompiler
         {"bpl", new BrInstructionCreator(Conditions.PL)},
         
         {"jmp", new JmpInstructionCreator(InstructionCodes.Jmp)},
-        {"call", new JmpInstructionCreator(InstructionCodes.Call)},
-        {"rcall", new OneRegisterInstructionCreator(InstructionCodes.RCall)},
+        {"call", new JmpInstructionCreator(InstructionCodes.Jal)},
+        {"rcall", new OneRegisterInstructionCreator(InstructionCodes.Jalr)},
         {"rjmp", new OneRegisterInstructionCreator(InstructionCodes.RJmp)},
 
         {"in", new InInstructionCreator()},
